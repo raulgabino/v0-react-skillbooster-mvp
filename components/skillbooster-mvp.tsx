@@ -96,6 +96,10 @@ export default function SkillboosterMVP() {
         const response = await fetch("/api/questions")
         const data = await response.json()
 
+        // Cargar las definiciones de habilidades para obtener los nombres descriptivos
+        const skillDefsResponse = await fetch("/api/skill_definitions")
+        const skillDefinitions = await skillDefsResponse.json()
+
         // Procesamos los datos para agruparlos por habilidad
         const skillsMap: Record<string, Question[]> = {}
         const indicadoresMap: Record<string, Array<{ id: string; nombre: string }>> = {}
@@ -107,18 +111,26 @@ export default function SkillboosterMVP() {
             indicadoresMap[question.axis] = []
           }
           skillsMap[question.axis].push(question)
-          if (!indicadoresMap[question.axis].find((i) => i.id === question.indicator)) {
-            indicadoresMap[question.axis].push({ id: question.indicator, nombre: question.indicator })
-          }
         })
 
         // Convertimos el mapa a un array de habilidades
-        const skillsArray: Skill[] = Object.keys(skillsMap).map((axis) => ({
-          id: axis.replace(/\s+/g, "_").toLowerCase(),
-          axis: axis,
-          questions: skillsMap[axis],
-          indicadoresInfo: indicadoresMap[axis],
-        }))
+        const skillsArray: Skill[] = Object.keys(skillsMap).map((axis) => {
+          // Convertir el nombre de la habilidad a un formato compatible con las claves en skill_definitions.json
+          const skillKey = axis.replace(/\s+/g, "_").toLowerCase()
+
+          // Buscar la definición correspondiente en skillDefinitions
+          const skillDef = Object.values(skillDefinitions).find((def: any) => def.name === axis)
+
+          // Usar los indicadores_info de la definición si existe, o crear un array vacío
+          const indicadoresInfo = skillDef ? skillDef.indicadores_info : []
+
+          return {
+            id: skillKey,
+            axis: axis,
+            questions: skillsMap[axis],
+            indicadoresInfo: indicadoresInfo,
+          }
+        })
 
         setSkills(skillsArray)
       } catch (error) {
@@ -430,7 +442,7 @@ export default function SkillboosterMVP() {
               learningObjective={currentSkillLearningObjective}
               setLearningObjective={setCurrentSkillLearningObjective}
               onSubmitObjective={handleSubmitSkillObjective}
-              indicadoresInfo={currentSkill.indicadoresInfo || []} // Asumiendo que indicadoresInfo ya está en currentSkill
+              indicadoresInfo={currentSkill.indicadoresInfo || []} // Asegurarnos de pasar los indicadoresInfo correctos
             />
           )
         } else {
