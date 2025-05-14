@@ -25,9 +25,10 @@ type UserInfo = {
 
 type Skill = {
   id: string
-  axis: string
+  name: string
   questions: Question[]
-  indicadoresInfo: Array<{ id: string; nombre: string }>
+  indicadoresInfo: Array<{ id: string; nombre: string; descripcion_indicador?: string }>
+  openQuestionId: string
 }
 
 type Question = {
@@ -90,55 +91,22 @@ export default function SkillboosterMVP() {
   // Cargar datos de preguntas
   useEffect(() => {
     // Cargamos los datos desde la API
-    const loadQuestions = async () => {
+    const loadSkillsData = async () => {
       try {
-        // Llamada a la API para obtener las preguntas
+        // Llamada a la API para obtener las habilidades con datos completos
         const response = await fetch("/api/questions")
-        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(`Error al cargar datos de habilidades: ${response.statusText}`)
+        }
 
-        // Cargar las definiciones de habilidades para obtener los nombres descriptivos
-        const skillDefsResponse = await fetch("/api/skill_definitions")
-        const skillDefinitions = await skillDefsResponse.json()
-
-        // Procesamos los datos para agruparlos por habilidad
-        const skillsMap: Record<string, Question[]> = {}
-        const indicadoresMap: Record<string, Array<{ id: string; nombre: string }>> = {}
-
-        // Procesamos los datos recibidos de la API
-        data.forEach((question: any) => {
-          if (!skillsMap[question.axis]) {
-            skillsMap[question.axis] = []
-            indicadoresMap[question.axis] = []
-          }
-          skillsMap[question.axis].push(question)
-        })
-
-        // Convertimos el mapa a un array de habilidades
-        const skillsArray: Skill[] = Object.keys(skillsMap).map((axis) => {
-          // Convertir el nombre de la habilidad a un formato compatible con las claves en skill_definitions.json
-          const skillKey = axis.replace(/\s+/g, "_").toLowerCase()
-
-          // Buscar la definición correspondiente en skillDefinitions
-          const skillDef = Object.values(skillDefinitions).find((def: any) => def.name === axis)
-
-          // Usar los indicadores_info de la definición si existe, o crear un array vacío
-          const indicadoresInfo = skillDef ? skillDef.indicadores_info : []
-
-          return {
-            id: skillKey,
-            axis: axis,
-            questions: skillsMap[axis],
-            indicadoresInfo: indicadoresInfo,
-          }
-        })
-
-        setSkills(skillsArray)
+        const skillsData: Skill[] = await response.json()
+        setSkills(skillsData)
       } catch (error) {
-        console.error("Error al cargar las preguntas:", error)
+        console.error("Error al cargar las habilidades:", error)
       }
     }
 
-    loadQuestions()
+    loadSkillsData()
   }, [])
 
   // Manejadores de eventos
@@ -258,7 +226,7 @@ export default function SkillboosterMVP() {
         // 3. Construimos el resultado completo
         const result: SkillResult = {
           skillId: currentSkillId,
-          skillName: currentSkill.axis,
+          skillName: currentSkill.name, // Usar name en lugar de axis
           globalScore,
           indicatorScores,
           tips,
@@ -438,11 +406,11 @@ export default function SkillboosterMVP() {
         if (!skillObjectiveSubmitted) {
           return (
             <SkillObjectiveStep
-              skillName={currentSkill.axis}
+              skillName={currentSkill.name} // Usar name en lugar de axis
               learningObjective={currentSkillLearningObjective}
               setLearningObjective={setCurrentSkillLearningObjective}
               onSubmitObjective={handleSubmitSkillObjective}
-              indicadoresInfo={currentSkill.indicadoresInfo || []} // Asegurarnos de pasar los indicadoresInfo correctos
+              indicadoresInfo={currentSkill.indicadoresInfo}
             />
           )
         } else {
@@ -720,7 +688,7 @@ function SkillObjectiveStep({
   learningObjective: string
   setLearningObjective: (value: string) => void
   onSubmitObjective: () => void
-  indicadoresInfo: Array<{ id: string; nombre: string }>
+  indicadoresInfo: Array<{ id: string; nombre: string; descripcion_indicador?: string }>
 }) {
   return (
     <div className="max-w-2xl mx-auto">
@@ -806,7 +774,7 @@ function SkillSelectionStep({
                 className="h-5 w-5 mr-3"
               />
               <label htmlFor={skill.id} className="cursor-pointer font-medium">
-                {skill.axis}
+                {skill.name}
               </label>
             </div>
           </div>
@@ -846,6 +814,15 @@ function AssessmentStep({
   const question = skill.questions[questionIndex]
   const isLastQuestion = questionIndex === skill.questions.length - 1
 
+  // Definir las etiquetas descriptivas para la escala Likert
+  const likertLabels: Record<number, string> = {
+    1: "Totalmente en desacuerdo",
+    2: "En desacuerdo",
+    3: "Neutral / A veces",
+    4: "De acuerdo",
+    5: "Totalmente de acuerdo",
+  }
+
   const handleLikertChange = (value: number) => {
     setCurrentAnswer(value)
   }
@@ -860,7 +837,7 @@ function AssessmentStep({
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-2 text-center">{skill.axis}</h2>
+      <h2 className="text-2xl font-bold mb-2 text-center">{skill.name}</h2>
 
       <div className="mb-6 flex justify-between items-center">
         <div className="text-sm text-gray-400">
@@ -885,15 +862,18 @@ function AssessmentStep({
             </div>
             <div className="flex justify-between gap-2">
               {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  onClick={() => handleLikertChange(value)}
-                  className={`flex-1 py-3 rounded-md transition-all ${
-                    currentAnswer === value ? "bg-blue-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-gray-200"
-                  }`}
-                >
-                  {value}
-                </button>
+                <div key={value} className="flex flex-col items-center flex-1">
+                  <button
+                    onClick={() => handleLikertChange(value)}
+                    className={`w-full py-3 rounded-md transition-all mb-1 ${
+                      currentAnswer === value ? "bg-blue-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                    }`}
+                    aria-label={`${likertLabels[value]} (${value})`}
+                  >
+                    {value}
+                  </button>
+                  <span className="text-xs text-gray-400 text-center px-1 h-8">{likertLabels[value]}</span>
+                </div>
               ))}
             </div>
           </div>
