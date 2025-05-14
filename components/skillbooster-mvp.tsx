@@ -17,7 +17,7 @@ type UserInfo = {
   experience: string
   projectDescription: string
   obstacles: string
-  learningObjective?: string // Nuevo campo añadido
+  // Se elimina learningObjective del UserInfo general
 }
 
 type Skill = {
@@ -62,7 +62,7 @@ export default function SkillboosterMVP() {
     experience: "",
     projectDescription: "",
     obstacles: "",
-    learningObjective: "", // Inicializado como string vacío
+    // Se elimina learningObjective del estado inicial
   })
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false)
   const [skills, setSkills] = useState<Skill[]>([])
@@ -75,6 +75,10 @@ export default function SkillboosterMVP() {
   const [loading, setLoading] = useState<boolean>(false)
   const [pdfGenerating, setPdfGenerating] = useState<boolean>(false)
   const [showMentorSession, setShowMentorSession] = useState<boolean>(false)
+
+  // Nuevos estados para manejar el objetivo de aprendizaje específico de cada habilidad
+  const [currentSkillLearningObjective, setCurrentSkillLearningObjective] = useState<string>("")
+  const [skillObjectiveSubmitted, setSkillObjectiveSubmitted] = useState<boolean>(false)
 
   // Cargar datos de preguntas
   useEffect(() => {
@@ -128,9 +132,10 @@ export default function SkillboosterMVP() {
 
   const handleSkillSelection = () => {
     if (selectedSkills.length > 0) {
-      setCurrentStep(3)
       setCurrentSkillIndex(0)
       setCurrentQuestionIndex(0)
+      setCurrentSkillLearningObjective("") // Limpiar para la nueva habilidad
+      setSkillObjectiveSubmitted(false) // Reiniciar para la nueva habilidad
 
       // Inicializamos el objeto de respuestas para cada habilidad seleccionada
       const initialAnswers: Record<string, Answer[]> = {}
@@ -138,7 +143,14 @@ export default function SkillboosterMVP() {
         initialAnswers[skillId] = []
       })
       setAnswers(initialAnswers)
+
+      setCurrentStep(3) // Ir al nuevo SkillObjectiveStep
     }
+  }
+
+  // Función para manejar el envío del objetivo de la habilidad
+  const handleSubmitSkillObjective = () => {
+    setSkillObjectiveSubmitted(true)
   }
 
   const handleAnswerQuestion = async () => {
@@ -271,7 +283,9 @@ export default function SkillboosterMVP() {
       // Pasamos a la siguiente habilidad
       setCurrentSkillIndex(currentSkillIndex + 1)
       setCurrentQuestionIndex(0)
-      setCurrentStep(3) // Volvemos a la pantalla de evaluación
+      setCurrentSkillLearningObjective("") // Limpiar para la nueva habilidad
+      setSkillObjectiveSubmitted(false) // Reiniciar para la nueva habilidad
+      setCurrentStep(3) // Volvemos a la pantalla de objetivo de habilidad
       setShowMentorSession(false)
     } else {
       // Pasamos a la pantalla de resumen final
@@ -288,12 +302,13 @@ export default function SkillboosterMVP() {
       experience: "",
       projectDescription: "",
       obstacles: "",
-      learningObjective: "",
     })
     setAcceptedTerms(false)
     setSelectedSkills([])
     setCurrentSkillIndex(0)
     setCurrentQuestionIndex(0)
+    setCurrentSkillLearningObjective("") // Limpiar el objetivo de aprendizaje
+    setSkillObjectiveSubmitted(false) // Reiniciar el estado de envío
     setAnswers({})
     setResults({})
     setShowMentorSession(false)
@@ -392,17 +407,29 @@ export default function SkillboosterMVP() {
         const currentSkillId = selectedSkills[currentSkillIndex]
         const currentSkill = skills.find((s) => s.id === currentSkillId)
 
-        if (!currentSkill) return <div>Cargando...</div>
+        if (!currentSkill) return <div>Cargando habilidad...</div>
 
-        return (
-          <AssessmentStep
-            skill={currentSkill}
-            questionIndex={currentQuestionIndex}
-            currentAnswer={currentAnswer}
-            setCurrentAnswer={setCurrentAnswer}
-            onNext={handleAnswerQuestion}
-          />
-        )
+        // Renderizar SkillObjectiveStep o AssessmentStep según el estado
+        if (!skillObjectiveSubmitted) {
+          return (
+            <SkillObjectiveStep
+              skillName={currentSkill.axis}
+              learningObjective={currentSkillLearningObjective}
+              setLearningObjective={setCurrentSkillLearningObjective}
+              onSubmitObjective={handleSubmitSkillObjective}
+            />
+          )
+        } else {
+          return (
+            <AssessmentStep
+              skill={currentSkill}
+              questionIndex={currentQuestionIndex}
+              currentAnswer={currentAnswer}
+              setCurrentAnswer={setCurrentAnswer}
+              onNext={handleAnswerQuestion}
+            />
+          )
+        }
       case 4:
         const resultSkillId = selectedSkills[currentSkillIndex]
         const result = results[resultSkillId]
@@ -415,6 +442,12 @@ export default function SkillboosterMVP() {
         const openEndedAnswer = answers[resultSkillId]?.find((answer) => answer.questionId === openEndedQuestionId)
           ?.value as string | undefined
 
+        // Crear un perfil de usuario que incluya el objetivo de aprendizaje específico
+        const userProfileForMentor = {
+          ...userInfo,
+          learningObjective: currentSkillLearningObjective, // Añadir el objetivo específico de la habilidad
+        }
+
         return showMentorSession ? (
           <MentorSessionInterface
             skillId={resultSkillId}
@@ -422,7 +455,7 @@ export default function SkillboosterMVP() {
             globalScore={result.globalScore}
             indicatorScores={result.indicatorScores}
             openEndedAnswer={openEndedAnswer}
-            userProfile={userInfo}
+            userProfile={userProfileForMentor} // Pasar el perfil modificado
             onSessionComplete={handleMentorSessionComplete}
           />
         ) : (
@@ -552,13 +585,6 @@ function UserInfoStep({
     setUserInfo({ ...userInfo, [name]: value })
   }
 
-  // Determinar si hay una habilidad seleccionada para personalizar el texto del campo de objetivo
-  const getObjectiveLabel = () => {
-    // Aquí podríamos obtener la habilidad seleccionada si ya existiera
-    // Por ahora usamos un texto genérico
-    return "Si tienes un objetivo específico para la habilidad que vas a evaluar, ¿cuál es o en qué situación te gustaría aplicarla mejor?"
-  }
-
   return (
     <div className="max-w-2xl mx-auto">
       <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
@@ -641,21 +667,7 @@ function UserInfoStep({
           ></textarea>
         </div>
 
-        {/* Nuevo campo para el objetivo de aprendizaje */}
-        <div>
-          <label htmlFor="learningObjective" className="block mb-2 text-sm font-medium">
-            {getObjectiveLabel()}
-          </label>
-          <textarea
-            id="learningObjective"
-            name="learningObjective"
-            value={userInfo.learningObjective}
-            onChange={handleChange}
-            rows={3}
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Este campo es opcional"
-          ></textarea>
-        </div>
+        {/* Se elimina el campo de objetivo de aprendizaje */}
 
         <div className="flex justify-center pt-4">
           <button
@@ -666,6 +678,49 @@ function UserInfoStep({
           </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+// Nuevo componente para el objetivo de aprendizaje específico de la habilidad
+function SkillObjectiveStep({
+  skillName,
+  learningObjective,
+  setLearningObjective,
+  onSubmitObjective,
+}: {
+  skillName: string
+  learningObjective: string
+  setLearningObjective: (value: string) => void
+  onSubmitObjective: () => void
+}) {
+  return (
+    <div className="max-w-2xl mx-auto">
+      <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">Objetivo para la habilidad: {skillName}</h2>
+
+      <div className="bg-gray-800 rounded-lg p-6 mb-8">
+        <label htmlFor="learningObjective" className="block mb-3 text-sm font-medium">
+          Si tienes un objetivo específico para la habilidad de <strong>{skillName}</strong> o una situación donde te
+          gustaría aplicarla mejor, ¿cuál sería? (Este campo es opcional)
+        </label>
+        <textarea
+          id="learningObjective"
+          value={learningObjective}
+          onChange={(e) => setLearningObjective(e.target.value)}
+          rows={5}
+          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Ej: Aplicar técnicas de comunicación asertiva en reuniones de equipo para presentar mis ideas con más confianza."
+        ></textarea>
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          onClick={onSubmitObjective}
+          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-medium transition-all"
+        >
+          Continuar a la Evaluación
+        </button>
+      </div>
     </div>
   )
 }
