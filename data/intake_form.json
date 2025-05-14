@@ -1,0 +1,198 @@
+[
+  {
+    "id": "CE1",
+    "axis": "Comunicación Estratégica",
+    "type": "likert",
+    "indicator": "CE1",
+    "prompt": "Al comunicarme, me aseguro de que mis ideas centrales sean fáciles de entender para mi interlocutor."
+  },
+  {
+    "id": "CE2",
+    "axis": "Comunicación Estratégica",
+    "type": "likert",
+    "indicator": "CE2",
+    "prompt": "Adapto mi lenguaje, tono y contenido según la persona o grupo con el que me estoy comunicando."
+  },
+  {
+    "id": "CE3",
+    "axis": "Comunicación Estratégica",
+    "type": "likert",
+    "indicator": "CE3",
+    "prompt": "Presto atención completa a lo que otros dicen, haciendo preguntas para asegurar mi comprensión antes de responder."
+  },
+  {
+    "id": "CE4",
+    "axis": "Comunicación Estratégica",
+    "type": "likert",
+    "indicator": "CE4",
+    "prompt": "Soy consciente de mi lenguaje corporal (gestos, postura, contacto visual) y lo utilizo para reforzar mi mensaje."
+  },
+  {
+    "id": "CE5",
+    "axis": "Comunicación Estratégica",
+    "type": "likert",
+    "indicator": "CE5",
+    "prompt": "Elijo el medio de comunicación más adecuado (email, llamada, reunión, etc.) para cada situación y mensaje."
+  },
+  {
+    "id": "CE6",
+    "axis": "Comunicación Estratégica",
+    "type": "likert",
+    "indicator": "CE6",
+    "prompt": "Busco activamente retroalimentación sobre mi comunicación y estoy dispuesto/a a ajustar mi enfoque según sea necesario."
+  },
+  {
+    "id": "CE7_open",
+    "axis": "Comunicación Estratégica",
+    "type": "open",
+    "indicator": "CE7_open",
+    "prompt": "Imagina que debes presentar una propuesta de proyecto innovador a un directivo que tiene poco tiempo y es escéptico sobre nuevas ideas. Describe brevemente cómo estructurarías los primeros 2 minutos de tu comunicación para captar su interés y transmitir el valor principal de tu propuesta. Menciona qué dirías y cómo lo dirías."
+  },
+  {
+    "id": "PS_P1",
+    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "type": "likert",
+    "indicator": "PS1",
+    "prompt": "Al tomar decisiones en un proyecto, considero cómo las opciones de consumo de recursos afectarán los costos Y el medio ambiente a la vez."
+  },
+  {
+    "id": "PS_P2",
+    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "type": "likert",
+    "indicator": "PS2",
+    "prompt": "Evalúo los pros y contras de una acción considerando sus implicaciones económicas, sociales Y ambientales, no solo una de ellas."
+  },
+  {
+    "id": "PS_P3",
+    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "type": "likert",
+    "indicator": "PS4",
+    "prompt": "Antes de implementar una solución, pienso en sus posibles efectos a largo plazo, más allá de los resultados inmediatos."
+  },
+  {
+    "id": "PS_P4",
+    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "type": "likert",
+    "indicator": "PS5",
+    "prompt": "Busco activamente información sobre los costos \"ocultos\" (sociales o ambientales) de las diferentes alternativas, no solo los precios directos."
+  },
+  {
+    "id": "PS_P5",
+    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "type": "likert",
+    "indicator": "PS6",
+    "prompt": "Cuando analizo un problema complejo, intento identificar los puntos clave donde una intervención podría tener el mayor impacto positivo."
+  },
+  {
+    "id": "PS_P6",
+    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "type": "likert",
+    "indicator": "PS8",
+    "prompt": "Adapto mis planes y estrategias cuando nueva información revela conexiones o consecuencias inesperadas en el sistema."
+  },
+  {
+    "id": "PS_P7",
+    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "type": "open",
+    "indicator": "PS7_open",
+    "prompt": "Describe una situación en un proyecto (real o hipotético) donde una decisión sobre consumo o costos tuvo un impacto socioambiental inesperado. ¿Cómo analizarías ahora esa interconexión para proponer una mejor alternativa?"
+  },
+  {
+    "id": "IDA_P1",
+    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "type": "likert",
+    "indicator": "IDA1",
+    "prompt": "Evalúo la calidad y fiabilidad (ej. precisión, fuente, posibles errores) de los datos ambientales (de sensores, recibos, etc.) antes de usarlos para análisis."
+  },
+  {
+    "id": "IDA_P2",
+    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "type": "likert",
+    "indicator": "IDA2",
+    "prompt": "Selecciono métodos o herramientas de análisis (ej. estadísticas básicas, gráficos, comparaciones) que considero adecuados para el tipo de dato ambiental y la pregunta que busco responder."
+  },
+  {
+    "id": "IDA_P3",
+    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "type": "likert",
+    "indicator": "IDA3",
+    "prompt": "Al analizar datos ambientales, logro identificar patrones importantes, cambios a lo largo del tiempo (tendencias) o valores inusuales (anomalías)."
+  },
+  {
+    "id": "IDA_P4",
+    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "type": "likert",
+    "indicator": "IDA4",
+    "prompt": "Tengo en cuenta el objetivo específico del proyecto de sostenibilidad o gestión de recursos al momento de interpretar qué significan los datos analizados."
+  },
+  {
+    "id": "IDA_P5",
+    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "type": "likert",
+    "indicator": "IDA5",
+    "prompt": "Soy capaz de traducir los resultados del análisis de datos ambientales en conclusiones prácticas o ideas concretas que ayuden a tomar decisiones."
+  },
+  {
+    "id": "IDA_P6",
+    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "type": "likert",
+    "indicator": "IDA6",
+    "prompt": "Comunico los hallazgos principales de mi interpretación de datos ambientales de forma que otros (miembros del equipo, comunidad) puedan entenderlos fácilmente."
+  },
+  {
+    "id": "IDA_P7",
+    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "type": "open",
+    "indicator": "IDA7_open",
+    "prompt": "Describe brevemente una situación en la que tuviste que interpretar datos de consumo (ej. recibos de luz, agua) o de sensores ambientales para un proyecto o iniciativa. ¿Qué pasos seguiste para entender los datos y qué conclusión práctica obtuviste?"
+  },
+  {
+    "id": "AA_P1",
+    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "type": "likert",
+    "indicator": "AA_P1",
+    "prompt": "Evalúo mi capacidad para identificar y priorizar los factores del contexto (ej. entorno del proyecto, recursos disponibles, estado anímico) que son más relevantes para adaptar una experiencia de aprendizaje de liderazgo social."
+  },
+  {
+    "id": "AA_P2",
+    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "type": "likert",
+    "indicator": "AA_P2",
+    "prompt": "Evalúo mi capacidad para diseñar métodos (ej. preguntas clave, observación, análisis de datos de uso) para inferir el progreso y las necesidades de aprendizaje de un usuario en tiempo real dentro de la app."
+  },
+  {
+    "id": "AA_P3",
+    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "type": "likert",
+    "indicator": "AA_P3",
+    "prompt": "Evalúo mi capacidad para definir reglas claras (ej. \"SI el usuario muestra dificultad con X Y está en contexto Y, ENTONCES ofrecer micro-ejercicio Z\") que guíen la personalización de contenidos o actividades."
+  },
+  {
+    "id": "AA_P4",
+    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "type": "likert",
+    "indicator": "AA_P4",
+    "prompt": "Evalúo mi capacidad para seleccionar o diseñar micro-contenidos y micro-ejercicios variados que respondan eficazmente a diferentes necesidades y contextos identificados por el sistema adaptativo."
+  },
+  {
+    "id": "AA_P5",
+    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "type": "likert",
+    "indicator": "AA_P5",
+    "prompt": "Evalúo mi capacidad para proponer indicadores y métodos sencillos para evaluar si las adaptaciones realizadas por la app están realmente ayudando al usuario a desarrollar la competencia de liderazgo."
+  },
+  {
+    "id": "AA_P6",
+    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "type": "likert",
+    "indicator": "AA_P6",
+    "prompt": "Evalúo mi capacidad para anticipar y proponer soluciones a posibles problemas éticos (privacidad, sesgo) o de usabilidad (confusión, falta de control) al diseñar las funciones adaptativas de la app."
+  },
+  {
+    "id": "AA_P7",
+    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "type": "open",
+    "indicator": "AA_P7_open",
+    "prompt": "Describe brevemente cómo abordarías el diseño de una secuencia adaptativa para desarrollar la habilidad de \"Comunicación Efectiva\" en un líder de proyecto social que trabaja remotamente con un equipo diverso y enfrenta plazos ajustados. ¿Qué información del contexto y del usuario intentarías capturar y cómo la usarías para personalizar la experiencia?"
+  }
+]

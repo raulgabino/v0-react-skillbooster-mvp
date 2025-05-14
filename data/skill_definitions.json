@@ -1,0 +1,174 @@
+{
+  "comunicacion_estrategica": {
+    "name": "Comunicación Estratégica",
+    "rubrica": {
+      "CE1": "Claridad de ideas centrales",
+      "CE2": "Adaptación al interlocutor",
+      "CE3": "Escucha activa",
+      "CE4": "Lenguaje corporal consciente",
+      "CE5": "Selección de medio adecuado",
+      "CE6": "Apertura a retroalimentación"
+    },
+    "likert_indicators": ["CE1", "CE2", "CE3", "CE4", "CE5", "CE6"],
+    "indicadores_info": [
+      { "id": "CE1", "nombre": "Claridad del Mensaje" },
+      { "id": "CE2", "nombre": "Adaptación a la Audiencia" },
+      { "id": "CE3", "nombre": "Escucha Activa" },
+      { "id": "CE4", "nombre": "Comunicación No Verbal" },
+      { "id": "CE5", "nombre": "Selección de Canales" },
+      { "id": "CE6", "nombre": "Feedback y Ajuste" }
+    ],
+    "open_question_id": "CE7_open",
+    "scoring_weights": {
+      "likert": 0.7,
+      "open": 0.3
+    },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre comunicación estratégica. La pregunta fue: 'Imagina que debes presentar una propuesta de proyecto innovador a un directivo que tiene poco tiempo y es escéptico sobre nuevas ideas. Describe brevemente cómo estructurarías los primeros 2 minutos de tu comunicación para captar su interés y transmitir el valor principal de tu propuesta. Menciona qué dirías y cómo lo dirías.' Asigna una puntuación de 0 a 100 basada en: 1) Estructura clara y concisa (25 pts), 2) Adaptación al perfil del directivo (25 pts), 3) Enfoque en valor/beneficio clave (25 pts), 4) Elementos persuasivos efectivos (25 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Comunicación Estratégica",
+      "expertise": "Experto en comunicación efectiva en entornos profesionales y presentación de ideas complejas de forma clara y persuasiva.",
+      "tone": "Profesional pero cercano, constructivo y orientado a soluciones prácticas.",
+      "focus_areas": [
+        "Estructuración clara de mensajes",
+        "Adaptación al interlocutor",
+        "Comunicación persuasiva",
+        "Escucha activa",
+        "Comunicación no verbal"
+      ],
+      "teaching_approach": "Proporcionar ejercicios prácticos y concretos que puedan aplicarse inmediatamente en situaciones reales de comunicación profesional.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips en un array de strings. El primer tip debe identificar una o dos fortalezas principales del usuario en esta habilidad, basándose en los scores de indicadores más altos. El segundo tip debe señalar una o dos áreas clave de oportunidad o mejora, basándose en los scores de indicadores más bajos. El tercer tip debe ser un consejo general práctico y motivador para seguir desarrollando la habilidad en el contexto del proyecto del usuario. Sé específico y evita la generalidad.",
+        "Al mencionar indicadores, usa sus nombres descriptivos."
+      ]
+    }
+  },
+  "pensamiento_sistemico_consumo_costos_medioambiente": {
+    "name": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
+    "rubrica": {
+      "PS_P1": "Consideración integrada de recursos, costos y ambiente",
+      "PS_P2": "Evaluación multidimensional de impactos",
+      "PS_P3": "Visión de efectos a largo plazo",
+      "PS_P4": "Identificación de costos ocultos",
+      "PS_P5": "Identificación de puntos de intervención clave",
+      "PS_P6": "Adaptabilidad ante nueva información"
+    },
+    "likert_indicators": ["PS_P1", "PS_P2", "PS_P3", "PS_P4", "PS_P5", "PS_P6"],
+    "indicadores_info": [
+      { "id": "PS_P1", "nombre": "Identificación de Conexiones" },
+      { "id": "PS_P2", "nombre": "Análisis Multidimensional" },
+      { "id": "PS_P3", "nombre": "Visión de Largo Plazo" },
+      { "id": "PS_P4", "nombre": "Identificación de Costos Ocultos" },
+      { "id": "PS_P5", "nombre": "Búsqueda de Puntos de Apalancamiento" },
+      { "id": "PS_P6", "nombre": "Mentalidad de Aprendizaje/Adaptación" }
+    ],
+    "open_question_id": "PS_P7",
+    "scoring_weights": {
+      "likert": 0.6,
+      "open": 0.4
+    },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre pensamiento sistémico. La pregunta fue: 'Describe una situación en un proyecto (real o hipotético) donde una decisión sobre consumo o costos tuvo un impacto socioambiental inesperado. ¿Cómo analizarías ahora esa interconexión para proponer una mejor alternativa?' Asigna una puntuación de 0 a 100 basada en: 1) Identificación clara de interconexiones (25 pts), 2) Análisis de impactos no evidentes (25 pts), 3) Consideración de múltiples dimensiones (económica, social, ambiental) (25 pts), 4) Propuesta de alternativa que equilibre las tres dimensiones (25 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Pensamiento Sistémico",
+      "expertise": "Especialista en análisis de sistemas complejos y toma de decisiones que consideran impactos económicos, sociales y ambientales de forma integrada.",
+      "tone": "Analítico pero accesible, enfocado en revelar conexiones no evidentes y estimular un pensamiento más holístico.",
+      "focus_areas": [
+        "Identificación de interconexiones",
+        "Análisis de ciclos de retroalimentación",
+        "Evaluación de impactos a largo plazo",
+        "Identificación de puntos de apalancamiento",
+        "Equilibrio entre factores económicos, sociales y ambientales"
+      ],
+      "teaching_approach": "Ofrecer marcos de análisis y ejercicios prácticos que ayuden a visualizar sistemas complejos y sus interrelaciones.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips en un array de strings. El primer tip debe identificar una o dos fortalezas principales del usuario en esta habilidad, basándose en los scores de indicadores más altos. El segundo tip debe señalar una o dos áreas clave de oportunidad o mejora, basándose en los scores de indicadores más bajos. El tercer tip debe ser un consejo general práctico y motivador para seguir desarrollando la habilidad en el contexto del proyecto del usuario. Sé específico y evita la generalidad.",
+        "Al mencionar indicadores, usa sus nombres descriptivos."
+      ]
+    }
+  },
+  "interpretacion_de_datos_ambientales_sensores_recibos": {
+    "name": "Interpretación de Datos Ambientales (Sensores/Recibos)",
+    "rubrica": {
+      "IDA_P1": "Evaluación de calidad y fiabilidad de datos",
+      "IDA_P2": "Selección de métodos de análisis adecuados",
+      "IDA_P3": "Identificación de patrones y anomalías",
+      "IDA_P4": "Contextualización según objetivos del proyecto",
+      "IDA_P5": "Traducción a conclusiones prácticas",
+      "IDA_P6": "Comunicación efectiva de hallazgos"
+    },
+    "likert_indicators": ["IDA_P1", "IDA_P2", "IDA_P3", "IDA_P4", "IDA_P5", "IDA_P6"],
+    "indicadores_info": [
+      { "id": "IDA_P1", "nombre": "Evaluación de Calidad y Fiabilidad" },
+      { "id": "IDA_P2", "nombre": "Selección y Aplicación de Técnicas" },
+      { "id": "IDA_P3", "nombre": "Identificación de Patrones" },
+      { "id": "IDA_P4", "nombre": "Comprensión del Contexto" },
+      { "id": "IDA_P5", "nombre": "Generación de Insights Prácticos" },
+      { "id": "IDA_P6", "nombre": "Comunicación de Hallazgos" }
+    ],
+    "open_question_id": "IDA_P7",
+    "scoring_weights": {
+      "likert": 0.65,
+      "open": 0.35
+    },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre interpretación de datos ambientales. La pregunta fue: 'Describe brevemente una situación en la que tuviste que interpretar datos de consumo (ej. recibos de luz, agua) o de sensores ambientales para un proyecto o iniciativa. ¿Qué pasos seguiste para entender los datos y qué conclusión práctica obtuviste?' Asigna una puntuación de 0 a 100 basada en: 1) Metodología clara de análisis (25 pts), 2) Evaluación crítica de los datos (25 pts), 3) Identificación de patrones relevantes (25 pts), 4) Derivación de conclusiones prácticas y accionables (25 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Interpretación de Datos Ambientales",
+      "expertise": "Especialista en análisis e interpretación de datos relacionados con consumo de recursos y variables ambientales para la toma de decisiones informadas.",
+      "tone": "Metódico pero accesible, enfocado en desarrollar capacidades analíticas prácticas sin tecnicismos innecesarios.",
+      "focus_areas": [
+        "Evaluación de calidad de datos",
+        "Métodos de análisis apropiados",
+        "Identificación de patrones significativos",
+        "Contextualización de datos",
+        "Comunicación efectiva de hallazgos"
+      ],
+      "teaching_approach": "Proporcionar métodos paso a paso y ejercicios prácticos que desarrollen habilidades de análisis aplicables a situaciones cotidianas de gestión de recursos.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips en un array de strings. El primer tip debe identificar una o dos fortalezas principales del usuario en esta habilidad, basándose en los scores de indicadores más altos. El segundo tip debe señalar una o dos áreas clave de oportunidad o mejora, basándose en los scores de indicadores más bajos. El tercer tip debe ser un consejo general práctico y motivador para seguir desarrollando la habilidad en el contexto del proyecto del usuario. Sé específico y evita la generalidad.",
+        "Al mencionar indicadores, usa sus nombres descriptivos."
+      ]
+    }
+  },
+  "aprendizaje_adaptativo_personalizacion_contextual": {
+    "name": "Aprendizaje Adaptativo (Personalización Contextual)",
+    "rubrica": {
+      "AA_P1": "Identificación de factores contextuales relevantes",
+      "AA_P2": "Diseño de métodos para inferir necesidades",
+      "AA_P3": "Definición de reglas de adaptación claras",
+      "AA_P4": "Diseño de micro-contenidos variados",
+      "AA_P5": "Evaluación de efectividad de adaptaciones",
+      "AA_P6": "Anticipación de problemas éticos y de usabilidad"
+    },
+    "likert_indicators": ["AA_P1", "AA_P2", "AA_P3", "AA_P4", "AA_P5", "AA_P6"],
+    "indicadores_info": [
+      { "id": "AA_P1", "nombre": "Modelado del Contexto" },
+      { "id": "AA_P2", "nombre": "Modelado del Estado del Usuario" },
+      { "id": "AA_P3", "nombre": "Diseño de Estrategias Adaptativas" },
+      { "id": "AA_P4", "nombre": "Selección y Mapeo de Contenido" },
+      { "id": "AA_P5", "nombre": "Evaluación de Efectividad" },
+      { "id": "AA_P6", "nombre": "Consideraciones Éticas/Usabilidad" }
+    ],
+    "open_question_id": "AA_P7",
+    "scoring_weights": {
+      "likert": 0.6,
+      "open": 0.4
+    },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre aprendizaje adaptativo. La pregunta fue: 'Describe brevemente cómo abordarías el diseño de una secuencia adaptativa para desarrollar la habilidad de \"Comunicación Efectiva\" en un líder de proyecto social que trabaja remotamente con un equipo diverso y enfrenta plazos ajustados. ¿Qué información del contexto y del usuario intentarías capturar y cómo la usarías para personalizar la experiencia?' Asigna una puntuación de 0 a 100 basada en: 1) Identificación de variables contextuales relevantes (25 pts), 2) Métodos efectivos para capturar información del usuario (25 pts), 3) Lógica clara de adaptación (25 pts), 4) Propuesta de contenidos personalizados relevantes (25 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Aprendizaje Adaptativo",
+      "expertise": "Especialista en diseño de experiencias de aprendizaje personalizadas que se adaptan a las necesidades, contexto y progreso del usuario.",
+      "tone": "Empático y orientado al usuario, con enfoque en soluciones prácticas y personalizadas.",
+      "focus_areas": [
+        "Identificación de variables contextuales",
+        "Métodos de inferencia de necesidades",
+        "Diseño de reglas de adaptación",
+        "Creación de micro-contenidos personalizados",
+        "Evaluación de efectividad de adaptaciones"
+      ],
+      "teaching_approach": "Ofrecer marcos de diseño y ejemplos concretos que ayuden a crear experiencias de aprendizaje que respondan a las necesidades específicas de cada usuario en su contexto particular.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips en un array de strings. El primer tip debe identificar una o dos fortalezas principales del usuario en esta habilidad, basándose en los scores de indicadores más altos. El segundo tip debe señalar una o dos áreas clave de oportunidad o mejora, basándose en los scores de indicadores más bajos. El tercer tip debe ser un consejo general práctico y motivador para seguir desarrollando la habilidad en el contexto del proyecto del usuario. Sé específico y evita la generalidad.",
+        "Al mencionar indicadores, usa sus nombres descriptivos."
+      ]
+    }
+  }
+}
