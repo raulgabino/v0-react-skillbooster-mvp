@@ -313,6 +313,9 @@ export default function SkillboosterMVP() {
       mentorSessionData: sessionData,
     }
     setResults(newResults)
+
+    // Avanzar automáticamente al siguiente paso en el flujo
+    handleNextSkill()
   }
 
   const handleDownloadPDF = async () => {
@@ -437,6 +440,7 @@ export default function SkillboosterMVP() {
             onRestart={handleRestart}
             onDownloadPDF={handleDownloadPDF}
             pdfGenerating={pdfGenerating}
+            setCurrentStep={setCurrentStep}
           />
         )
       default:
@@ -909,17 +913,27 @@ function SummaryStep({
   onRestart,
   onDownloadPDF,
   pdfGenerating,
+  setCurrentStep,
 }: {
   results: Record<string, SkillResult>
   onRestart: () => void
   onDownloadPDF: () => void
   pdfGenerating: boolean
+  setCurrentStep: (step: number) => void
 }) {
   const resultsArray = Object.values(results)
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">Resumen de tu Evaluación</h2>
+      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">Resumen de tu Evaluación</h2>
+
+      {/* Texto de cierre explícito */}
+      <div className="bg-blue-900/30 rounded-lg p-4 mb-6 text-center">
+        <p className="text-gray-200">
+          Has completado tu ciclo de evaluación y mentoría para las habilidades seleccionadas. A continuación, puedes
+          ver un resumen, descargar tu reporte completo o iniciar una nueva evaluación.
+        </p>
+      </div>
 
       <div id="summary-content-to-pdf" className="bg-gray-800 rounded-lg p-6 mb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -1120,12 +1134,12 @@ function SummaryStep({
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row justify-center gap-4">
+      <div className="flex flex-col md:flex-row justify-center gap-4 mb-6">
         <button
           onClick={onDownloadPDF}
           disabled={pdfGenerating}
           className={`px-8 py-3 rounded-full text-white font-medium transition-all flex items-center justify-center ${
-            pdfGenerating ? "bg-gray-600 cursor-not-allowed" : "bg-gray-700 hover:bg-gray-600"
+            pdfGenerating ? "bg-gray-600 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
           {pdfGenerating ? (
@@ -1150,11 +1164,21 @@ function SummaryStep({
           )}
         </button>
         <button
-          onClick={onRestart}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-medium transition-all"
+          onClick={() => setCurrentStep(2)}
+          className="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-full text-white font-medium transition-all"
         >
-          Evaluar de Nuevo
+          Evaluar Otras Habilidades
         </button>
+        <button
+          onClick={onRestart}
+          className="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-full text-white font-medium transition-all"
+        >
+          Iniciar Nueva Evaluación
+        </button>
+      </div>
+
+      <div className="text-center text-gray-400 text-sm">
+        <p>Gracias por utilizar SkillBoosterX. ¡Esperamos que esta evaluación te ayude en tu desarrollo profesional!</p>
       </div>
     </div>
   )

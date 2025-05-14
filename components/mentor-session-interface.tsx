@@ -42,6 +42,7 @@ export interface MentorSessionData {
   sessionFeedback?: {
     rating: number
     comment?: string
+    status?: string
   }
 }
 
@@ -263,6 +264,7 @@ export default function MentorSessionInterface({
 
     setIsLoading(true)
     setError(null)
+
     try {
       // Enviar el feedback a la API
       const response = await fetch("/api/mentor_feedback", {
@@ -297,28 +299,54 @@ export default function MentorSessionInterface({
         },
       }
 
-      // Notificar al componente padre que la sesión ha terminado
-      onSessionComplete(updatedSessionData)
+      // Mostrar mensaje de confirmación
+      setShowFeedback(false)
+      setConversationHistory([
+        ...conversationHistory,
+        {
+          sender: "mentor",
+          text: "¡Gracias por tu feedback! Tu sesión ha sido completada exitosamente.",
+        },
+      ])
+
+      // Esperar un breve momento para que el usuario vea la confirmación
+      setTimeout(() => {
+        // Notificar al componente padre que la sesión ha terminado
+        onSessionComplete(updatedSessionData)
+      }, 1800)
     } catch (error) {
       console.error("Error al enviar el feedback:", error)
-      setError("Error al enviar el feedback, pero tu sesión ha sido guardada.")
+      setError("Error al enviar el feedback, pero tu sesión será guardada.")
 
-      // Aún así, completamos la sesión
-      const updatedSessionData: MentorSessionData = {
-        microLesson: sessionData.microLesson || "",
-        actionPlan: sessionData.actionPlan || "",
-        userInsight: sessionData.userInsight || "",
-        userCommitment: sessionData.userCommitment || "",
-        mentorProjection: sessionData.mentorProjection || "",
-        conversationHistory: conversationHistory,
-        exerciseScore: exerciseScore,
-        exerciseScoreJustification: exerciseScoreJustification,
-        sessionFeedback: {
-          rating: feedbackRating,
-          comment: feedbackComment,
+      // Mostrar mensaje de error pero aún así completar la sesión
+      setConversationHistory([
+        ...conversationHistory,
+        {
+          sender: "mentor",
+          text: "Hubo un problema al enviar tu feedback, pero tu sesión ha sido guardada. Puedes continuar.",
         },
-      }
-      onSessionComplete(updatedSessionData)
+      ])
+
+      // Aún así, completamos la sesión después de un breve retraso
+      setTimeout(() => {
+        const updatedSessionData: MentorSessionData = {
+          microLesson: sessionData.microLesson || "",
+          actionPlan: sessionData.actionPlan || "",
+          userInsight: sessionData.userInsight || "",
+          userCommitment: sessionData.userCommitment || "",
+          mentorProjection: sessionData.mentorProjection || "",
+          conversationHistory: conversationHistory,
+          exerciseScore: exerciseScore,
+          exerciseScoreJustification: exerciseScoreJustification,
+          // Marcamos el feedback como no enviado o incompleto
+          sessionFeedback: {
+            rating: feedbackRating,
+            comment: feedbackComment,
+            status: "error_sending",
+          },
+        }
+        onSessionComplete(updatedSessionData)
+      }, 1800)
     } finally {
       setIsLoading(false)
     }
@@ -408,6 +436,7 @@ export default function MentorSessionInterface({
               placeholder="Comentarios adicionales (opcional)"
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={3}
+              disabled={isLoading}
             ></textarea>
             <div className="flex justify-end">
               <button
