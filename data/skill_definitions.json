@@ -11,12 +11,36 @@
     },
     "likert_indicators": ["CE1", "CE2", "CE3", "CE4", "CE5", "CE6"],
     "indicadores_info": [
-      { "id": "CE1", "nombre": "Claridad del Mensaje" },
-      { "id": "CE2", "nombre": "Adaptación a la Audiencia" },
-      { "id": "CE3", "nombre": "Escucha Activa" },
-      { "id": "CE4", "nombre": "Comunicación No Verbal" },
-      { "id": "CE5", "nombre": "Selección de Canales" },
-      { "id": "CE6", "nombre": "Feedback y Ajuste" }
+      {
+        "id": "CE1",
+        "nombre": "Claridad del Mensaje",
+        "descripcion_indicador": "Capacidad para comunicar ideas centrales de manera simple y comprensible, asegurando que el mensaje principal sea fácilmente entendido por el receptor."
+      },
+      {
+        "id": "CE2",
+        "nombre": "Adaptación a la Audiencia",
+        "descripcion_indicador": "Habilidad para ajustar el lenguaje, tono y contenido según las características específicas del interlocutor o grupo, mejorando la efectividad de la comunicación."
+      },
+      {
+        "id": "CE3",
+        "nombre": "Escucha Activa",
+        "descripcion_indicador": "Aptitud para prestar atención completa al interlocutor, hacer preguntas relevantes y confirmar la comprensión antes de responder."
+      },
+      {
+        "id": "CE4",
+        "nombre": "Comunicación No Verbal",
+        "descripcion_indicador": "Consciencia y manejo efectivo del lenguaje corporal, gestos, postura y contacto visual para reforzar el mensaje verbal."
+      },
+      {
+        "id": "CE5",
+        "nombre": "Selección de Canales",
+        "descripcion_indicador": "Criterio para elegir el medio de comunicación más apropiado (correo, llamada, reunión) según el contexto y el tipo de mensaje a transmitir."
+      },
+      {
+        "id": "CE6",
+        "nombre": "Feedback y Ajuste",
+        "descripcion_indicador": "Disposición para solicitar y aplicar retroalimentación sobre la propia comunicación, adaptando continuamente el enfoque para mejorar."
+      }
     ],
     "open_question_id": "CE7_open",
     "scoring_weights": {
@@ -54,12 +78,36 @@
     },
     "likert_indicators": ["PS_P1", "PS_P2", "PS_P3", "PS_P4", "PS_P5", "PS_P6"],
     "indicadores_info": [
-      { "id": "PS_P1", "nombre": "Identificación de Conexiones" },
-      { "id": "PS_P2", "nombre": "Análisis Multidimensional" },
-      { "id": "PS_P3", "nombre": "Visión de Largo Plazo" },
-      { "id": "PS_P4", "nombre": "Identificación de Costos Ocultos" },
-      { "id": "PS_P5", "nombre": "Búsqueda de Puntos de Apalancamiento" },
-      { "id": "PS_P6", "nombre": "Mentalidad de Aprendizaje/Adaptación" }
+      {
+        "id": "PS_P1",
+        "nombre": "Identificación de Conexiones",
+        "descripcion_indicador": "Capacidad para reconocer cómo las decisiones sobre consumo, costos y ambiente están interconectadas y se afectan mutuamente, permitiendo una comprensión holística de los sistemas."
+      },
+      {
+        "id": "PS_P2",
+        "nombre": "Análisis Multidimensional",
+        "descripcion_indicador": "Habilidad para evaluar simultáneamente las implicaciones económicas, sociales y ambientales de las decisiones, considerando múltiples dimensiones de impacto."
+      },
+      {
+        "id": "PS_P3",
+        "nombre": "Visión de Largo Plazo",
+        "descripcion_indicador": "Capacidad para anticipar y considerar las consecuencias a largo plazo de las acciones, más allá de los resultados inmediatos o aparentes."
+      },
+      {
+        "id": "PS_P4",
+        "nombre": "Identificación de Costos Ocultos",
+        "descripcion_indicador": "Habilidad para detectar y cuantificar costos indirectos, externalidades o impactos no evidentes (sociales o ambientales) en las alternativas consideradas."
+      },
+      {
+        "id": "PS_P5",
+        "nombre": "Búsqueda de Puntos de Apalancamiento",
+        "descripcion_indicador": "Capacidad para identificar los puntos clave en un sistema donde una intervención puede generar el máximo impacto positivo con el mínimo esfuerzo."
+      },
+      {
+        "id": "PS_P6",
+        "nombre": "Mentalidad de Aprendizaje/Adaptación",
+        "descripcion_indicador": "Flexibilidad para modificar estrategias y planes cuando nueva información revela conexiones o consecuencias inesperadas en el sistema analizado."
+      }
     ],
     "open_question_id": "PS_P7",
     "scoring_weights": {
@@ -97,12 +145,36 @@
     },
     "likert_indicators": ["IDA_P1", "IDA_P2", "IDA_P3", "IDA_P4", "IDA_P5", "IDA_P6"],
     "indicadores_info": [
-      { "id": "IDA_P1", "nombre": "Evaluación de Calidad y Fiabilidad" },
-      { "id": "IDA_P2", "nombre": "Selección y Aplicación de Técnicas" },
-      { "id": "IDA_P3", "nombre": "Identificación de Patrones" },
-      { "id": "IDA_P4", "nombre": "Comprensión del Contexto" },
-      { "id": "IDA_P5", "nombre": "Generación de Insights Prácticos" },
-      { "id": "IDA_P6", "nombre": "Comunicación de Hallazgos" }
+      {
+        "id": "IDA_P1",
+        "nombre": "Evaluación de Calidad y Fiabilidad",
+        "descripcion_indicador": "Capacidad para valorar críticamente la precisión, relevancia y fiabilidad de los datos ambientales antes de utilizarlos para análisis y toma de decisiones."
+      },
+      {
+        "id": "IDA_P2",
+        "nombre": "Selección y Aplicación de Técnicas",
+        "descripcion_indicador": "Habilidad para elegir y aplicar métodos analíticos apropiados según el tipo de datos ambientales y la pregunta específica que se busca responder."
+      },
+      {
+        "id": "IDA_P3",
+        "nombre": "Identificación de Patrones",
+        "descripcion_indicador": "Aptitud para reconocer tendencias significativas, anomalías o correlaciones relevantes en conjuntos de datos ambientales o de consumo de recursos."
+      },
+      {
+        "id": "IDA_P4",
+        "nombre": "Comprensión del Contexto",
+        "descripcion_indicador": "Capacidad para interpretar datos ambientales en función de los objetivos específicos del proyecto y su contexto particular de sostenibilidad."
+      },
+      {
+        "id": "IDA_P5",
+        "nombre": "Generación de Insights Prácticos",
+        "descripcion_indicador": "Habilidad para transformar análisis de datos en conclusiones accionables, recomendaciones concretas o decisiones prácticas sobre gestión de recursos."
+      },
+      {
+        "id": "IDA_P6",
+        "nombre": "Comunicación de Hallazgos",
+        "descripcion_indicador": "Capacidad para presentar los resultados del análisis de datos ambientales de forma clara, concisa y comprensible para diversos públicos."
+      }
     ],
     "open_question_id": "IDA_P7",
     "scoring_weights": {
@@ -140,12 +212,36 @@
     },
     "likert_indicators": ["AA_P1", "AA_P2", "AA_P3", "AA_P4", "AA_P5", "AA_P6"],
     "indicadores_info": [
-      { "id": "AA_P1", "nombre": "Modelado del Contexto" },
-      { "id": "AA_P2", "nombre": "Modelado del Estado del Usuario" },
-      { "id": "AA_P3", "nombre": "Diseño de Estrategias Adaptativas" },
-      { "id": "AA_P4", "nombre": "Selección y Mapeo de Contenido" },
-      { "id": "AA_P5", "nombre": "Evaluación de Efectividad" },
-      { "id": "AA_P6", "nombre": "Consideraciones Éticas/Usabilidad" }
+      {
+        "id": "AA_P1",
+        "nombre": "Modelado del Contexto",
+        "descripcion_indicador": "Capacidad para identificar y priorizar los factores contextuales más relevantes (entorno, recursos, estado emocional) que influyen en una experiencia de aprendizaje."
+      },
+      {
+        "id": "AA_P2",
+        "nombre": "Modelado del Estado del Usuario",
+        "descripcion_indicador": "Habilidad para diseñar métodos efectivos que permitan inferir en tiempo real el progreso, necesidades y preferencias de aprendizaje de un usuario."
+      },
+      {
+        "id": "AA_P3",
+        "nombre": "Diseño de Estrategias Adaptativas",
+        "descripcion_indicador": "Aptitud para crear reglas lógicas claras que definan cómo personalizar contenidos o actividades basándose en las variables del usuario y su contexto."
+      },
+      {
+        "id": "AA_P4",
+        "nombre": "Selección y Mapeo de Contenido",
+        "descripcion_indicador": "Capacidad para diseñar o seleccionar micro-contenidos variados y relevantes que respondan a las diferentes necesidades identificadas por el sistema adaptativo."
+      },
+      {
+        "id": "AA_P5",
+        "nombre": "Evaluación de Efectividad",
+        "descripcion_indicador": "Habilidad para desarrollar indicadores y métodos que midan objetivamente si las adaptaciones están mejorando el aprendizaje o desarrollo de competencias."
+      },
+      {
+        "id": "AA_P6",
+        "nombre": "Consideraciones Éticas/Usabilidad",
+        "descripcion_indicador": "Capacidad para anticipar y resolver cuestiones éticas (privacidad, sesgos) y de usabilidad en el diseño de sistemas adaptativos de aprendizaje."
+      }
     ],
     "open_question_id": "AA_P7",
     "scoring_weights": {

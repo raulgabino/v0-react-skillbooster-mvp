@@ -10,6 +10,9 @@ import MentorSessionInterface, { type MentorSessionData } from "./mentor-session
 const jsPDF = dynamic(() => import("jspdf"), { ssr: false })
 const html2canvas = dynamic(() => import("html2canvas"), { ssr: false })
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Info } from "lucide-react"
+
 // Importar tipos
 type UserInfo = {
   name: string
@@ -40,15 +43,18 @@ type Answer = {
   value: string | number
 }
 
+type IndicatorScore = {
+  id: string
+  name: string
+  score: number
+  descripcion_indicador?: string
+}
+
 type SkillResult = {
   skillId: string
   skillName: string
   globalScore: number
-  indicatorScores: {
-    id: string
-    name: string
-    score: number
-  }[]
+  indicatorScores: IndicatorScore[]
   tips: string[]
   mentorSessionData?: MentorSessionData
 }
@@ -946,19 +952,39 @@ function ResultsStep({
 
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4">Indicadores</h3>
-          <div className="space-y-4">
-            {result.indicatorScores.slice(0, 6).map((indicator, index) => (
-              <div key={index}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium">{indicator.name}</span>
-                  <span>{indicator.score}/100</span>
+          <TooltipProvider delayDuration={200}>
+            <div className="space-y-4">
+              {result.indicatorScores.slice(0, 6).map((indicator, index) => (
+                <div key={index}>
+                  <div className="flex justify-between text-sm mb-1 items-center">
+                    <div className="flex items-center">
+                      <span className="font-medium">{indicator.name}</span>
+                      {indicator.descripcion_indicador && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              aria-label={`Más información sobre ${indicator.name}`}
+                              className="ml-1.5 p-0.5 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <Info className="w-3.5 h-3.5 text-gray-400" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs">
+                            <p className="font-semibold mb-1">{indicator.name}</p>
+                            <p>{indicator.descripcion_indicador}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                    <span>{indicator.score}/100</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2.5">
+                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${indicator.score}%` }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2.5">
-                  <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${indicator.score}%` }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -1031,30 +1057,66 @@ function SummaryStep({
 
           <div>
             <h3 className="text-xl font-semibold mb-4">Fortalezas y Oportunidades</h3>
-            <div className="space-y-4">
-              {resultsArray.map((result) => {
-                // Encontrar el indicador con mayor puntuación (fortaleza)
-                const highestScore = [...result.indicatorScores].sort((a, b) => b.score - a.score)[0]
-                // Encontrar el indicador con menor puntuación (oportunidad)
-                const lowestScore = [...result.indicatorScores].sort((a, b) => a.score - b.score)[0]
+            <TooltipProvider delayDuration={200}>
+              <div className="space-y-4">
+                {resultsArray.map((result) => {
+                  // Encontrar el indicador con mayor puntuación (fortaleza)
+                  const highestScore = [...result.indicatorScores].sort((a, b) => b.score - a.score)[0]
+                  // Encontrar el indicador con menor puntuación (oportunidad)
+                  const lowestScore = [...result.indicatorScores].sort((a, b) => a.score - b.score)[0]
 
-                return (
-                  <div key={result.skillId} className="mb-4">
-                    <h4 className="font-medium text-blue-400 mb-1">{result.skillName}</h4>
-                    <div className="pl-2 text-sm">
-                      <p className="mb-1">
-                        <span className="font-medium text-green-400">💪 Fortaleza: </span>
-                        {highestScore.name} ({highestScore.score}/100)
-                      </p>
-                      <p>
-                        <span className="font-medium text-yellow-400">🔍 Oportunidad: </span>
-                        {lowestScore.name} ({lowestScore.score}/100)
-                      </p>
+                  return (
+                    <div key={result.skillId} className="mb-4">
+                      <h4 className="font-medium text-blue-400 mb-1">{result.skillName}</h4>
+                      <div className="pl-2 text-sm">
+                        <p className="mb-2 flex items-center">
+                          <span className="font-medium text-green-400 mr-1">💪 Fortaleza: </span>
+                          <span className="mr-1">{highestScore.name}</span>
+                          <span className="text-gray-400">({highestScore.score}/100)</span>
+                          {highestScore.descripcion_indicador && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  aria-label={`Más información sobre ${highestScore.name}`}
+                                  className="ml-1.5 p-0.5 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                  <Info className="w-3.5 h-3.5 text-gray-400" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs">
+                                <p className="font-semibold mb-1">{highestScore.name}</p>
+                                <p>{highestScore.descripcion_indicador}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </p>
+                        <p className="flex items-center">
+                          <span className="font-medium text-yellow-400 mr-1">🔍 Oportunidad: </span>
+                          <span className="mr-1">{lowestScore.name}</span>
+                          <span className="text-gray-400">({lowestScore.score}/100)</span>
+                          {lowestScore.descripcion_indicador && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  aria-label={`Más información sobre ${lowestScore.name}`}
+                                  className="ml-1.5 p-0.5 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                >
+                                  <Info className="w-3.5 h-3.5 text-gray-400" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs">
+                                <p className="font-semibold mb-1">{lowestScore.name}</p>
+                                <p>{lowestScore.descripcion_indicador}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            </TooltipProvider>
           </div>
         </div>
 

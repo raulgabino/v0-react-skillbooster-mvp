@@ -7,6 +7,7 @@ import OpenAI from "openai"
 interface IndicadorInfo {
   id: string
   nombre: string
+  descripcion_indicador?: string
 }
 
 interface SkillDefinition {
@@ -40,6 +41,7 @@ interface IndicatorScore {
   id: string
   name: string
   score: number
+  descripcion_indicador?: string
 }
 
 interface ScoreResponsePayload {
@@ -126,11 +128,13 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
         // Buscar el nombre descriptivo del indicador
         const indicadorInfo = skillDefinition.indicadores_info.find((info) => info.id === indicator)
         const indicatorName = indicadorInfo ? indicadorInfo.nombre : indicator
+        const descripcionIndicador = indicadorInfo ? indicadorInfo.descripcion_indicador : undefined
 
         likertScores.push({
           id: indicator,
           name: indicatorName,
           score,
+          descripcion_indicador: descripcionIndicador,
         })
 
         likertTotal += score
@@ -178,6 +182,8 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
       id: skillDefinition.open_question_id,
       name: "Respuesta Abierta",
       score: openScore,
+      descripcion_indicador:
+        "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
     })
 
     return NextResponse.json({
