@@ -24,6 +24,7 @@ type Skill = {
   id: string
   axis: string
   questions: Question[]
+  indicadoresInfo: Array<{ id: string; nombre: string }>
 }
 
 type Question = {
@@ -91,13 +92,18 @@ export default function SkillboosterMVP() {
 
         // Procesamos los datos para agruparlos por habilidad
         const skillsMap: Record<string, Question[]> = {}
+        const indicadoresMap: Record<string, Array<{ id: string; nombre: string }>> = {}
 
         // Procesamos los datos recibidos de la API
-        data.forEach((question: Question) => {
+        data.forEach((question: any) => {
           if (!skillsMap[question.axis]) {
             skillsMap[question.axis] = []
+            indicadoresMap[question.axis] = []
           }
           skillsMap[question.axis].push(question)
+          if (!indicadoresMap[question.axis].find((i) => i.id === question.indicator)) {
+            indicadoresMap[question.axis].push({ id: question.indicator, nombre: question.indicator })
+          }
         })
 
         // Convertimos el mapa a un array de habilidades
@@ -105,6 +111,7 @@ export default function SkillboosterMVP() {
           id: axis.replace(/\s+/g, "_").toLowerCase(),
           axis: axis,
           questions: skillsMap[axis],
+          indicadoresInfo: indicadoresMap[axis],
         }))
 
         setSkills(skillsArray)
@@ -417,6 +424,7 @@ export default function SkillboosterMVP() {
               learningObjective={currentSkillLearningObjective}
               setLearningObjective={setCurrentSkillLearningObjective}
               onSubmitObjective={handleSubmitSkillObjective}
+              indicadoresInfo={currentSkill.indicadoresInfo || []} // Asumiendo que indicadoresInfo ya está en currentSkill
             />
           )
         } else {
@@ -688,29 +696,41 @@ function SkillObjectiveStep({
   learningObjective,
   setLearningObjective,
   onSubmitObjective,
+  indicadoresInfo,
 }: {
   skillName: string
   learningObjective: string
   setLearningObjective: (value: string) => void
   onSubmitObjective: () => void
+  indicadoresInfo: Array<{ id: string; nombre: string }>
 }) {
   return (
     <div className="max-w-2xl mx-auto">
       <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">Objetivo para la habilidad: {skillName}</h2>
 
-      <div className="bg-gray-800 rounded-lg p-6 mb-8">
-        <label htmlFor="learningObjective" className="block mb-3 text-sm font-medium">
-          Si tienes un objetivo específico para la habilidad de <strong>{skillName}</strong> o una situación donde te
-          gustaría aplicarla mejor, ¿cuál sería? (Este campo es opcional)
-        </label>
-        <textarea
-          id="learningObjective"
-          value={learningObjective}
-          onChange={(e) => setLearningObjective(e.target.value)}
-          rows={5}
-          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Ej: Aplicar técnicas de comunicación asertiva en reuniones de equipo para presentar mis ideas con más confianza."
-        ></textarea>
+      <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <h3 className="text-xl font-semibold mb-3">Contexto de la Habilidad:</h3>
+        <p className="mb-3">Esta habilidad se enfoca en tu capacidad para:</p>
+        <ul className="list-disc pl-6 mb-6 space-y-1 text-gray-300">
+          {indicadoresInfo.map((indicador) => (
+            <li key={indicador.id}>{indicador.nombre}</li>
+          ))}
+        </ul>
+
+        <div className="border-t border-gray-700 pt-5 mt-5">
+          <label htmlFor="learningObjective" className="block mb-3 text-sm font-medium">
+            Si tienes un objetivo específico para la habilidad de <strong>{skillName}</strong> o una situación donde te
+            gustaría aplicarla mejor, ¿cuál sería? (Este campo es opcional)
+          </label>
+          <textarea
+            id="learningObjective"
+            value={learningObjective}
+            onChange={(e) => setLearningObjective(e.target.value)}
+            rows={5}
+            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ej: Aplicar técnicas de comunicación asertiva en reuniones de equipo para presentar mis ideas con más confianza."
+          ></textarea>
+        </div>
       </div>
 
       <div className="flex justify-center">
