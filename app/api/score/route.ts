@@ -187,40 +187,44 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
         "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
     })
 
-    // Generar feedback específico para cada indicador
+    // --- INICIO: Bloque para generar feedback_especifico por indicador ---
     if (openai) {
-      // Asegurarse que openai está inicializado
+      // Solo proceder si OpenAI está configurado
       for (const indScore of likertScores) {
-        // Omitir generación de feedback específico para la pregunta abierta si no tiene descripción o no se desea
+        // Opcional: Decidir si se genera feedback para la pregunta abierta.
+        // Si la pregunta abierta no tiene una 'descripcion_indicador' clara o si se prefiere no darle feedback específico aquí,
+        // se puede añadir una condición para saltarla o darle un texto por defecto.
         if (indScore.id === skillDefinition.open_question_id && !indScore.descripcion_indicador) {
           indScore.feedback_especifico =
-            "Tu respuesta a la situación práctica es un componente valioso de esta evaluación."
-          continue // Saltar a la siguiente iteración
+            "Tu desempeño en la situación práctica ha sido considerado en tu puntaje global y en la sesión con el mentor."
+          continue // Saltar a la siguiente iteración del bucle
         }
 
-        const systemContent = `Eres un tutor experto en desarrollo de habilidades, especializado en ${skillDefinition.name}. Tu tono es alentador, conciso y orientado a la acción. Debes generar un feedback breve (1-2 frases, máximo 35 palabras) para un indicador específico. No uses markdown.`
+        // Si no hay descripción del indicador, usar un texto genérico para el prompt de IA.
+        const descripcionParaPrompt =
+          indScore.descripcion_indicador || `Este es un aspecto clave de la habilidad '${skillDefinition.name}'.`
+
+        const systemContent = `Eres un tutor experto en ${skillDefinition.name}, con un tono alentador, conciso y orientado a la acción. Tu tarea es proporcionar un feedback muy breve (1-2 frases concisas, idealmente menos de 30 palabras) sobre el desempeño del usuario en un indicador específico. No utilices Markdown en tu respuesta.`
 
         let userContent = ""
         const score = indScore.score
         const indicatorName = indScore.name
-        const indicatorDescription = indScore.descripcion_indicador || `Este es un aspecto de ${skillDefinition.name}.`
 
         if (score >= 75) {
           // Puntuación Alta
-          userContent = `El usuario ha obtenido una puntuación de ${score}/100 en el indicador "${indicatorName}", que se refiere a: "${indicatorDescription}". 
-Genera un feedback positivo que refuerce esta fortaleza y sugiera brevemente cómo puede seguir aplicándola o apalancándola. Ejemplo: "¡Excelente trabajo en ${indicatorName}! Sigue aplicando esta habilidad para potenciar tus proyectos."`
+          userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}"). 
+Proporciona un reconocimiento positivo y una sugerencia breve sobre cómo puede seguir aprovechando o expandiendo esta fortaleza. Ejemplo: "¡Excelente desempeño en ${indicatorName}! Sigue aplicando esta claridad para liderar con impacto."`
         } else if (score >= 40) {
           // Puntuación Media
-          userContent = `El usuario ha obtenido una puntuación de ${score}/100 en el indicador "${indicatorName}", que se refiere a: "${indicatorDescription}".
-Genera un feedback constructivo que reconozca el área y sugiera una acción simple o una pregunta para reflexionar sobre cómo mejorar. Ejemplo: "Buen avance en ${indicatorName}. Considera cómo [acción simple] podría fortalecer aún más este aspecto."`
+          userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
+Proporciona una observación constructiva y una sugerencia simple y accionable, o una pregunta breve para la reflexión enfocada en mejorar este aspecto. Ejemplo: "Has mostrado una base en ${indicatorName}. Para mejorar, considera practicar [acción simple]."`
         } else {
           // Puntuación Baja
-          userContent = `El usuario ha obtenido una puntuación de ${score}/100 en el indicador "${indicatorName}", que se refiere a: "${indicatorDescription}".
-Genera un feedback de apoyo que ofrezca un primer paso muy básico y alentador, o una pregunta simple para ayudar a identificar una barrera. Ejemplo: "Este es un buen punto de partida para ${indicatorName}. Un primer paso podría ser [acción muy básica]."`
+          userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
+Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable, o una pregunta que le ayude a identificar un posible obstáculo. Ejemplo: "Este es un área para enfocar tu desarrollo en ${indicatorName}. Un buen inicio sería [acción muy básica]."`
         }
-
         userContent +=
-          "\nResponde únicamente con el feedback directo al usuario (1-2 frases, máximo 35 palabras). No incluyas saludos ni despedidas."
+          "\n\nInstrucciones Adicionales: Responde directamente al usuario. Tu respuesta debe ser solo el feedback, sin saludos, introducciones ni despedidas. Mantén la respuesta entre 1 y 2 frases concisas, no más de 35 palabras."
 
         try {
           const feedbackResponse = await openai.chat.completions.create({
@@ -229,38 +233,42 @@ Genera un feedback de apoyo que ofrezca un primer paso muy básico y alentador, 
               { role: "system", content: systemContent },
               { role: "user", content: userContent },
             ],
-            temperature: 0.5, // Un poco menos de variabilidad para consistencia
-            max_tokens: 50, // Suficiente para 35 palabras y algo de margen
-            n: 1, // Solo una respuesta
+            temperature: 0.55, // Ligeramente más determinista para feedback consistente
+            max_tokens: 60, // Espacio para ~40 palabras + buffer
+            n: 1,
           })
           let generatedFeedback =
-            feedbackResponse.choices[0]?.message?.content?.trim() || "Sigue practicando este aspecto para mejorar."
+            feedbackResponse.choices[0]?.message?.content?.trim() ||
+            "Continúa practicando para fortalecer este aspecto."
 
-          // Simple post-procesamiento para asegurar brevedad si es necesario
-          if (generatedFeedback.split(" ").length > 40) {
-            // Un poco más de margen que 35
-            generatedFeedback = generatedFeedback.split(".")[0] + "." // Tomar solo la primera frase
+          // Opcional: Truncar si es muy largo, aunque el prompt ya lo limita.
+          const words = generatedFeedback.split(" ")
+          if (words.length > 40) {
+            generatedFeedback = words.slice(0, 38).join(" ") + "..."
           }
-
           indScore.feedback_especifico = generatedFeedback
         } catch (feedbackError) {
-          console.error(`Error generando feedback para indicador ${indScore.id} (${indicatorName}):`, feedbackError)
-          // Fallback más genérico si falla la IA
+          console.error(
+            `Error generando feedback específico para el indicador '${indicatorName}' (ID: ${indScore.id}):`,
+            feedbackError,
+          )
+          // Fallback genérico si la IA falla para este indicador específico
           if (score >= 75) {
-            indScore.feedback_especifico = `¡Buen trabajo en ${indicatorName}! Sigue así.`
+            indScore.feedback_especifico = `¡Buen trabajo en ${indicatorName}! Sigue aplicando tus fortalezas.`
           } else if (score >= 40) {
-            indScore.feedback_especifico = `Continúa desarrollando tu ${indicatorName}, ¡vas por buen camino!`
+            indScore.feedback_especifico = `Sigue esforzándote en ${indicatorName}, ¡la práctica constante es clave!`
           } else {
-            indScore.feedback_especifico = `Con práctica, mejorarás en ${indicatorName}. ¡Ánimo!`
+            indScore.feedback_especifico = `Identificar áreas de mejora es el primer paso. ¡Con enfoque en ${indicatorName}, progresarás!`
           }
         }
       }
     } else {
-      // Fallback si OpenAI no está disponible
+      // Fallback si la instancia de OpenAI no está disponible
       likertScores.forEach((indScore) => {
-        indScore.feedback_especifico = "El servicio de feedback no está disponible actualmente."
+        indScore.feedback_especifico = "El servicio de análisis detallado no está disponible en este momento."
       })
     }
+    // --- FIN: Bloque para generar feedback_especifico por indicador ---
 
     return NextResponse.json({
       indicatorScores: likertScores,

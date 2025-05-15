@@ -1019,12 +1019,12 @@ function ResultsStep({
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4">Indicadores</h3>
           <TooltipProvider delayDuration={200}>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {result.indicatorScores.slice(0, 6).map((indicator, index) => (
-                <div key={index} className="pb-3 border-b border-gray-700 last:border-0">
+                <div key={index} className="py-2.5 border-b border-gray-700/50 last:border-b-0">
                   <div className="flex justify-between text-sm mb-1 items-center">
                     <div className="flex items-center">
-                      <span className="font-medium">{indicator.name}</span>
+                      <span className="font-medium text-gray-100">{indicator.name}</span>
                       {indicator.descripcion_indicador && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1035,7 +1035,7 @@ function ResultsStep({
                               <Info className="w-3.5 h-3.5 text-gray-400" />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs">
+                          <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs z-50">
                             <p className="font-semibold mb-1">{indicator.name}</p>
                             <p>{indicator.descripcion_indicador}</p>
                           </TooltipContent>
@@ -1054,7 +1054,7 @@ function ResultsStep({
                       {indicator.score}/100
                     </span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
+                  <div className="w-full bg-gray-700 rounded-full h-2.5 mb-1.5">
                     <div
                       className={`h-2.5 rounded-full ${
                         indicator.score >= 75 ? "bg-green-500" : indicator.score >= 40 ? "bg-yellow-500" : "bg-red-500"
@@ -1063,7 +1063,9 @@ function ResultsStep({
                     ></div>
                   </div>
                   {indicator.feedback_especifico && (
-                    <p className="text-xs text-gray-300 mt-1 italic">{indicator.feedback_especifico}</p>
+                    <p className="text-xs text-blue-300/90 italic bg-gray-800/70 p-2 rounded-md mt-1 border-l-2 border-blue-500/50">
+                      {indicator.feedback_especifico}
+                    </p>
                   )}
                 </div>
               ))}

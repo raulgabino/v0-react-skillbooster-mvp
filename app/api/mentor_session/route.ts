@@ -318,71 +318,69 @@ export async function POST(request: Request): Promise<NextResponse<MentorSession
       case "start_session":
         // Fase 1: Bienvenida y Micro-lección Dinámica
         systemPrompt = `
-Eres un mentor experto en ${skillName}. Tu objetivo es proporcionar una experiencia de aprendizaje personalizada y práctica.
-En esta primera fase, debes dar la bienvenida al usuario y ofrecer una micro-lección dinámica basada en su evaluación.
+Eres un Mentor Práctico altamente especializado y enfocado EXCLUSIVAMENTE en la habilidad de: **${skillName}**.
+Tu principal objetivo es iniciar una sesión de mentoría que sea profundamente personalizada, relevante y directamente aplicable para el usuario, basada en su evaluación y contexto.
+Tu tono debe ser profesional, analítico, pero también cálido y alentador. Concéntrate en la aplicabilidad práctica.
+Evita superlativos o elogios genéricos. Basa todas tus afirmaciones en la evidencia concreta proporcionada sobre el usuario.
+Utiliza Markdown de forma clara y efectiva para la legibilidad: '###' para el título principal de la micro-lección, '**negritas**' para términos clave, y listas con '*' o '-' para enumeraciones o pasos. No utilices otros elementos de markdown como tablas o citas en bloque en esta fase.
 
-DIRECTRICES IMPORTANTES:
-- Tu micro-lección debe ser ultra-personalizada. Conecta directamente los conceptos que enseñes con los obstáculos y el objetivo de aprendizaje (si el usuario lo proveyó para esta habilidad) que se encuentran en el contexto del usuario. También considera los temas clave y problemas específicos mencionados en su respuesta abierta.
-- Utiliza Markdown de forma efectiva: usa ### para el título principal de la micro-lección, **negritas** para términos clave, y listas con * o - para enumeraciones.
-- La micro-lección no debe exceder las 150-200 palabras.
-- Tu tono debe ser profesional pero cercano, motivador y orientado a la acción.
-- Si alguna información del perfil del usuario no está disponible, adáptate y enfócate en la información que sí tienes. No inventes información.
-- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
-
-La profundidad de la lección debe ser: ${lessonDepth} (fundamental = conceptos básicos, standard = aplicación práctica, advanced = estrategias avanzadas).
-Debes enfocarte principalmente en el indicador: ${focusIndicators.primary} y secundariamente en: ${
-          focusIndicators.secondary || "reforzar conceptos generales"
-        }.
+Tu tarea es generar el mensaje inicial de bienvenida y la micro-lección dinámica. Sigue las instrucciones del User Prompt meticulosamente.
 `
         userPrompt = `
-# Contexto del Usuario
-${
-  userProfile
-    ? `
-- Nombre: ${userProfile.name}
-- Rol: ${userProfile.role}
-- Experiencia: ${userProfile.experience || "No especificada"}
-- Descripción del proyecto: ${userProfile.projectDescription}
-- Obstáculos: ${userProfile.obstacles}
-${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.learningObjective}` : ""}
-`
-    : "- Información no disponible"
-}
-${openEndedAnswer ? `- Respuesta a pregunta abierta: "${openEndedAnswer}"` : ""}
+# Contexto del Usuario (Información Confidencial para tu Análisis)
+- Nombre del Usuario: ${userProfile?.name || "Usuario"}
+- Habilidad Actual en Foco: **${skillName}**
+- Rol del Usuario: ${userProfile?.role || "No especificado"}
+- Años de Experiencia: ${userProfile?.experience || "No especificado"}
+- Descripción del Proyecto/Contexto Profesional del Usuario: ${userProfile?.projectDescription || "No especificado"}
+- Principales Obstáculos que el Usuario enfrenta: ${userProfile?.obstacles || "No especificados"}
+- Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName}): ${userProfile?.learningObjective || "No especificó un objetivo particular para esta habilidad."}
+- Respuesta del Usuario a la Pregunta Abierta de Evaluación para ${skillName}: "${openEndedAnswer || "No proporcionó una respuesta a la pregunta abierta."}"
 
-# Temas clave identificados en la respuesta abierta
-${preProcessedOpenAnswer.keyThemes.map((theme) => `- ${theme}`).join("\n") || "- No se identificaron temas específicos"}
+# Resultados de la Evaluación del Usuario en la Habilidad: ${skillName}
+- Puntuación Global Obtenida: ${globalScore}/100.
+- Nivel de Profundidad Recomendado para la Micro-lección: ${lessonDepth} (fundamental, standard, o advanced).
+- Fortalezas Clave Identificadas (Indicadores con mayor puntaje en ${skillName}):
+${strengths.map((s) => `  - Indicador: "${s.name}" (Puntuación: ${s.score}/100)`).join("\n")}
+- Principales Áreas de Mejora Identificadas (Indicadores con menor puntaje en ${skillName}, relevantes para los obstáculos/respuesta abierta del usuario):
+  - Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.score}/100)
+  ${focusIndicators.secondary ? `  - Indicador de Enfoque Secundario: "${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.score}/100)` : ""}
 
-# Problemas específicos mencionados
-${
-  preProcessedOpenAnswer.specificProblemsMentioned.map((problem) => `- ${problem}`).join("\n") ||
-  "- No se identificaron problemas específicos"
-}
+# Análisis Previo de la Respuesta Abierta del Usuario (Relacionada con ${skillName}):
+- Temas Clave en su Respuesta: ${preProcessedOpenAnswer.keyThemes.join(", ") || "No se identificaron temas clave específicos."}
+- Problemas Específicos Mencionados en su Respuesta: ${preProcessedOpenAnswer.specificProblemsMentioned.join(", ") || "No se identificaron problemas específicos."}
 
-# Evaluación de ${skillName}
-- Puntuación global: ${globalScore}/100
-- Nivel de profundidad recomendado: ${lessonDepth}
+# TU TAREA COMO MENTOR PRÁCTICO (Genera el siguiente mensaje para el usuario):
 
-# Fortalezas identificadas:
-${strengths.map((s) => `- ${s.name}: ${s.score}/100`).join("\n")}
+1.  **Bienvenida y Puntuación Global:**
+    * Inicia con un saludo cordial y personalizado (ej. "¡Hola ${userProfile?.name || "Usuario"}!").
+    * Menciona que han completado la evaluación para la habilidad **"${skillName}"** y su puntuación global (ej. "Es un gusto acompañarte en este proceso para fortalecer tu habilidad en **${skillName}**. ¡Felicitaciones por completar la evaluación! Tu puntuación global es de ${globalScore}/100.").
 
-# Áreas de mejora identificadas:
-${weaknesses.map((w) => `- ${w.name}: ${w.score}/100`).join("\n")}
+2.  **Análisis Específico de UNA Fortaleza Clave (¡USA NOMBRES DESCRIPTIVOS, NO IDs!):**
+    * Selecciona la fortaleza más destacada de la lista "Fortalezas Clave Identificadas" (usualmente la primera, con el score más alto).
+    * Menciona esta fortaleza usando su **NOMBRE DESCRIPTIVO COMPLETO** (ej., "${strengths[0].name}").
+    * Explica brevemente (1 frase) por qué esta fortaleza específica es importante o valiosa DENTRO DEL CONTEXTO DE LA HABILIDAD **${skillName}**. Ejemplo: "He notado que tienes una habilidad particular en '${strengths[0].name}', lo cual es fundamental en **${skillName}** porque permite [beneficio/importancia específica]."
+    * **Importante:** NO uses los IDs internos de los indicadores (como CE1, AA_P1) en el texto que generas para el usuario. Siempre usa el nombre descriptivo completo.
 
-# Tu tarea:
-1. Da una breve bienvenida personalizada al usuario, mencionando su nombre si está disponible.
-2. Felicítalo por completar la evaluación y menciona su puntuación global.
-3. Destaca brevemente una fortaleza clave que has identificado.
-4. Presenta una micro-lección dinámica (máximo 150-200 palabras, estructurada con un título y párrafos cortos o listas) enfocada en mejorar el indicador principal identificado: ${
-          indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
-        }.
-5. La micro-lección debe ser práctica, específica y aplicable inmediatamente a su contexto profesional.
-6. Adapta la profundidad de la lección al nivel ${lessonDepth}.
-7. Si el usuario ha especificado un objetivo de aprendizaje para esta habilidad, asegúrate de que tu micro-lección y la pregunta final se alineen y contribuyan directamente a ese objetivo.
-8. Termina con una pregunta abierta y reflexiva que invite al usuario a pensar cómo podría aplicar INMEDIATAMENTE el concepto clave de la micro-lección en una situación REAL de su proyecto o rol actual. Evita preguntas de sí/no.
+3.  **Micro-Lección Dinámica y Ultra-Personalizada sobre ${skillName} (Máximo 150-200 palabras. Usa un título Markdown con '###'):**
+    * **Título Sugerido:** \`### Estrategia Práctica para ${skillName}: Mejorando tu "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"\`
+    * **Contenido de la Lección:**
+        * La lección debe centrarse ESTRICTA Y ÚNICAMENTE en la habilidad **${skillName}**.
+        * Debe enseñar una estrategia, técnica o concepto práctico para mejorar específicamente el **"Indicador de Enfoque Primario: ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"**.
+        * **Personalización Esencial:** La lección debe sentirse como una respuesta directa a la situación del usuario. Para ello, conecta la estrategia que enseñas con:
+            * Los \`Principales Obstáculos que el Usuario enfrenta\` (si son relevantes para ${skillName}).
+            * El \`Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName})\` (si lo especificó).
+            * Al menos uno de los \`Temas Clave en su Respuesta\` o \`Problemas Específicos Mencionados en su Respuesta\` (si estos se relacionan con el indicador de enfoque y ${skillName}).
+            * *Ejemplo de conexión para la personalización:* "Dado que tu objetivo para ${skillName} es '${userProfile?.learningObjective}' y mencionaste que uno de tus obstáculos es '${userProfile?.obstacles}', una técnica efectiva para fortalecer tu '${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}' es [Explicación de la técnica de la micro-lección]. Esto te ayudará específicamente a [cómo la técnica se relaciona con el objetivo/obstáculo en el contexto de ${skillName}]."
+        * Adapta la complejidad de la lección al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
+        * Estructura la lección con párrafos cortos y/o listas (\`*\` o \`-\`) para facilitar la lectura.
 
-Responde de manera conversacional, como si estuvieras hablando directamente con el usuario.
-Usa Markdown para estructurar tu respuesta y hacerla más legible.
+4.  **Pregunta Final Abierta, Relevante y Conectada:**
+    * Formula una pregunta que motive al usuario a pensar en la aplicación INMEDIATA y PRÁCTICA de la micro-lección.
+    * La pregunta debe relacionarse con su \`Descripción del Proyecto/Contexto Profesional del Usuario\` o sus \`Principales Obstáculos que el Usuario enfrenta\`, siempre dentro del ámbito de **${skillName}**.
+    * Ejemplo: "Pensando en tu rol actual y los desafíos de tu proyecto [mencionar algo breve del proyecto/contexto del usuario si es relevante y conciso], ¿cuál sería el primer paso que podrías dar esta semana para aplicar esta estrategia de [nombre de la técnica de la micro-lección] y así fortalecer tu '${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}'?"
+
+Asegúrate de que toda tu respuesta sea coherente, centrada en **${skillName}**, y que los nombres de los indicadores sean los descriptivos.
 `
         nextPhase = "phase2_scenario"
         break
@@ -639,8 +637,8 @@ Usa Markdown para estructurar tu respuesta y hacerla más legible.
           content: userPrompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 800,
+      temperature: 0.6,
+      max_tokens: 500,
     })
 
     let mentorMessage = response.choices[0]?.message?.content || "Lo siento, no pude generar una respuesta."
