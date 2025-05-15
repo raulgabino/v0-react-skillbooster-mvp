@@ -66,34 +66,14 @@ if (openaiApiKey) {
 function extractJsonFromText(text: string): { json: any; cleanText: string } | null {
   try {
     // Intentar diferentes patrones para encontrar JSON
-    // 1. Buscar un objeto JSON completo
-    const jsonRegex = /\{[\s\S]*\}/
+
+    // 1. Buscar un objeto JSON completo con el formato esperado
+    const jsonRegex = /\{\s*"exerciseScore"\s*:\s*(\d+)\s*,\s*"exerciseScoreJustification"\s*:\s*"([^"]*)"\s*\}/
     const jsonMatch = text.match(jsonRegex)
 
-    if (!jsonMatch) return null
-
-    // Intentar parsear el JSON encontrado
-    try {
-      const jsonString = jsonMatch[0]
-      const json = JSON.parse(jsonString)
-
-      // Verificar que el JSON tiene los campos esperados
-      if (json && (json.exerciseScore !== undefined || json.exerciseScoreJustification !== undefined)) {
-        // Eliminar el JSON del texto original
-        const cleanText = text.replace(jsonString, "").trim()
-        return { json, cleanText }
-      }
-    } catch (parseError) {
-      console.log("Error al parsear JSON, intentando con regex más específico:", parseError)
-    }
-
-    // 2. Intentar con un regex más específico para nuestro formato
-    const specificRegex = /\{\s*"exerciseScore"\s*:\s*(\d+)\s*,\s*"exerciseScoreJustification"\s*:\s*"([^"]*)"\s*\}/
-    const specificMatch = text.match(specificRegex)
-
-    if (specificMatch) {
-      const score = Number.parseInt(specificMatch[1], 10)
-      const justification = specificMatch[2]
+    if (jsonMatch) {
+      const score = Number.parseInt(jsonMatch[1], 10)
+      const justification = jsonMatch[2]
 
       const json = {
         exerciseScore: score,
@@ -101,8 +81,34 @@ function extractJsonFromText(text: string): { json: any; cleanText: string } | n
       }
 
       // Eliminar el JSON del texto original
-      const cleanText = text.replace(specificMatch[0], "").trim()
+      const cleanText = text.replace(jsonMatch[0], "").trim()
       return { json, cleanText }
+    }
+
+    // 2. Buscar un objeto JSON genérico
+    const genericJsonRegex = /\{[\s\S]*\}/
+    const genericJsonMatch = text.match(genericJsonRegex)
+
+    if (genericJsonMatch) {
+      try {
+        const jsonString = genericJsonMatch[0]
+        const parsedJson = JSON.parse(jsonString)
+
+        // Verificar que el JSON tiene los campos esperados
+        if (parsedJson && typeof parsedJson.exerciseScore !== "undefined" && parsedJson.exerciseScoreJustification) {
+          // Asegurarse de que exerciseScore sea un número
+          const json = {
+            exerciseScore: Number(parsedJson.exerciseScore),
+            exerciseScoreJustification: String(parsedJson.exerciseScoreJustification),
+          }
+
+          // Eliminar el JSON del texto original
+          const cleanText = text.replace(jsonString, "").trim()
+          return { json, cleanText }
+        }
+      } catch (parseError) {
+        console.log("Error al parsear JSON genérico:", parseError)
+      }
     }
 
     // 3. Último recurso: buscar valores numéricos y texto que parezcan ser score y justificación
@@ -111,18 +117,31 @@ function extractJsonFromText(text: string): { json: any; cleanText: string } | n
 
     if (scoreMatch) {
       const score = Number.parseInt(scoreMatch[1], 10)
-      // Extraer algunas frases después del score como justificación
-      const parts = text.split(scoreMatch[0])
+
+      // Buscar texto que parezca una justificación después del score
       let justification = ""
+      const parts = text.split(scoreMatch[0])
 
       if (parts.length > 1) {
-        // Tomar hasta 200 caracteres después del score como justificación
-        justification = parts[1].trim().substring(0, 200)
+        // Extraer hasta 200 caracteres después del score como justificación
+        const afterScoreText = parts[1].trim()
+        const sentenceEndRegex = /[.!?]\s+/g
+        const sentences = afterScoreText.split(sentenceEndRegex)
+
+        // Tomar hasta 3 oraciones como justificación
+        justification = sentences.slice(0, 3).join(". ").trim()
+        if (justification.length > 200) {
+          justification = justification.substring(0, 200) + "..."
+        }
+      }
+
+      if (!justification) {
+        justification = "Evaluación basada en la respuesta al escenario."
       }
 
       const json = {
         exerciseScore: score,
-        exerciseScoreJustification: justification || "Evaluación basada en la respuesta al escenario.",
+        exerciseScoreJustification: justification,
       }
 
       return { json, cleanText: text }
@@ -150,17 +169,23 @@ async function preProcessOpenAnswer(openEndedAnswer: string): Promise<PreProcess
       messages: [
         {
           role: "system",
-          content: "Eres un asistente analítico que extrae información estructurada de textos.",
+          content:
+            "Eres un asistente analítico especializado en extraer información estructurada de textos. Tu tarea es identificar temas clave y problemas específicos mencionados en una respuesta abierta, y devolverlos en un formato JSON válido y consistente.",
         },
         {
           role: "user",
           content: `Analiza la siguiente respuesta de un usuario a una pregunta abierta de evaluación de habilidades: "${openEndedAnswer}".
           
-          Extrae y resume en formato JSON los siguientes puntos (si no se detectan elementos claros para una categoría, devuelve un array vacío para ella):
+          Extrae y resume en formato JSON los siguientes puntos:
           {
             "keyThemes": ["<Identifica y lista hasta 3 temas clave o conceptos principales mencionados>"],
             "specificProblemsMentioned": ["<Identifica y lista hasta 2 problemas o desafíos específicos que el usuario haya descrito explícita o implícitamente>"]
-          }`,
+          }
+          
+          IMPORTANTE: 
+          1. Si no detectas elementos claros para una categoría, devuelve un array vacío [] para esa categoría, NUNCA null o undefined.
+          2. Asegúrate de que el formato JSON sea válido y pueda ser parseado correctamente.
+          3. Sé conciso pero preciso en tus descripciones.`,
         },
       ],
       temperature: 0.3,
@@ -295,8 +320,14 @@ export async function POST(request: Request): Promise<NextResponse<MentorSession
         systemPrompt = `
 Eres un mentor experto en ${skillName}. Tu objetivo es proporcionar una experiencia de aprendizaje personalizada y práctica.
 En esta primera fase, debes dar la bienvenida al usuario y ofrecer una micro-lección dinámica basada en su evaluación.
-Tu tono debe ser profesional pero cercano, motivador y orientado a la acción.
-Puedes usar Markdown para formatear tu respuesta, como **negrita**, *cursiva*, listas con * o -, y ### para títulos.
+
+DIRECTRICES IMPORTANTES:
+- Tu micro-lección debe ser ultra-personalizada. Conecta directamente los conceptos que enseñes con los obstáculos y el objetivo de aprendizaje (si el usuario lo proveyó para esta habilidad) que se encuentran en el contexto del usuario. También considera los temas clave y problemas específicos mencionados en su respuesta abierta.
+- Utiliza Markdown de forma efectiva: usa ### para el título principal de la micro-lección, **negritas** para términos clave, y listas con * o - para enumeraciones.
+- La micro-lección no debe exceder las 150-200 palabras.
+- Tu tono debe ser profesional pero cercano, motivador y orientado a la acción.
+- Si alguna información del perfil del usuario no está disponible, adáptate y enfócate en la información que sí tienes. No inventes información.
+- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
 
 La profundidad de la lección debe ser: ${lessonDepth} (fundamental = conceptos básicos, standard = aplicación práctica, advanced = estrategias avanzadas).
 Debes enfocarte principalmente en el indicador: ${focusIndicators.primary} y secundariamente en: ${
@@ -342,13 +373,13 @@ ${weaknesses.map((w) => `- ${w.name}: ${w.score}/100`).join("\n")}
 1. Da una breve bienvenida personalizada al usuario, mencionando su nombre si está disponible.
 2. Felicítalo por completar la evaluación y menciona su puntuación global.
 3. Destaca brevemente una fortaleza clave que has identificado.
-4. Presenta una micro-lección dinámica (máximo 150 palabras) enfocada en mejorar el indicador principal identificado: ${
+4. Presenta una micro-lección dinámica (máximo 150-200 palabras, estructurada con un título y párrafos cortos o listas) enfocada en mejorar el indicador principal identificado: ${
           indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
         }.
 5. La micro-lección debe ser práctica, específica y aplicable inmediatamente a su contexto profesional.
 6. Adapta la profundidad de la lección al nivel ${lessonDepth}.
-7. Si el usuario ha especificado un objetivo de aprendizaje, asegúrate de relacionar tu micro-lección con ese objetivo.
-8. Termina con una pregunta abierta que invite a la reflexión sobre cómo aplicaría lo aprendido en su situación actual.
+7. Si el usuario ha especificado un objetivo de aprendizaje para esta habilidad, asegúrate de que tu micro-lección y la pregunta final se alineen y contribuyan directamente a ese objetivo.
+8. Termina con una pregunta abierta y reflexiva que invite al usuario a pensar cómo podría aplicar INMEDIATAMENTE el concepto clave de la micro-lección en una situación REAL de su proyecto o rol actual. Evita preguntas de sí/no.
 
 Responde de manera conversacional, como si estuvieras hablando directamente con el usuario.
 Usa Markdown para estructurar tu respuesta y hacerla más legible.
@@ -361,7 +392,12 @@ Usa Markdown para estructurar tu respuesta y hacerla más legible.
         systemPrompt = `
 Eres un mentor experto en ${skillName}. Estás en la segunda fase de una sesión de mentoría personalizada.
 Tu objetivo es presentar un escenario práctico personalizado que desafíe al usuario a aplicar sus conocimientos.
-Puedes usar Markdown para formatear tu respuesta, como **negrita**, *cursiva*, listas con * o -, y ### para títulos.
+
+DIRECTRICES IMPORTANTES:
+- El escenario debe ser una oportunidad clara para que el usuario APLIQUE los conceptos de la micro-lección que acabas de dar. Haz referencia implícita o explícita a esos conceptos al pedirle al usuario que resuelva el escenario.
+- Utiliza Markdown de forma efectiva: usa ### para el título del escenario, **negritas** para términos clave, y listas con * o - para enumeraciones.
+- Mantén un tono de mentor experto: empático, alentador, pero también directo y claro en tus recomendaciones.
+- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
 
 La profundidad del escenario debe ser: ${lessonDepth} (fundamental = situación básica, standard = situación con complejidad moderada, advanced = situación compleja con múltiples variables).
 Debes enfocarte principalmente en el indicador: ${focusIndicators.primary}.
@@ -391,14 +427,15 @@ ${preProcessedOpenAnswer.keyThemes.map((theme) => `- ${theme}`).join("\n") || "-
 # Tu tarea:
 1. Reconoce brevemente la respuesta del usuario, destacando un punto valioso de su reflexión.
 2. Presenta un escenario práctico personalizado (situación hipotética) relacionado con ${skillName} que:
-   - Sea relevante para el contexto profesional del usuario (su rol y proyecto)
+   - Sea creíble, relevante y directamente aplicable al Rol, Descripción del proyecto y Obstáculos del usuario. Evita escenarios genéricos.
    - Desafíe específicamente el área de mejora identificada: ${
      indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
    }
    - Tenga un nivel de complejidad adecuado al nivel ${lessonDepth}
    - Sea concreto y detallado, pero conciso (máximo 120 palabras)
    - Si el usuario ha especificado un objetivo de aprendizaje, intenta incorporarlo en el escenario
-3. Pide al usuario que explique cómo abordaría este escenario, aplicando lo aprendido en la micro-lección.
+   - El escenario debe permitirle practicar activamente lo aprendido en la micro-lección anterior
+3. Pide al usuario que explique detalladamente su plan de acción o cómo abordaría este escenario, enfatizando que debe aplicar los principios o técnicas de la micro-lección que discutieron.
 
 El escenario debe ser realista, desafiante pero abordable, y directamente relacionado con las habilidades que el usuario necesita desarrollar.
 Usa Markdown para estructurar tu respuesta y hacerla más legible.
@@ -411,7 +448,13 @@ Usa Markdown para estructurar tu respuesta y hacerla más legible.
         systemPrompt = `
 Eres un mentor experto en ${skillName}. Estás en la tercera fase de una sesión de mentoría personalizada.
 Tu objetivo es proporcionar feedback constructivo sobre la respuesta del usuario al escenario planteado.
-Puedes usar Markdown para formatear tu respuesta, como **negrita**, *cursiva*, listas con * o -, y ### para títulos.
+
+DIRECTRICES IMPORTANTES:
+- Tu feedback debe ser muy específico. Cuando menciones fortalezas o áreas de mejora, cita o parafrasea partes de la respuesta del usuario al escenario para ilustrar tus puntos.
+- Utiliza Markdown de forma efectiva: usa ### para títulos de secciones, **negritas** para términos clave, y listas con * o - para enumeraciones.
+- Mantén un tono de mentor experto: honesto pero motivador, enfocado en el crecimiento.
+- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
+- DEBES incluir un bloque JSON al final de tu respuesta con el formato exacto especificado en las instrucciones.
 
 La profundidad del feedback debe ser: ${lessonDepth} (fundamental = conceptos básicos, standard = análisis detallado, advanced = análisis profundo con matices).
 Debes enfocarte principalmente en el indicador: ${focusIndicators.primary}.
@@ -439,23 +482,24 @@ ${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.lear
 
 # Tu tarea:
 1. Proporciona feedback constructivo sobre la respuesta del usuario, siguiendo este formato:
-   - Aspectos positivos: Identifica 2 fortalezas en su enfoque (sé específico)
-   - Oportunidades de mejora: Sugiere 1-2 aspectos que podrían reforzarse, especialmente relacionados con ${
+   - Aspectos positivos: Identifica 1-2 fortalezas en su enfoque, citando ejemplos de su respuesta.
+   - Oportunidades de mejora: Sugiere 1-2 aspectos específicos de su respuesta que podrían reforzarse, explicando CÓMO se relacionan con la micro-lección dada y el indicador principal: ${
      indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
    }
-   - Consejo práctico: Ofrece una técnica o herramienta específica que podría ayudarle a mejorar
+   - Consejo práctico: Ofrece una técnica o herramienta específica, y explica brevemente cómo podría implementarla.
 2. El feedback debe ser honesto pero motivador, enfocado en el crecimiento
 3. Adapta la profundidad de tu feedback al nivel ${lessonDepth}
 4. Termina preguntando al usuario qué aprendizaje clave se lleva de este ejercicio y cómo lo aplicaría en su trabajo
 
-Adicionalmente a tu feedback conversacional, debes generar una evaluación estructurada de la respuesta del usuario al escenario. Incluye esto AL FINAL de tu respuesta, claramente separado, en el siguiente formato JSON (esto será procesado por el sistema, no mostrado directamente al usuario en este formato crudo, sino que el sistema lo usará para mostrarlo después de tu mensaje de feedback):
+Adicionalmente a tu feedback conversacional, DEBES generar una evaluación estructurada de la respuesta del usuario al escenario. Incluye esto AL FINAL de tu respuesta completa, sin ningún texto adicional después, en el siguiente formato JSON exacto:
 
 {
-  "exerciseScore": <un número entre 0 y 100 representando la calidad de la respuesta del usuario al escenario, donde 0 es muy deficiente y 100 es excelente>,
-  "exerciseScoreJustification": "<un análisis detallado (2-4 frases) explicando el porqué del score, destacando puntos fuertes y áreas de mejora específicas en la respuesta del usuario al escenario. Sé constructivo y específico.>"
+  "exerciseScore": <un número entero entre 0 y 100, sin decimales>,
+  "exerciseScoreJustification": "<Un análisis conciso pero detallado (aproximadamente 50-75 palabras, 2-4 frases) explicando el porqué del score. Conecta tu justificación con la aplicación (o falta de ella) de los conceptos de la micro-lección en la respuesta del usuario al escenario. Sé específico, mencionando 1-2 puntos fuertes y 1-2 áreas de mejora de su respuesta al escenario. Este texto se mostrará al usuario como la justificación del puntaje del ejercicio.>"
 }
 
-Asegúrate de que tu mensaje de feedback conversacional preceda a este bloque JSON. El bloque JSON debe ser el último elemento en tu respuesta.
+Asegúrate de que exerciseScore sea un NÚMERO y exerciseScoreJustification sea un STRING. El bloque JSON debe ser el último elemento en tu respuesta. No incluyas saltos de línea innecesarios dentro del string de justificación que puedan romper el parseo JSON.
+
 Usa Markdown para estructurar tu respuesta conversacional y hacerla más legible.
 `
         nextPhase = "phase4_action_plan"
@@ -466,7 +510,13 @@ Usa Markdown para estructurar tu respuesta conversacional y hacerla más legible
         systemPrompt = `
 Eres un mentor experto en ${skillName}. Estás en la cuarta fase de una sesión de mentoría personalizada.
 Tu objetivo es ayudar al usuario a desarrollar un plan de acción concreto para mejorar sus habilidades.
-Puedes usar Markdown para formatear tu respuesta, como **negrita**, *cursiva*, listas con * o -, y ### para títulos.
+
+DIRECTRICES IMPORTANTES:
+- Cada paso del plan debe ser específico, medible, accionable, relevante y con un plazo definido (SMART).
+- Utiliza Markdown de forma efectiva: usa ### para el título del plan, **negritas** para términos clave, y listas numeradas para los pasos.
+- Mantén un tono de mentor experto: empático, alentador, pero también directo y claro en tus recomendaciones.
+- Si alguna información del perfil del usuario no está disponible, adáptate y enfócate en la información que sí tienes. No inventes información.
+- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
 
 La profundidad del plan de acción debe ser: ${lessonDepth} (fundamental = pasos básicos, standard = pasos con cierta complejidad, advanced = pasos estratégicos avanzados).
 Debes enfocarte principalmente en el indicador: ${focusIndicators.primary}.
@@ -499,12 +549,13 @@ ${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.lear
           indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
         }
 3. Cada paso debe:
-   - Ser específico y accionable
-   - Incluir un objetivo claro
+   - Ser Específico, Medible (sugiere cómo podría saber que lo logró), Accionable, Relevante (para su contexto y el indicador ${
+     indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
+   }), y con un Plazo sugerido (ej. 'para la próxima semana', 'dentro de 15 días').
    - Ser realizable en 1-2 semanas
    - Estar adaptado al contexto profesional del usuario y su nivel ${lessonDepth}
-   - Si el usuario ha especificado un objetivo de aprendizaje, asegúrate de que los pasos contribuyan a ese objetivo
-4. Termina preguntando al usuario: "¿Cuál de estos pasos te comprometes a implementar esta semana y qué posible obstáculo podrías enfrentar?"
+   - Si el usuario proveyó un objetivo de aprendizaje para esta habilidad, cada paso debe ser una contribución clara hacia ese objetivo
+4. Termina preguntando: "De estos pasos, ¿cuál te parece más prioritario o realizable para comenzar esta misma semana? ¿Qué primer pequeña acción podrías tomar para iniciarlo y qué posible obstáculo anticipas?"
 
 El plan debe ser práctico, realista y directamente aplicable a la situación del usuario.
 Usa Markdown para estructurar tu respuesta y hacerla más legible.
@@ -517,7 +568,13 @@ Usa Markdown para estructurar tu respuesta y hacerla más legible.
         systemPrompt = `
 Eres un mentor experto en ${skillName}. Estás en la fase final de una sesión de mentoría personalizada.
 Tu objetivo es ayudar al usuario a sintetizar lo aprendido y proyectar su crecimiento futuro.
-Puedes usar Markdown para formatear tu respuesta, como **negrita**, *cursiva*, listas con * o -, y ### para títulos.
+
+DIRECTRICES IMPORTANTES:
+- Esta es la fase de cierre, debes proporcionar una síntesis clara y motivadora de toda la sesión.
+- Utiliza Markdown de forma efectiva: usa ### para títulos de secciones, **negritas** para términos clave, y listas con * o - para enumeraciones.
+- Mantén un tono de mentor experto: inspirador, alentador y orientado al futuro.
+- Si alguna información del perfil del usuario no está disponible, adáptate y enfócate en la información que sí tienes. No inventes información.
+- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
 `
         userPrompt = `
 # Historial de conversación:
@@ -542,14 +599,15 @@ ${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.lear
 
 # Tu tarea:
 1. Reconoce y refuerza positivamente el compromiso del usuario
-2. Ofrece 1-2 consejos prácticos para superar el obstáculo que mencionó
+2. Ofrece 1-2 consejos muy prácticos y breves para superar el obstáculo específico que mencionó el usuario
 3. Sintetiza los principales aprendizajes de toda la sesión (máximo 100 palabras)
-4. Proyecta cómo el desarrollo de esta habilidad impactará positivamente en:
-   - Su desempeño profesional
-   - El éxito de su proyecto
+4. Proyecta de forma realista y personalizada cómo el desarrollo continuo de esta habilidad (${skillName}) impactará positivamente en:
+   - Su desempeño profesional (considerando su Rol)
+   - El éxito de su Proyecto
    - Su crecimiento personal
-5. Si el usuario especificó un objetivo de aprendizaje, menciona cómo lo que ha aprendido contribuirá a alcanzarlo
-6. Concluye la sesión con un mensaje motivador y una invitación a reflexionar sobre su próximo objetivo de desarrollo
+   Sé concreto.
+5. Si el usuario especificó un objetivo de aprendizaje para esta habilidad, subraya cómo lo aprendido en esta sesión y las acciones futuras le ayudarán a alcanzarlo
+6. Concluye la sesión con un mensaje motivador que refuerce su progreso y lo anime a seguir aprendiendo. Invítalo a pensar en qué otra habilidad podría trabajar o cómo puede seguir profundizando en esta
 
 Esta síntesis debe servir como cierre inspirador de la sesión y como puente hacia el desarrollo continuo.
 Usa Markdown para estructurar tu respuesta y hacerla más legible.
