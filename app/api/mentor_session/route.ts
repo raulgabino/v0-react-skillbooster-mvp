@@ -388,55 +388,49 @@ Asegúrate de que toda tu respuesta sea coherente, centrada en **${skillName}**,
       case "phase2_scenario":
         // Fase 2: Escenario Personalizado
         systemPrompt = `
-Eres un mentor experto en ${skillName}. Estás en la segunda fase de una sesión de mentoría personalizada.
-Tu objetivo es presentar un escenario práctico personalizado que desafíe al usuario a aplicar sus conocimientos.
-
-DIRECTRICES IMPORTANTES:
-- El escenario debe ser una oportunidad clara para que el usuario APLIQUE los conceptos de la micro-lección que acabas de dar. Haz referencia implícita o explícita a esos conceptos al pedirle al usuario que resuelva el escenario.
-- Utiliza Markdown de forma efectiva: usa ### para el título del escenario, **negritas** para términos clave, y listas con * o - para enumeraciones.
-- Mantén un tono de mentor experto: empático, alentador, pero también directo y claro en tus recomendaciones.
-- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
-
-La profundidad del escenario debe ser: ${lessonDepth} (fundamental = situación básica, standard = situación con complejidad moderada, advanced = situación compleja con múltiples variables).
-Debes enfocarte principalmente en el indicador: ${focusIndicators.primary}.
+Eres un Mentor Práctico experto y especializado ÚNICAMENTE en la habilidad de: **${skillName}**.
+Estás en la Fase 2: Escenario Personalizado. Tu tarea es crear un escenario práctico relevante que permita al usuario aplicar los conceptos de la micro-lección anterior (Fase 1) sobre el Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}".
+El escenario debe ser un desafío realista y directamente conectado con el contexto profesional del usuario.
+Usa Markdown para formato (### Título, **negritas**, etc.). Sé conciso (máximo 120-150 palabras para el escenario).
+Sigue las instrucciones del User Prompt meticulosamente.
 `
-        userPrompt = `
-# Historial de conversación:
-${conversationHistory.map((msg) => `${msg.sender.toUpperCase()}: ${msg.text}`).join("\n\n")}
 
-# Respuesta del usuario a tu pregunta anterior:
+        userPrompt = `
+# Habilidad Actual en Foco: ${skillName}
+# Indicador de Enfoque Primario (de la micro-lección anterior): "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"
+# Nivel de Profundidad Recomendado para el Escenario: ${lessonDepth}
+
+# Historial Reciente de Conversación (Últimos mensajes):
+${conversationHistory
+  .slice(-2)
+  .map((msg) => `${msg.sender.toUpperCase()}: ${msg.text}`)
+  .join("\n\n")}
+
+# Respuesta del Usuario a tu Pregunta Anterior (sobre cómo aplicaría la micro-lección):
 "${userResponse}"
 
-# Contexto del Usuario
-${
-  userProfile
-    ? `
-- Rol: ${userProfile.role}
-- Descripción del proyecto: ${userProfile.projectDescription}
-- Obstáculos: ${userProfile.obstacles}
-${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.learningObjective}` : ""}
-`
-    : "- Información no disponible"
-}
+# Contexto Clave del Usuario (para personalizar el escenario):
+- Rol: ${userProfile?.role || "No especificado"}
+- Proyecto/Contexto Profesional: ${userProfile?.projectDescription || "No especificado"}
+- Obstáculos Principales: ${userProfile?.obstacles || "No especificados"}
+- Objetivo de Aprendizaje para ${skillName}: ${userProfile?.learningObjective || "No especificado"}
+- Temas/Problemas de su Respuesta Abierta (${skillName}): ${preProcessedOpenAnswer.keyThemes.join(", ") || "N/A"}; ${preProcessedOpenAnswer.specificProblemsMentioned.join(", ") || "N/A"}
 
-# Temas clave identificados en la respuesta abierta
-${preProcessedOpenAnswer.keyThemes.map((theme) => `- ${theme}`).join("\n") || "- No se identificaron temas específicos"}
+# Tu Tarea Detallada:
 
-# Tu tarea:
-1. Reconoce brevemente la respuesta del usuario, destacando un punto valioso de su reflexión.
-2. Presenta un escenario práctico personalizado (situación hipotética) relacionado con ${skillName} que:
-   - Sea creíble, relevante y directamente aplicable al Rol, Descripción del proyecto y Obstáculos del usuario. Evita escenarios genéricos.
-   - Desafíe específicamente el área de mejora identificada: ${
-     indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
-   }
-   - Tenga un nivel de complejidad adecuado al nivel ${lessonDepth}
-   - Sea concreto y detallado, pero conciso (máximo 120 palabras)
-   - Si el usuario ha especificado un objetivo de aprendizaje, intenta incorporarlo en el escenario
-   - El escenario debe permitirle practicar activamente lo aprendido en la micro-lección anterior
-3. Pide al usuario que explique detalladamente su plan de acción o cómo abordaría este escenario, enfatizando que debe aplicar los principios o técnicas de la micro-lección que discutieron.
+1.  **Breve Reconocimiento (1 frase):**
+    * Reconoce la respuesta anterior del usuario (\`userResponse\`) de forma concisa y positiva, enlazándola con la creación del escenario si es posible.
 
-El escenario debe ser realista, desafiante pero abordable, y directamente relacionado con las habilidades que el usuario necesita desarrollar.
-Usa Markdown para estructurar tu respuesta y hacerla más legible.
+2.  **Presentar el Escenario Personalizado (### Título del Escenario, máximo 120-150 palabras):**
+    * El escenario debe ser una situación práctica y desafiante donde el usuario necesite aplicar activamente los conceptos de la micro-lección anterior, enfocándose en el Indicador Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}".
+    * **Crucialmente Personalizado:** Integra elementos específicos del \`Rol del Usuario\`, su \`Proyecto/Contexto Profesional\`, y al menos uno de sus \`Obstáculos Principales\` o un \`Problema Específico Mencionado en su Respuesta Abierta\` (si es relevante para ${skillName} y el indicador de enfoque).
+    * Ajusta la complejidad del escenario al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
+    * Si el usuario proveyó un \`Objetivo de Aprendizaje para ${skillName}\`, el escenario debe ser una oportunidad para avanzar hacia ese objetivo.
+
+3.  **Instrucción Clara para el Usuario:**
+    * Pide al usuario que describa detalladamente cómo abordaría este escenario, enfatizando que debe aplicar explícitamente los principios o técnicas de la micro-lección anterior (Fase 1) para mejorar su "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}".
+
+Ejemplo de inicio: "Entendido, Raul. Basado en tu reflexión sobre [aspecto de userResponse], aquí tienes un escenario para poner en práctica esas ideas en el contexto de ${skillName}: ### Escenario: [Tu escenario personalizado aquí]..."
 `
         nextPhase = "phase3_feedback"
         break
@@ -444,61 +438,61 @@ Usa Markdown para estructurar tu respuesta y hacerla más legible.
       case "phase3_feedback":
         // Fase 3: Feedback Interactivo
         systemPrompt = `
-Eres un mentor experto en ${skillName}. Estás en la tercera fase de una sesión de mentoría personalizada.
-Tu objetivo es proporcionar feedback constructivo sobre la respuesta del usuario al escenario planteado.
-
-DIRECTRICES IMPORTANTES:
-- Tu feedback debe ser muy específico. Cuando menciones fortalezas o áreas de mejora, cita o parafrasea partes de la respuesta del usuario al escenario para ilustrar tus puntos.
-- Utiliza Markdown de forma efectiva: usa ### para títulos de secciones, **negritas** para términos clave, y listas con * o - para enumeraciones.
-- Mantén un tono de mentor experto: honesto pero motivador, enfocado en el crecimiento.
-- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
-- DEBES incluir un bloque JSON al final de tu respuesta con el formato exacto especificado en las instrucciones.
-
-La profundidad del feedback debe ser: ${lessonDepth} (fundamental = conceptos básicos, standard = análisis detallado, advanced = análisis profundo con matices).
-Debes enfocarte principalmente en el indicador: ${focusIndicators.primary}.
+Eres un Mentor Práctico experto y especializado ÚNICAMENTE en la habilidad de: **${skillName}**.
+Estás en la Fase 3: Feedback del Ejercicio. Tu tarea es analizar la respuesta del usuario al escenario práctico y proporcionar feedback constructivo y detallado. También debes generar una puntuación numérica y una justificación para esa puntuación.
+El feedback debe centrarse en cómo el usuario aplicó (o no) los conceptos de la micro-lección (Fase 1) y su desempeño en el Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}".
+Usa Markdown. Sé específico y cita ejemplos de la respuesta del usuario.
+Sigue las instrucciones del User Prompt para la estructura del feedback y el formato JSON OBLIGATORIO al final.
 `
+
         userPrompt = `
-# Historial de conversación:
+# Habilidad Actual en Foco: ${skillName}
+# Indicador de Enfoque Primario (de la micro-lección y escenario): "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"
+# Nivel de Profundidad Recomendado para el Feedback: ${lessonDepth}
+
+# Historial Reciente de Conversación (Escenario y Micro-lección relevantes):
 ${conversationHistory
   .slice(-4)
   .map((msg) => `${msg.sender.toUpperCase()}: ${msg.text}`)
   .join("\n\n")}
 
-# Respuesta del usuario al escenario:
-"${userResponse}"
+# Respuesta del Usuario al Escenario Práctico:
+"${userResponse}" 
 
-# Contexto del Usuario
-${
-  userProfile
-    ? `
-- Rol: ${userProfile.role}
-- Descripción del proyecto: ${userProfile.projectDescription}
-${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.learningObjective}` : ""}
-`
-    : "- Información no disponible"
-}
+# Contexto Clave del Usuario (para referencia):
+- Rol: ${userProfile?.role || "No especificado"}
+- Proyecto/Contexto Profesional: ${userProfile?.projectDescription || "No especificado"}
+- Objetivo de Aprendizaje para ${skillName}: ${userProfile?.learningObjective || "No especificado"}
 
-# Tu tarea:
-1. Proporciona feedback constructivo sobre la respuesta del usuario, siguiendo este formato:
-   - Aspectos positivos: Identifica 1-2 fortalezas en su enfoque, citando ejemplos de su respuesta.
-   - Oportunidades de mejora: Sugiere 1-2 aspectos específicos de su respuesta que podrían reforzarse, explicando CÓMO se relacionan con la micro-lección dada y el indicador principal: ${
-     indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
-   }
-   - Consejo práctico: Ofrece una técnica o herramienta específica, y explica brevemente cómo podría implementarla.
-2. El feedback debe ser honesto pero motivador, enfocado en el crecimiento
-3. Adapta la profundidad de tu feedback al nivel ${lessonDepth}
-4. Termina preguntando al usuario qué aprendizaje clave se lleva de este ejercicio y cómo lo aplicaría en su trabajo
+# Tu Tarea Detallada (Feedback Conversacional Y JSON de Puntuación):
 
-Adicionalmente a tu feedback conversacional, DEBES generar una evaluación estructurada de la respuesta del usuario al escenario. Incluye esto AL FINAL de tu respuesta completa, sin ningún texto adicional después, en el siguiente formato JSON exacto:
+**A. Feedback Conversacional para el Usuario (Usa Markdown):**
 
+1.  **Reconocimiento y Resumen Breve (1-2 frases):**
+    * Agradece la respuesta del usuario y resume brevemente su enfoque principal al escenario.
+
+2.  **Puntos Fuertes (1-2 puntos, con ejemplos de su respuesta):**
+    * Identifica aspectos positivos específicos en cómo abordó el escenario, especialmente si aplicó conceptos de la micro-lección o demostró habilidad en "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}". Sé específico: "Me gustó cómo mencionaste que harías [cita de su respuesta], lo cual demuestra [aspecto positivo relacionado con el indicador/lección]."
+
+3.  **Áreas de Oportunidad (1-2 puntos, con ejemplos y conexión a la lección):**
+    * Sugiere aspectos específicos de su respuesta que podrían mejorarse o alternativas que podría considerar, enfocándote en el Indicador Primario y la micro-lección. Explica *por qué* sería una mejora. Ejemplo: "En cuanto a [parte de su respuesta], una alternativa podría ser [sugerencia basada en la micro-lección], porque te ayudaría a [beneficio relacionado con el indicador]."
+
+4.  **Sugerencia Práctica Adicional (1 consejo concreto):**
+    * Ofrece una técnica, herramienta o recurso adicional relevante para el Indicador Primario y la habilidad ${skillName}, que complemente lo discutido.
+
+5.  **Pregunta de Transición al Plan de Acción:**
+    * Termina preguntando: "Considerando este ejercicio y el feedback, ¿cuál es el '¡Ajá!' o aprendizaje más significativo que te llevas hasta ahora sobre cómo mejorar tu '${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}' en el contexto de ${skillName}?"
+
+**B. Bloque JSON de Puntuación del Ejercicio (OBLIGATORIO y AL FINAL de tu respuesta completa):**
+* DEBES incluir este bloque JSON exacto al final, sin ningún texto después.
+* La \`exerciseScoreJustification\` debe ser concisa (50-75 palabras), específica, y explicar cómo la respuesta del usuario al escenario se relaciona con los conceptos de la micro-lección y el indicador de enfoque, justificando el \`exerciseScore\`.
+
+\`\`\`json
 {
-  "exerciseScore": <un número entero entre 0 y 100, sin decimales>,
-  "exerciseScoreJustification": "<Un análisis conciso pero detallado (aproximadamente 50-75 palabras, 2-4 frases) explicando el porqué del score. Conecta tu justificación con la aplicación (o falta de ella) de los conceptos de la micro-lección en la respuesta del usuario al escenario. Sé específico, mencionando 1-2 puntos fuertes y 1-2 áreas de mejora de su respuesta al escenario. Este texto se mostrará al usuario como la justificación del puntaje del ejercicio.>"
+  "exerciseScore": <un número entero entre 0 y 100, representando la calidad de la respuesta del usuario al escenario en relación con la aplicación de la micro-lección y el indicador "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}">,
+  "exerciseScoreJustification": "<Análisis de 2-4 frases: 1-2 fortalezas en su respuesta al escenario (ej. aplicó bien X concepto de la lección), 1-2 áreas de mejora específicas (ej. podría haber enfatizado más Y aspecto de la lección), y una conclusión que justifique el score. Conecta con ${skillName} y el indicador ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}.>"
 }
-
-Asegúrate de que exerciseScore sea un NÚMERO y exerciseScoreJustification sea un STRING. El bloque JSON debe ser el último elemento en tu respuesta. No incluyas saltos de línea innecesarios dentro del string de justificación que puedan romper el parseo JSON.
-
-Usa Markdown para estructurar tu respuesta conversacional y hacerla más legible.
+\`\`\`
 `
         nextPhase = "phase4_action_plan"
         break
@@ -506,57 +500,53 @@ Usa Markdown para estructurar tu respuesta conversacional y hacerla más legible
       case "phase4_action_plan":
         // Fase 4: Plan de Acción
         systemPrompt = `
-Eres un mentor experto en ${skillName}. Estás en la cuarta fase de una sesión de mentoría personalizada.
-Tu objetivo es ayudar al usuario a desarrollar un plan de acción concreto para mejorar sus habilidades.
-
-DIRECTRICES IMPORTANTES:
-- Cada paso del plan debe ser específico, medible, accionable, relevante y con un plazo definido (SMART).
-- Utiliza Markdown de forma efectiva: usa ### para el título del plan, **negritas** para términos clave, y listas numeradas para los pasos.
-- Mantén un tono de mentor experto: empático, alentador, pero también directo y claro en tus recomendaciones.
-- Si alguna información del perfil del usuario no está disponible, adáptate y enfócate en la información que sí tienes. No inventes información.
-- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
-
-La profundidad del plan de acción debe ser: ${lessonDepth} (fundamental = pasos básicos, standard = pasos con cierta complejidad, advanced = pasos estratégicos avanzados).
-Debes enfocarte principalmente en el indicador: ${focusIndicators.primary}.
+Eres un Mentor Práctico experto y especializado ÚNICAMENTE en la habilidad de: **${skillName}**.
+Estás en la Fase 4: Plan de Acción. Tu tarea es ayudar al usuario a co-crear un plan de acción breve, concreto y personalizado para seguir desarrollando el Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}".
+El plan debe ser SMART (Específico, Medible, Alcanzable, Relevante, con Plazo).
+Usa Markdown. Sé práctico y motivador.
+Sigue las instrucciones del User Prompt.
 `
+
         userPrompt = `
-# Historial de conversación:
+# Habilidad Actual en Foco: ${skillName}
+# Indicador de Enfoque Primario (para el plan de acción): "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"
+# Nivel de Profundidad Recomendado para el Plan: ${lessonDepth}
+
+# Historial Reciente de Conversación (Feedback y 'Aha!' moment del usuario):
 ${conversationHistory
-  .slice(-4)
+  .slice(-2)
   .map((msg) => `${msg.sender.toUpperCase()}: ${msg.text}`)
   .join("\n\n")}
 
-# Respuesta del usuario sobre su aprendizaje:
+# '¡Ajá!' Moment / Aprendizaje Clave del Usuario (Respuesta Anterior):
 "${userResponse}"
 
-# Contexto del Usuario
-${
-  userProfile
-    ? `
-- Rol: ${userProfile.role}
-- Descripción del proyecto: ${userProfile.projectDescription}
-- Obstáculos: ${userProfile.obstacles}
-${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.learningObjective}` : ""}
-`
-    : "- Información no disponible"
-}
+# Contexto Clave del Usuario (para personalizar el plan):
+- Rol: ${userProfile?.role || "No especificado"}
+- Proyecto/Contexto Profesional: ${userProfile?.projectDescription || "No especificado"}
+- Obstáculos Principales: ${userProfile?.obstacles || "No especificados"}
+- Objetivo de Aprendizaje para ${skillName}: ${userProfile?.learningObjective || "No especificado"}
 
-# Tu tarea:
-1. Reconoce el aprendizaje identificado por el usuario
-2. Presenta un plan de acción estructurado con 3 pasos concretos para mejorar en ${skillName}, específicamente en el área de ${
-          indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
-        }
-3. Cada paso debe:
-   - Ser Específico, Medible (sugiere cómo podría saber que lo logró), Accionable, Relevante (para su contexto y el indicador ${
-     indicatorScores.find((i) => i.id === focusIndicators.primary)?.name
-   }), y con un Plazo sugerido (ej. 'para la próxima semana', 'dentro de 15 días').
-   - Ser realizable en 1-2 semanas
-   - Estar adaptado al contexto profesional del usuario y su nivel ${lessonDepth}
-   - Si el usuario proveyó un objetivo de aprendizaje para esta habilidad, cada paso debe ser una contribución clara hacia ese objetivo
-4. Termina preguntando: "De estos pasos, ¿cuál te parece más prioritario o realizable para comenzar esta misma semana? ¿Qué primer pequeña acción podrías tomar para iniciarlo y qué posible obstáculo anticipas?"
+# Tu Tarea Detallada:
 
-El plan debe ser práctico, realista y directamente aplicable a la situación del usuario.
-Usa Markdown para estructurar tu respuesta y hacerla más legible.
+1.  **Validar el '¡Ajá!' Moment (1 frase):**
+    * Valida y refuerza positivamente el aprendizaje clave (\`userResponse\`) que el usuario acaba de compartir.
+
+2.  **Proponer 1-2 Pasos de Acción SMART (### Plan de Acción Sugerido):**
+    * Basado en el '¡Ajá!' moment del usuario, el feedback anterior, y el Indicador de Enfoque Primario ("${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"), sugiere 1 o 2 pasos de acción.
+    * **Cada paso debe ser:**
+        * **Específico:** Claramente definido.
+        * **Accionable:** Algo que el usuario pueda hacer.
+        * **Relevante:** Directamente conectado con la mejora del indicador de enfoque, su \`Rol\`, \`Proyecto/Contexto Profesional\`, \`Obstáculos\`, y su \`Objetivo de Aprendizaje para ${skillName}\` (si lo tiene).
+        * **Con Plazo (sugerido):** Realizable en un corto plazo (ej., "esta semana", "en los próximos 7 días").
+        * Ajustado al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
+    * *Formato por paso:*
+        * \`* **Paso X: [Título del Paso].** [Descripción breve y específica de la acción, y cómo se relaciona con su contexto/objetivo/obstáculo]. Sugerencia de plazo: [Plazo].\`
+
+3.  **Pregunta de Co-creación y Compromiso:**
+    * Pregunta al usuario: "De estos pasos, ¿cuál te parece más relevante o factible para empezar? ¿Hay alguna modificación que le harías o algún otro primer paso que tengas en mente para poner en práctica tu '${userResponse}' y mejorar en '${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}'?"
+
+Ejemplo de inicio: "¡Excelente '¡Ajá!' moment, Raul! Ese entendimiento sobre [aspecto del userResponse] es clave. Para ayudarte a llevarlo a la práctica y seguir mejorando tu '${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}' en ${skillName}, te propongo: ### Plan de Acción Sugerido..."
 `
         nextPhase = "phase5_synthesis"
         break
@@ -564,51 +554,53 @@ Usa Markdown para estructurar tu respuesta y hacerla más legible.
       case "phase5_synthesis":
         // Fase 5: Síntesis y Proyección de Crecimiento
         systemPrompt = `
-Eres un mentor experto en ${skillName}. Estás en la fase final de una sesión de mentoría personalizada.
-Tu objetivo es ayudar al usuario a sintetizar lo aprendido y proyectar su crecimiento futuro.
-
-DIRECTRICES IMPORTANTES:
-- Esta es la fase de cierre, debes proporcionar una síntesis clara y motivadora de toda la sesión.
-- Utiliza Markdown de forma efectiva: usa ### para títulos de secciones, **negritas** para términos clave, y listas con * o - para enumeraciones.
-- Mantén un tono de mentor experto: inspirador, alentador y orientado al futuro.
-- Si alguna información del perfil del usuario no está disponible, adáptate y enfócate en la información que sí tienes. No inventes información.
-- Sé conciso. Evita párrafos demasiado largos. Prioriza la claridad y la accionabilidad.
+Eres un Mentor Práctico experto y especializado ÚNICAMENTE en la habilidad de: **${skillName}**.
+Estás en la Fase 5: Síntesis y Proyección de Crecimiento. Esta es la fase final de la sesión de mentoría.
+Tu tarea es ayudar al usuario a consolidar su aprendizaje, reforzar su compromiso y visualizar el impacto positivo de desarrollar ${skillName}, enfocándose en el Indicador Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}".
+Usa Markdown. Tu tono debe ser muy motivador e inspirador.
+Sigue las instrucciones del User Prompt.
 `
+
         userPrompt = `
-# Historial de conversación:
+# Habilidad Actual en Foco: ${skillName}
+# Indicador de Enfoque Primario (relevante para la síntesis): "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"
+
+# Historial Reciente de Conversación (Plan de acción y compromiso del usuario):
 ${conversationHistory
-  .slice(-6)
+  .slice(-2)
   .map((msg) => `${msg.sender.toUpperCase()}: ${msg.text}`)
   .join("\n\n")}
 
-# Compromiso del usuario:
-"${userResponse}"
+# Compromiso/Respuesta del Usuario sobre el Plan de Acción:
+"${userResponse}" 
 
-# Contexto del Usuario
-${
-  userProfile
-    ? `
-- Rol: ${userProfile.role}
-- Descripción del proyecto: ${userProfile.projectDescription}
-${userProfile.learningObjective ? `- Objetivo de aprendizaje: ${userProfile.learningObjective}` : ""}
-`
-    : "- Información no disponible"
-}
+# Contexto Clave del Usuario (para personalizar la proyección):
+- Nombre: ${userProfile?.name || "Usuario"}
+- Rol: ${userProfile?.role || "No especificado"}
+- Proyecto/Contexto Profesional: ${userProfile?.projectDescription || "No especificado"}
+- Objetivo de Aprendizaje para ${skillName}: ${userProfile?.learningObjective || "No especificado"}
 
-# Tu tarea:
-1. Reconoce y refuerza positivamente el compromiso del usuario
-2. Ofrece 1-2 consejos muy prácticos y breves para superar el obstáculo específico que mencionó el usuario
-3. Sintetiza los principales aprendizajes de toda la sesión (máximo 100 palabras)
-4. Proyecta de forma realista y personalizada cómo el desarrollo continuo de esta habilidad (${skillName}) impactará positivamente en:
-   - Su desempeño profesional (considerando su Rol)
-   - El éxito de su Proyecto
-   - Su crecimiento personal
-   Sé concreto.
-5. Si el usuario especificó un objetivo de aprendizaje para esta habilidad, subraya cómo lo aprendido en esta sesión y las acciones futuras le ayudarán a alcanzarlo
-6. Concluye la sesión con un mensaje motivador que refuerce su progreso y lo anime a seguir aprendiendo. Invítalo a pensar en qué otra habilidad podría trabajar o cómo puede seguir profundizando en esta
+# Tu Tarea Detallada (Mensaje Final de Síntesis y Proyección):
 
-Esta síntesis debe servir como cierre inspirador de la sesión y como puente hacia el desarrollo continuo.
-Usa Markdown para estructurar tu respuesta y hacerla más legible.
+1.  **Reconocer el Compromiso (1-2 frases):**
+    * Valida y elogia el compromiso o la reflexión del usuario (\`userResponse\`) sobre su plan de acción. Sé específico sobre lo que valoras de su respuesta.
+
+2.  **Breve Síntesis del Aprendizaje Clave de la Sesión (1-2 frases, máximo 50 palabras):**
+    * Resume el aprendizaje más importante que el usuario debería llevarse de toda esta sesión de mentoría sobre ${skillName}, especialmente en relación con el Indicador Primario "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}" y su '¡Ajá!' moment.
+
+3.  **Proyección de Crecimiento Personalizada (### Impacto de tu Desarrollo en ${skillName}):**
+    * Describe brevemente (2-3 puntos usando listas \`*\` o \`-\`) cómo el continuar desarrollando ${skillName} (y específicamente el indicador de enfoque) impactará positivamente:
+        * Su desempeño en su \`Rol del Usuario\`.
+        * El éxito de su \`Proyecto/Contexto Profesional del Usuario\`.
+        * (Opcional) Algún otro aspecto como su liderazgo o colaboración.
+    * Si el usuario especificó un \`Objetivo de Aprendizaje para ${skillName}\`, explica cómo este desarrollo lo acerca a ese objetivo.
+
+4.  **Mensaje Final Inspirador y Siguientes Pasos (2-3 frases):**
+    * Concluye la sesión con un mensaje muy motivador que lo anime a mantener el impulso.
+    * Sugiérele que revise su plan de acción y los aprendizajes.
+    * Invítalo a pensar en su próximo paso de desarrollo, ya sea profundizando en esta habilidad o explorando otra.
+
+Ejemplo de inicio: "¡Fantástico compromiso, ${userProfile?.name || "Usuario"}! Tomar esa iniciativa con [aspecto de userResponse] es exactamente la actitud. Esta sesión sobre ${skillName} ha sido muy productiva. El aprendizaje clave que me gustaría que te lleves es [síntesis]. ### Impacto de tu Desarrollo en ${skillName} ..."
 `
         nextPhase = "session_completed"
         break
@@ -637,8 +629,17 @@ Usa Markdown para estructurar tu respuesta y hacerla más legible.
           content: userPrompt,
         },
       ],
-      temperature: 0.6,
-      max_tokens: 500,
+      temperature: 0.65,
+      max_tokens:
+        currentMentorPhase === "phase2_scenario"
+          ? 350
+          : currentMentorPhase === "phase3_feedback"
+            ? 600
+            : currentMentorPhase === "phase4_action_plan"
+              ? 450
+              : currentMentorPhase === "phase5_synthesis"
+                ? 450
+                : 500,
     })
 
     let mentorMessage = response.choices[0]?.message?.content || "Lo siento, no pude generar una respuesta."
