@@ -88,6 +88,48 @@ export default function SkillboosterMVP() {
   const [currentSkillLearningObjective, setCurrentSkillLearningObjective] = useState<string>("")
   const [skillObjectiveSubmitted, setSkillObjectiveSubmitted] = useState<boolean>(false)
 
+  // Función para renderizar el indicador de progreso general
+  const renderOverallProgress = (): string => {
+    const totalSelectedSkills = selectedSkills.length
+
+    switch (currentStep) {
+      case 0: // LandingStep
+        return "" // No mostramos progreso en la página de inicio
+      case 1: // UserInfoStep
+        return "Paso 1 de 4: Perfil de Usuario"
+      case 2: // SkillSelectionStep
+        return "Paso 2 de 4: Selección de Habilidades"
+      case 3: // SkillObjectiveStep o AssessmentStep
+        if (totalSelectedSkills > 0) {
+          const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
+          const skillName = currentSkill?.name || "Habilidad"
+
+          if (!skillObjectiveSubmitted) {
+            return `Paso 3 de 4: Definiendo Objetivo - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
+          } else {
+            return `Paso 3 de 4: Evaluación - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills}) - Pregunta ${currentQuestionIndex + 1}/${skills.find((s) => s.id === selectedSkills[currentSkillIndex])?.questions.length || 0}`
+          }
+        }
+        return "Paso 3 de 4: Evaluación de Habilidad"
+      case 4: // ResultsStep o MentorSessionInterface
+        if (totalSelectedSkills > 0) {
+          const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
+          const skillName = currentSkill?.name || "Habilidad"
+
+          if (showMentorSession) {
+            return `Paso 3 de 4: Sesión de Mentoría - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
+          } else {
+            return `Paso 3 de 4: Resultados - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
+          }
+        }
+        return "Paso 3 de 4: Resultados"
+      case 5: // SummaryStep
+        return "Paso 4 de 4: Resumen Final"
+      default:
+        return ""
+    }
+  }
+
   // Cargar datos de preguntas
   useEffect(() => {
     // Cargamos los datos desde la API
@@ -245,7 +287,7 @@ export default function SkillboosterMVP() {
         // En caso de error, mostramos un resultado simulado para no interrumpir el flujo
         const fallbackResult: SkillResult = {
           skillId: currentSkillId,
-          skillName: currentSkill.axis,
+          skillName: currentSkill.name,
           globalScore: 75,
           indicatorScores: newAnswers[currentSkillId].map((answer) => ({
             id: answer.questionId,
@@ -478,6 +520,13 @@ export default function SkillboosterMVP() {
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Indicador de progreso general */}
+        {currentStep > 0 && (
+          <div className="mb-6 text-center font-medium text-blue-400 tracking-wider bg-gray-800/50 py-2 px-4 rounded-lg shadow-inner">
+            {renderOverallProgress()}
+          </div>
+        )}
+
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
