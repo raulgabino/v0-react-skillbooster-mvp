@@ -42,6 +42,7 @@ interface IndicatorScore {
   name: string
   score: number
   descripcion_indicador?: string
+  feedback_especifico?: string // Para el feedback de IA
 }
 
 interface ScoreResponsePayload {
@@ -185,6 +186,81 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
       descripcion_indicador:
         "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
     })
+
+    // Generar feedback específico para cada indicador
+    if (openai) {
+      // Asegurarse que openai está inicializado
+      for (const indScore of likertScores) {
+        // Omitir generación de feedback específico para la pregunta abierta si no tiene descripción o no se desea
+        if (indScore.id === skillDefinition.open_question_id && !indScore.descripcion_indicador) {
+          indScore.feedback_especifico =
+            "Tu respuesta a la situación práctica es un componente valioso de esta evaluación."
+          continue // Saltar a la siguiente iteración
+        }
+
+        const systemContent = `Eres un tutor experto en desarrollo de habilidades, especializado en ${skillDefinition.name}. Tu tono es alentador, conciso y orientado a la acción. Debes generar un feedback breve (1-2 frases, máximo 35 palabras) para un indicador específico. No uses markdown.`
+
+        let userContent = ""
+        const score = indScore.score
+        const indicatorName = indScore.name
+        const indicatorDescription = indScore.descripcion_indicador || `Este es un aspecto de ${skillDefinition.name}.`
+
+        if (score >= 75) {
+          // Puntuación Alta
+          userContent = `El usuario ha obtenido una puntuación de ${score}/100 en el indicador "${indicatorName}", que se refiere a: "${indicatorDescription}". 
+Genera un feedback positivo que refuerce esta fortaleza y sugiera brevemente cómo puede seguir aplicándola o apalancándola. Ejemplo: "¡Excelente trabajo en ${indicatorName}! Sigue aplicando esta habilidad para potenciar tus proyectos."`
+        } else if (score >= 40) {
+          // Puntuación Media
+          userContent = `El usuario ha obtenido una puntuación de ${score}/100 en el indicador "${indicatorName}", que se refiere a: "${indicatorDescription}".
+Genera un feedback constructivo que reconozca el área y sugiera una acción simple o una pregunta para reflexionar sobre cómo mejorar. Ejemplo: "Buen avance en ${indicatorName}. Considera cómo [acción simple] podría fortalecer aún más este aspecto."`
+        } else {
+          // Puntuación Baja
+          userContent = `El usuario ha obtenido una puntuación de ${score}/100 en el indicador "${indicatorName}", que se refiere a: "${indicatorDescription}".
+Genera un feedback de apoyo que ofrezca un primer paso muy básico y alentador, o una pregunta simple para ayudar a identificar una barrera. Ejemplo: "Este es un buen punto de partida para ${indicatorName}. Un primer paso podría ser [acción muy básica]."`
+        }
+
+        userContent +=
+          "\nResponde únicamente con el feedback directo al usuario (1-2 frases, máximo 35 palabras). No incluyas saludos ni despedidas."
+
+        try {
+          const feedbackResponse = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: systemContent },
+              { role: "user", content: userContent },
+            ],
+            temperature: 0.5, // Un poco menos de variabilidad para consistencia
+            max_tokens: 50, // Suficiente para 35 palabras y algo de margen
+            n: 1, // Solo una respuesta
+          })
+          let generatedFeedback =
+            feedbackResponse.choices[0]?.message?.content?.trim() || "Sigue practicando este aspecto para mejorar."
+
+          // Simple post-procesamiento para asegurar brevedad si es necesario
+          if (generatedFeedback.split(" ").length > 40) {
+            // Un poco más de margen que 35
+            generatedFeedback = generatedFeedback.split(".")[0] + "." // Tomar solo la primera frase
+          }
+
+          indScore.feedback_especifico = generatedFeedback
+        } catch (feedbackError) {
+          console.error(`Error generando feedback para indicador ${indScore.id} (${indicatorName}):`, feedbackError)
+          // Fallback más genérico si falla la IA
+          if (score >= 75) {
+            indScore.feedback_especifico = `¡Buen trabajo en ${indicatorName}! Sigue así.`
+          } else if (score >= 40) {
+            indScore.feedback_especifico = `Continúa desarrollando tu ${indicatorName}, ¡vas por buen camino!`
+          } else {
+            indScore.feedback_especifico = `Con práctica, mejorarás en ${indicatorName}. ¡Ánimo!`
+          }
+        }
+      }
+    } else {
+      // Fallback si OpenAI no está disponible
+      likertScores.forEach((indScore) => {
+        indScore.feedback_especifico = "El servicio de feedback no está disponible actualmente."
+      })
+    }
 
     return NextResponse.json({
       indicatorScores: likertScores,

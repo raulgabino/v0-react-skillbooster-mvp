@@ -49,6 +49,7 @@ type IndicatorScore = {
   name: string
   score: number
   descripcion_indicador?: string
+  feedback_especifico?: string
 }
 
 type SkillResult = {
@@ -1018,9 +1019,9 @@ function ResultsStep({
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4">Indicadores</h3>
           <TooltipProvider delayDuration={200}>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {result.indicatorScores.slice(0, 6).map((indicator, index) => (
-                <div key={index}>
+                <div key={index} className="pb-3 border-b border-gray-700 last:border-0">
                   <div className="flex justify-between text-sm mb-1 items-center">
                     <div className="flex items-center">
                       <span className="font-medium">{indicator.name}</span>
@@ -1041,11 +1042,29 @@ function ResultsStep({
                         </Tooltip>
                       )}
                     </div>
-                    <span>{indicator.score}/100</span>
+                    <span
+                      className={`px-2 py-1 rounded-md ${
+                        indicator.score >= 75
+                          ? "bg-green-900/40 text-green-300"
+                          : indicator.score >= 40
+                            ? "bg-yellow-900/40 text-yellow-300"
+                            : "bg-red-900/40 text-red-300"
+                      }`}
+                    >
+                      {indicator.score}/100
+                    </span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${indicator.score}%` }}></div>
+                  <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
+                    <div
+                      className={`h-2.5 rounded-full ${
+                        indicator.score >= 75 ? "bg-green-500" : indicator.score >= 40 ? "bg-yellow-500" : "bg-red-500"
+                      }`}
+                      style={{ width: `${indicator.score}%` }}
+                    ></div>
                   </div>
+                  {indicator.feedback_especifico && (
+                    <p className="text-xs text-gray-300 mt-1 italic">{indicator.feedback_especifico}</p>
+                  )}
                 </div>
               ))}
             </div>
