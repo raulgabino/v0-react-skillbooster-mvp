@@ -11,7 +11,7 @@ const jsPDF = dynamic(() => import("jspdf"), { ssr: false })
 const html2canvas = dynamic(() => import("html2canvas"), { ssr: false })
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Info } from "lucide-react"
+import { Info, MessageSquare, Lightbulb } from "lucide-react"
 
 // Importar tipos
 type UserInfo = {
@@ -901,39 +901,63 @@ function AssessmentStep({
       </div>
 
       <div className="bg-gray-800 rounded-lg p-6 mb-6">
-        <p className="text-lg mb-6">{question.prompt}</p>
-
         {question.type === "likert" ? (
-          <div className="space-y-4">
-            <div className="flex justify-between text-sm text-gray-400 px-2">
-              <span>Muy en desacuerdo</span>
-              <span>Muy de acuerdo</span>
+          <>
+            <p className="text-lg mb-6">{question.prompt}</p>
+            <div className="space-y-4">
+              <div className="flex justify-between text-sm text-gray-400 px-2">
+                <span>Muy en desacuerdo</span>
+                <span>Muy de acuerdo</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <div key={value} className="flex flex-col items-center flex-1">
+                    <button
+                      onClick={() => handleLikertChange(value)}
+                      className={`w-full py-3 rounded-md transition-all mb-1 ${
+                        currentAnswer === value
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                      }`}
+                      aria-label={`${likertLabels[value]} (${value})`}
+                    >
+                      {value}
+                    </button>
+                    <span className="text-xs text-gray-400 text-center px-1 h-8">{likertLabels[value]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex justify-between gap-2">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <div key={value} className="flex flex-col items-center flex-1">
-                  <button
-                    onClick={() => handleLikertChange(value)}
-                    className={`w-full py-3 rounded-md transition-all mb-1 ${
-                      currentAnswer === value ? "bg-blue-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-gray-200"
-                    }`}
-                    aria-label={`${likertLabels[value]} (${value})`}
-                  >
-                    {value}
-                  </button>
-                  <span className="text-xs text-gray-400 text-center px-1 h-8">{likertLabels[value]}</span>
-                </div>
-              ))}
+          </>
+        ) : (
+          <div className="bg-gray-700/50 p-5 rounded-lg border border-blue-600/30 shadow-lg">
+            <div className="flex items-center text-blue-400 mb-3">
+              <Lightbulb className="w-5 h-5 mr-2" />
+              <h4 className="text-lg font-semibold">Pregunta de Aplicación Práctica</h4>
+            </div>
+
+            <p className="text-sm text-gray-300 mb-4 italic">
+              Esta pregunta nos ayuda a entender cómo aplicarías esta habilidad en situaciones reales. Tu respuesta
+              detallada permitirá una evaluación más precisa y una sesión de mentoría personalizada.
+            </p>
+
+            <div className="bg-gray-800/70 p-4 rounded-md mb-4 border-l-4 border-blue-500">
+              <p className="text-base text-gray-100">{question.prompt}</p>
+            </div>
+
+            <textarea
+              value={currentAnswer as string}
+              onChange={handleOpenChange}
+              rows={7}
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+              placeholder="Describe tu enfoque aquí de manera detallada. Cuanto más específico seas, mejor podremos personalizar tu experiencia de aprendizaje..."
+            ></textarea>
+
+            <div className="flex items-center mt-3 text-xs text-gray-400">
+              <MessageSquare className="w-4 h-4 mr-1 text-gray-500" />
+              <span>Tu respuesta será analizada para personalizar tu sesión con el mentor.</span>
             </div>
           </div>
-        ) : (
-          <textarea
-            value={currentAnswer as string}
-            onChange={handleOpenChange}
-            rows={6}
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Escribe tu respuesta aquí..."
-          ></textarea>
         )}
       </div>
 
