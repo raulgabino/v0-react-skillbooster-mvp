@@ -17,7 +17,7 @@ interface UserInfo {
   experience: string
   projectDescription: string
   obstacles: string
-  learningObjective?: string // Nuevo campo añadido
+  learningObjective?: string
 }
 
 interface MentorSessionProps {
@@ -72,6 +72,7 @@ export default function MentorSessionInterface({
   const [feedbackComment, setFeedbackComment] = useState("")
   const [exerciseScore, setExerciseScore] = useState<number | undefined>(undefined)
   const [exerciseScoreJustification, setExerciseScoreJustification] = useState<string | undefined>(undefined)
+  const [showExerciseScore, setShowExerciseScore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const conversationEndRef = useRef<HTMLDivElement>(null)
@@ -205,6 +206,7 @@ export default function MentorSessionInterface({
       if (currentMentorPhase === "phase3_feedback" && data.exerciseScore !== undefined) {
         setExerciseScore(data.exerciseScore)
         setExerciseScoreJustification(data.exerciseScoreJustification)
+        setShowExerciseScore(true)
 
         // Actualizar sessionData con estos valores
         setSessionData((prev) => ({
@@ -381,19 +383,74 @@ export default function MentorSessionInterface({
     )
   }
 
+  // Componente para mostrar la puntuación del ejercicio
+  const ExerciseScoreDisplay = () => {
+    if (!exerciseScore || !showExerciseScore) return null
+
+    return (
+      <div className="mt-3 mb-2 p-3 bg-slate-700/60 border border-slate-600 rounded-md text-sm">
+        <p className="font-semibold text-sky-300 mb-1">Evaluación del Ejercicio Práctico:</p>
+        <p className="text-slate-200">
+          Puntuación: <span className="font-bold text-amber-300">{exerciseScore}/100</span>
+        </p>
+        {exerciseScoreJustification && (
+          <p className="text-xs text-slate-400 mt-1 italic">Justificación del Mentor: {exerciseScoreJustification}</p>
+        )}
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col h-[70vh] bg-gray-900 rounded-lg overflow-hidden">
+    <div className="flex flex-col h-[70vh] bg-gray-900 rounded-lg overflow-hidden shadow-xl border border-gray-800">
+      {/* Encabezado de la sesión */}
+      <div className="bg-gray-800 p-4 border-b border-gray-700">
+        <h2 className="text-lg font-semibold text-blue-300">Sesión de Mentoría: {skillName}</h2>
+        <p className="text-sm text-gray-400">
+          Puntuación global: {globalScore}/100 • Fase:{" "}
+          {currentMentorPhase === "start_session"
+            ? "Introducción"
+            : currentMentorPhase === "phase2_scenario"
+              ? "Escenario Práctico"
+              : currentMentorPhase === "phase3_feedback"
+                ? "Feedback"
+                : currentMentorPhase === "phase4_action_plan"
+                  ? "Plan de Acción"
+                  : currentMentorPhase === "phase5_synthesis"
+                    ? "Síntesis"
+                    : "Finalización"}
+        </p>
+      </div>
+
       {/* Área de conversación */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {conversationHistory.map((message, index) => (
           <div key={index} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.sender === "user" ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-100"
+              className={`max-w-[85%] rounded-lg p-3 ${
+                message.sender === "user"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-800 text-gray-100 border border-gray-700"
               }`}
             >
               {message.sender === "mentor" ? (
-                <ReactMarkdown className="whitespace-pre-wrap prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown
+                  className="whitespace-pre-wrap prose prose-invert prose-sm max-w-none"
+                  components={{
+                    h3: ({ node, ...props }) => (
+                      <h3 className="text-blue-300 font-semibold text-lg mt-2 mb-1" {...props} />
+                    ),
+                    h4: ({ node, ...props }) => (
+                      <h4 className="text-blue-200 font-medium text-base mt-2 mb-1" {...props} />
+                    ),
+                    p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+                    ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+                    ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                    li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                    strong: ({ node, ...props }) => <strong className="font-semibold text-blue-200" {...props} />,
+                    em: ({ node, ...props }) => <em className="text-gray-300 italic" {...props} />,
+                    a: ({ node, ...props }) => <a className="text-blue-400 underline hover:text-blue-300" {...props} />,
+                  }}
+                >
                   {message.text}
                 </ReactMarkdown>
               ) : (
@@ -402,9 +459,13 @@ export default function MentorSessionInterface({
             </div>
           </div>
         ))}
+
+        {/* Mostrar la puntuación del ejercicio después del feedback del mentor */}
+        {currentMentorPhase === "phase4_action_plan" && <ExerciseScoreDisplay />}
+
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 text-gray-100 rounded-lg p-3">
+            <div className="bg-gray-800 text-gray-100 rounded-lg p-3 border border-gray-700">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-150"></div>
@@ -428,13 +489,13 @@ export default function MentorSessionInterface({
       <div className="p-4 bg-gray-800 border-t border-gray-700">
         {showFeedback ? (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">¿Cómo calificarías esta sesión de mentoría?</h3>
+            <h3 className="text-lg font-medium text-blue-300">¿Cómo calificarías esta sesión de mentoría?</h3>
             <div className="flex justify-center">{renderStars()}</div>
             <textarea
               value={feedbackComment}
               onChange={(e) => setFeedbackComment(e.target.value)}
               placeholder="Comentarios adicionales (opcional)"
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
               rows={3}
               disabled={isLoading}
             ></textarea>
@@ -459,7 +520,7 @@ export default function MentorSessionInterface({
               onChange={(e) => setCurrentUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Escribe tu mensaje..."
-              className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
               rows={2}
               disabled={isLoading}
             ></textarea>

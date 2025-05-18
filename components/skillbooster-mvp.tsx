@@ -485,6 +485,25 @@ export default function SkillboosterMVP() {
           learningObjective: currentSkillLearningObjective, // Añadir el objetivo específico de la habilidad
         }
 
+        // Preparar datos para el navegador de habilidades
+        const allSkillsForNavigation = selectedSkills.map((skillId) => {
+          const skillResult = results[skillId]
+          return {
+            id: skillId,
+            name: skills.find((s) => s.id === skillId)?.name || skillId,
+            globalScore: skillResult?.globalScore,
+            status: skillResult ? "evaluado" : "no_evaluado",
+          }
+        })
+
+        // Función para cambiar a otra habilidad evaluada
+        const handleSelectSkill = (skillId: string) => {
+          const newIndex = selectedSkills.findIndex((id) => id === skillId)
+          if (newIndex >= 0) {
+            setCurrentSkillIndex(newIndex)
+          }
+        }
+
         return showMentorSession ? (
           <MentorSessionInterface
             skillId={resultSkillId}
@@ -501,6 +520,8 @@ export default function SkillboosterMVP() {
             hasMoreSkills={currentSkillIndex < selectedSkills.length - 1}
             onNextSkill={handleNextSkill}
             onStartMentorSession={handleStartMentorSession}
+            allSkills={selectedSkills.length > 1 ? allSkillsForNavigation : undefined}
+            onSelectSkill={selectedSkills.length > 1 ? handleSelectSkill : undefined}
           />
         )
       case 5:
@@ -984,11 +1005,15 @@ function ResultsStep({
   hasMoreSkills,
   onNextSkill,
   onStartMentorSession,
+  allSkills,
+  onSelectSkill,
 }: {
   result: SkillResult
   hasMoreSkills: boolean
   onNextSkill: () => void
   onStartMentorSession: () => void
+  allSkills?: { id: string; name: string; globalScore: number; status: string }[]
+  onSelectSkill?: (skillId: string) => void
 }) {
   return (
     <div className="max-w-3xl mx-auto">
@@ -1073,6 +1098,30 @@ function ResultsStep({
           </TooltipProvider>
         </div>
       </div>
+
+      {allSkills && (
+        <div className="mb-6">
+          <h4 className="text-xl font-semibold mb-3">Navega entre tus Habilidades Evaluadas</h4>
+          <div className="flex space-x-3 overflow-x-auto py-2">
+            {allSkills.map((skill) => (
+              <button
+                key={skill.id}
+                onClick={() => onSelectSkill?.(skill.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  skill.id === result.skillId
+                    ? "bg-blue-600 text-white"
+                    : skill.status === "evaluado"
+                      ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                      : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                }`}
+                disabled={skill.status !== "evaluado"}
+              >
+                {skill.name} ({skill.globalScore || "Pendiente"})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-center mb-10">
         <button

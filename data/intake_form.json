@@ -193,6 +193,6 @@
     "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
     "type": "open",
     "indicator": "AA_P7_open",
-    "prompt": "Describe brevemente cómo abordarías el diseño de una secuencia adaptativa para desarrollar la habilidad de \"Comunicación Efectiva\" en un líder de proyecto social que trabaja remotamente con un equipo diverso y enfrenta plazos ajustados. ¿Qué información del contexto y del usuario intentarías capturar y cómo la usarías para personalizar la experiencia?"
+    "prompt": "Imagina que estás diseñando una sección dentro de una herramienta de desarrollo de habilidades (como SkillBoosterX) para ayudar a un usuario a mejorar su habilidad de **'Gestión del Tiempo'**. Describe brevemente cómo aplicarías los principios de **Aprendizaje Adaptativo (Personalización Contextual)** para esta tarea. ¿Qué información clave del usuario y de su contexto intentarías capturar y cómo la usarías para personalizar la secuencia de aprendizaje (ej., tipo de contenido, dificultad, feedback) sobre **'Gestión del Tiempo'**?"
   }
 ]
