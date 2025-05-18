@@ -12,6 +12,7 @@ const html2canvas = dynamic(() => import("html2canvas"), { ssr: false })
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Info, MessageSquare, Lightbulb } from "lucide-react"
+import { Check, BarChart3, BookOpen, Sparkles } from "lucide-react"
 
 // Importar tipos
 type UserInfo = {
@@ -599,9 +600,94 @@ function UserInfoStep({
   setUserInfo: (value: UserInfo) => void
   onSubmit: (e: React.FormEvent) => void
 }) {
+  // Define the fields in order
+  const fields = [
+    { name: "name", label: "¿Cómo te llamas?", type: "text", placeholder: "Escribe aquí tu nombre" },
+    {
+      name: "role",
+      label: "¿Cuál es tu rol actual?",
+      type: "text",
+      placeholder: "Ej: Gerente de Proyecto, Desarrollador...",
+    },
+    {
+      name: "experience",
+      label: "¿Cuántos años de experiencia tienes en este rol?",
+      type: "number",
+      placeholder: "Ej: 3",
+    },
+    {
+      name: "projectDescription",
+      label: "Cuéntanos brevemente sobre tu proyecto o contexto profesional actual.",
+      type: "textarea",
+      placeholder: "Describe el proyecto o contexto en el que estás trabajando...",
+    },
+    {
+      name: "obstacles",
+      label: "Y finalmente, ¿cuáles son los principales obstáculos que enfrentas?",
+      type: "textarea",
+      placeholder: "Describe los desafíos o problemas que estás tratando de resolver...",
+    },
+  ]
+
+  // State to track current field index
+  const [currentFieldIndex, setCurrentFieldIndex] = useState(0)
+  const currentField = fields[currentFieldIndex]
+
+  // Animation state
+  const [direction, setDirection] = useState<"entering" | "exiting">("entering")
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  // Handle field change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setUserInfo({ ...userInfo, [name]: value })
+  }
+
+  // Check if current field is valid
+  const isCurrentFieldValid = () => {
+    const value = userInfo[currentField.name as keyof UserInfo]
+
+    // For required fields
+    if (currentField.name !== "experience") {
+      return Boolean(value && String(value).trim() !== "")
+    }
+
+    // For experience (optional or valid number)
+    return value === "" || (typeof value === "string" && !isNaN(Number(value)))
+  }
+
+  // Handle next field
+  const handleNextField = () => {
+    if (!isCurrentFieldValid()) return
+
+    if (currentFieldIndex < fields.length - 1) {
+      // Animate exit
+      setDirection("exiting")
+      setIsAnimating(true)
+
+      setTimeout(() => {
+        setCurrentFieldIndex(currentFieldIndex + 1)
+        setDirection("entering")
+
+        setTimeout(() => {
+          setIsAnimating(false)
+        }, 300)
+      }, 300)
+    } else {
+      // Submit form on last field
+      const formEvent = { preventDefault: () => {} } as React.FormEvent
+      onSubmit(formEvent)
+    }
+  }
+
+  // Handle key press (Enter to advance)
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey && isCurrentFieldValid()) {
+      if (currentField.type !== "textarea") {
+        e.preventDefault()
+        handleNextField()
+      }
+    }
   }
 
   return (
@@ -610,93 +696,98 @@ function UserInfoStep({
         Primero, cuéntanos un poco sobre ti y tu proyecto
       </h2>
 
-      <form onSubmit={onSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="name" className="block mb-2 text-sm font-medium">
-            Nombre
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={userInfo.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      {/* Progress indicator */}
+      <div className="flex justify-center mb-8">
+        <div className="flex space-x-2">
+          {fields.map((field, index) => (
+            <div
+              key={field.name}
+              className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                index === currentFieldIndex ? "bg-blue-500" : index < currentFieldIndex ? "bg-blue-300" : "bg-gray-600"
+              }`}
+            />
+          ))}
         </div>
+        <span className="text-xs text-gray-400 ml-3">
+          {currentFieldIndex + 1} de {fields.length}
+        </span>
+      </div>
 
-        <div>
-          <label htmlFor="role" className="block mb-2 text-sm font-medium">
-            Rol Actual
-          </label>
-          <input
-            type="text"
-            id="role"
-            name="role"
-            value={userInfo.role}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div className="relative overflow-hidden">
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            isAnimating
+              ? direction === "exiting"
+                ? "opacity-0 transform translate-x-10"
+                : "opacity-0 transform -translate-x-10"
+              : "opacity-100 transform translate-x-0"
+          }`}
+        >
+          <div className="mb-8">
+            <label htmlFor={currentField.name} className="block text-xl text-white mb-4 font-medium">
+              {currentField.label}
+            </label>
+
+            {currentField.type === "textarea" ? (
+              <textarea
+                id={currentField.name}
+                name={currentField.name}
+                value={(userInfo[currentField.name as keyof UserInfo] as string) || ""}
+                onChange={handleChange}
+                onKeyDown={handleKeyPress}
+                placeholder={currentField.placeholder}
+                rows={4}
+                className="w-full px-1 py-2 bg-gray-800 text-white border-0 border-b-2 border-gray-700 focus-visible:outline-none focus-visible:border-blue-500 transition-colors rounded-t-md"
+                autoFocus
+              />
+            ) : (
+              <input
+                type={currentField.type}
+                id={currentField.name}
+                name={currentField.name}
+                value={(userInfo[currentField.name as keyof UserInfo] as string) || ""}
+                onChange={handleChange}
+                onKeyDown={handleKeyPress}
+                placeholder={currentField.placeholder}
+                className="w-full px-1 py-2 bg-gray-800 text-white border-0 border-b-2 border-gray-700 focus-visible:outline-none focus-visible:border-blue-500 transition-colors"
+                autoFocus
+                min={currentField.type === "number" ? 0 : undefined}
+              />
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleNextField}
+              disabled={!isCurrentFieldValid()}
+              className={`px-6 py-2 rounded-full text-white font-medium transition-all flex items-center ${
+                isCurrentFieldValid() ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-700 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {currentFieldIndex === fields.length - 1 ? (
+                "Continuar al siguiente paso"
+              ) : (
+                <>
+                  Siguiente
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 ml-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
         </div>
-
-        <div>
-          <label htmlFor="experience" className="block mb-2 text-sm font-medium">
-            Años de Experiencia
-          </label>
-          <input
-            type="number"
-            id="experience"
-            name="experience"
-            value={userInfo.experience}
-            onChange={handleChange}
-            min="0"
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="projectDescription" className="block mb-2 text-sm font-medium">
-            Describe brevemente tu proyecto o contexto
-          </label>
-          <textarea
-            id="projectDescription"
-            name="projectDescription"
-            value={userInfo.projectDescription}
-            onChange={handleChange}
-            required
-            rows={4}
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          ></textarea>
-        </div>
-
-        <div>
-          <label htmlFor="obstacles" className="block mb-2 text-sm font-medium">
-            Principales obstáculos que enfrentas
-          </label>
-          <textarea
-            id="obstacles"
-            name="obstacles"
-            value={userInfo.obstacles}
-            onChange={handleChange}
-            required
-            rows={4}
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          ></textarea>
-        </div>
-
-        {/* Se elimina el campo de objetivo de aprendizaje */}
-
-        <div className="flex justify-center pt-4">
-          <button
-            type="submit"
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-medium transition-all"
-          >
-            Continuar
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }
@@ -775,32 +866,88 @@ function SkillSelectionStep({
     }
   }
 
-  return (
-    <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">¿Qué habilidades quieres evaluar hoy?</h2>
+  // Function to get an appropriate icon for each skill
+  const getSkillIcon = (skillName: string) => {
+    const name = skillName.toLowerCase()
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    if (name.includes("comunicación")) return <MessageSquare className="h-8 w-8 text-blue-400 opacity-75" />
+    if (name.includes("pensamiento") || name.includes("sistémico"))
+      return <Lightbulb className="h-8 w-8 text-blue-400 opacity-75" />
+    if (name.includes("interpretación") || name.includes("datos"))
+      return <BarChart3 className="h-8 w-8 text-blue-400 opacity-75" />
+    if (name.includes("aprendizaje") || name.includes("adaptativo"))
+      return <BookOpen className="h-8 w-8 text-blue-400 opacity-75" />
+
+    // Default icon if no match
+    return <Sparkles className="h-8 w-8 text-blue-400 opacity-75" />
+  }
+
+  // Function to get a brief description for the tooltip
+  const getSkillDescription = (skill: Skill) => {
+    // If we have indicadores_info, use the first one's description
+    if (skill.indicadoresInfo && skill.indicadoresInfo.length > 0 && skill.indicadoresInfo[0].descripcion_indicador) {
+      return skill.indicadoresInfo[0].descripcion_indicador
+    }
+
+    // Default description
+    return `Evalúa tu nivel de competencia en ${skill.name}`
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center text-white">
+        ¿Qué habilidades quieres evaluar hoy?
+      </h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {skills.map((skill) => (
           <div
             key={skill.id}
             onClick={() => toggleSkill(skill.id)}
-            className={`p-4 rounded-lg cursor-pointer transition-all ${
-              selectedSkills.includes(skill.id)
-                ? "bg-blue-600 border-2 border-blue-400"
-                : "bg-gray-800 border border-gray-700 hover:bg-gray-700"
-            }`}
+            className={`
+              relative p-6 rounded-xl transition-all duration-200 cursor-pointer
+              ${
+                selectedSkills.includes(skill.id)
+                  ? "bg-gray-800 border-2 border-blue-500"
+                  : "bg-gray-800 border border-gray-700 hover:bg-gray-700/70"
+              }
+            `}
           >
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id={skill.id}
-                checked={selectedSkills.includes(skill.id)}
-                onChange={() => {}} // Manejado por el onClick del div
-                className="h-5 w-5 mr-3"
-              />
-              <label htmlFor={skill.id} className="cursor-pointer font-medium">
-                {skill.name}
-              </label>
+            {/* Check icon for selected skills */}
+            {selectedSkills.includes(skill.id) && (
+              <div className="absolute top-3 right-3">
+                <Check className="h-5 w-5 text-blue-500" />
+              </div>
+            )}
+
+            {/* Skill icon */}
+            <div className="mb-3">{getSkillIcon(skill.name)}</div>
+
+            {/* Skill name with tooltip */}
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center">
+                    <h3 className="text-xl font-semibold text-white">{skill.name}</h3>
+                    <Info className="h-4 w-4 text-gray-400 ml-2 inline-flex" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-700 text-gray-200 p-3 rounded-md max-w-xs">
+                  <p>{getSkillDescription(skill)}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Indicators preview */}
+            <div className="mt-4 space-y-1">
+              {skill.indicadoresInfo.slice(0, 3).map((indicador) => (
+                <p key={indicador.id} className="text-sm text-gray-400 truncate">
+                  • {indicador.nombre}
+                </p>
+              ))}
+              {skill.indicadoresInfo.length > 3 && (
+                <p className="text-xs text-gray-500 italic">+{skill.indicadoresInfo.length - 3} indicadores más</p>
+              )}
             </div>
           </div>
         ))}
@@ -810,13 +957,15 @@ function SkillSelectionStep({
         <button
           onClick={onContinue}
           disabled={selectedSkills.length === 0}
-          className={`px-8 py-3 rounded-full text-lg font-medium transition-all ${
+          className={`px-8 py-3 rounded-full text-lg font-medium transition-colors ${
             selectedSkills.length > 0
               ? "bg-blue-600 hover:bg-blue-700 text-white"
               : "bg-gray-700 text-gray-400 cursor-not-allowed"
           }`}
         >
-          Iniciar Evaluación de Habilidad{selectedSkills.length !== 1 ? "es" : ""}
+          {selectedSkills.length === 0
+            ? "Selecciona al menos una habilidad"
+            : `Iniciar Evaluación de ${selectedSkills.length === 1 ? "Habilidad" : `${selectedSkills.length} Habilidades`}`}
         </button>
       </div>
     </div>
