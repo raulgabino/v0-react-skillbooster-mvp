@@ -5,13 +5,16 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import MentorSessionInterface, { type MentorSessionData } from "./mentor-session-interface"
+import ReactMarkdown from "react-markdown"
 
 // Importación dinámica de jsPDF y html2canvas para evitar problemas de SSR
 const jsPDF = dynamic(() => import("jspdf"), { ssr: false })
 const html2canvas = dynamic(() => import("html2canvas"), { ssr: false })
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Info, MessageSquare, Lightbulb } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Progress } from "@/components/ui/progress"
+import { Info, MessageSquare, Lightbulb, Target, ClipboardList, TrendingUp, Star } from "lucide-react"
 import { Check, BarChart3, BookOpen, Sparkles } from "lucide-react"
 
 // Importar tipos
@@ -1186,15 +1189,18 @@ function ResultsStep({
                 transform="rotate(-90 50 50)"
               />
             </svg>
-            <div className="absolute text-5xl font-bold">{result.globalScore}</div>
+            <div className="absolute flex flex-col items-center">
+              <span className="text-5xl font-bold">{result.globalScore}</span>
+              <span className="text-sm text-gray-400">de 100</span>
+            </div>
           </div>
         </div>
 
         <div className="bg-gray-800 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4">Indicadores</h3>
           <TooltipProvider delayDuration={200}>
-            <div className="space-y-4">
-              {result.indicatorScores.slice(0, 6).map((indicator, index) => (
+            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2">
+              {result.indicatorScores.map((indicator, index) => (
                 <div key={index} className="py-2.5 border-b border-gray-700/50 last:border-b-0">
                   <div className="flex justify-between text-sm mb-1 items-center">
                     <div className="flex items-center">
@@ -1218,7 +1224,7 @@ function ResultsStep({
                     </div>
                     <span
                       className={`px-2 py-1 rounded-md ${
-                        indicator.score >= 75
+                        indicator.score >= 70
                           ? "bg-green-900/40 text-green-300"
                           : indicator.score >= 40
                             ? "bg-yellow-900/40 text-yellow-300"
@@ -1231,7 +1237,7 @@ function ResultsStep({
                   <div className="w-full bg-gray-700 rounded-full h-2.5 mb-1.5">
                     <div
                       className={`h-2.5 rounded-full ${
-                        indicator.score >= 75 ? "bg-green-500" : indicator.score >= 40 ? "bg-yellow-500" : "bg-red-500"
+                        indicator.score >= 70 ? "bg-green-500" : indicator.score >= 40 ? "bg-yellow-500" : "bg-red-500"
                       }`}
                       style={{ width: `${indicator.score}%` }}
                     ></div>
@@ -1275,8 +1281,22 @@ function ResultsStep({
       <div className="flex justify-center mb-10">
         <button
           onClick={onStartMentorSession}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-medium transition-all"
+          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-medium transition-all flex items-center justify-center"
         >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
           Iniciar Sesión con Mentor Práctico
         </button>
       </div>
@@ -1476,78 +1496,161 @@ function SummaryStep({
                   <div key={`mentor-${result.skillId}`} className="bg-gray-700 rounded-lg p-4">
                     <h4 className="font-medium text-blue-400 mb-3">{result.skillName}</h4>
 
-                    {result.mentorSessionData?.microLesson && (
-                      <div className="mb-4">
-                        <h5 className="font-medium text-white mb-1">Mi Micro-Lección Personalizada:</h5>
-                        <p className="text-sm text-gray-300 pl-2">{result.mentorSessionData.microLesson}</p>
-                      </div>
-                    )}
+                    <Accordion type="single" collapsible className="w-full">
+                      {/* Item 1: Micro-Lección Personalizada */}
+                      {result.mentorSessionData?.microLesson && (
+                        <AccordionItem value="micro-lesson" className="border-b border-gray-600">
+                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
+                            <div className="flex items-center">
+                              <Lightbulb className="w-5 h-5 mr-2 text-blue-400" />
+                              <span>Paso 1: Tu Micro-Lección Personalizada</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
+                            <ReactMarkdown className="text-sm text-gray-300 prose prose-invert prose-sm max-w-none">
+                              {result.mentorSessionData.microLesson}
+                            </ReactMarkdown>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
 
-                    {result.mentorSessionData?.actionPlan && (
-                      <div className="mb-4">
-                        <h5 className="font-medium text-white mb-1">Mi Plan de Acción:</h5>
-                        <p className="text-sm text-gray-300 pl-2">{result.mentorSessionData.actionPlan}</p>
-                      </div>
-                    )}
+                      {/* Item 2: Análisis de Tu Práctica con el Mentor */}
+                      {result.mentorSessionData?.exerciseScore !== undefined && (
+                        <AccordionItem value="exercise-analysis" className="border-b border-gray-600">
+                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
+                            <div className="flex items-center">
+                              <Target className="w-5 h-5 mr-2 text-green-400" />
+                              <span>Paso 2: Tu Desempeño en el Ejercicio Práctico</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
+                            <div className="mb-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-gray-300">Puntuación:</span>
+                                <span className="text-lg font-semibold text-green-400">
+                                  {result.mentorSessionData.exerciseScore}/100
+                                </span>
+                              </div>
+                              <Progress value={result.mentorSessionData.exerciseScore} className="h-2 bg-gray-700" />
+                            </div>
 
-                    {(result.mentorSessionData?.userInsight ||
-                      result.mentorSessionData?.userCommitment ||
-                      result.mentorSessionData?.mentorProjection) && (
-                      <div className="mb-4">
-                        <h5 className="font-medium text-white mb-1">Mi Síntesis y Proyección de Crecimiento:</h5>
+                            {result.mentorSessionData.exerciseScoreJustification && (
+                              <div className="mt-3">
+                                <h6 className="text-sm font-medium text-gray-200 mb-1">Justificación del Mentor:</h6>
+                                <p className="text-sm text-gray-300 italic border-l-2 border-green-500/40 pl-3">
+                                  {result.mentorSessionData.exerciseScoreJustification}
+                                </p>
+                              </div>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
 
-                        {result.mentorSessionData?.userInsight && (
-                          <div className="mb-2">
-                            <p className="text-sm font-medium text-green-400 pl-2">Mi Principal "Aha!" Moment:</p>
-                            <p className="text-sm text-gray-300 pl-4">{result.mentorSessionData.userInsight}</p>
-                          </div>
-                        )}
+                      {/* Item 3: Plan de Acción SMART */}
+                      {result.mentorSessionData?.actionPlan && (
+                        <AccordionItem value="action-plan" className="border-b border-gray-600">
+                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
+                            <div className="flex items-center">
+                              <ClipboardList className="w-5 h-5 mr-2 text-yellow-400" />
+                              <span>Paso 3: Tu Plan de Acción Personalizado</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
+                            <ReactMarkdown className="text-sm text-gray-300 prose prose-invert prose-sm max-w-none">
+                              {result.mentorSessionData.actionPlan}
+                            </ReactMarkdown>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
 
-                        {result.mentorSessionData?.userCommitment && (
-                          <div className="mb-2">
-                            <p className="text-sm font-medium text-yellow-400 pl-2">Mi Compromiso de Acción:</p>
-                            <p className="text-sm text-gray-300 pl-4">{result.mentorSessionData.userCommitment}</p>
-                          </div>
-                        )}
+                      {/* Item 4: Síntesis y Proyección de Crecimiento */}
+                      {(result.mentorSessionData?.userInsight ||
+                        result.mentorSessionData?.userCommitment ||
+                        result.mentorSessionData?.mentorProjection) && (
+                        <AccordionItem value="synthesis" className="border-b border-gray-600">
+                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
+                            <div className="flex items-center">
+                              <TrendingUp className="w-5 h-5 mr-2 text-blue-400" />
+                              <span>Paso 4: Tu Síntesis y Proyección de Crecimiento</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
+                            <div className="space-y-4">
+                              {result.mentorSessionData?.userInsight && (
+                                <div>
+                                  <h6 className="text-sm font-medium text-green-400 mb-1">
+                                    Mi Principal "Aha!" Moment:
+                                  </h6>
+                                  <p className="text-sm text-gray-300 bg-gray-800/70 p-2 rounded-md">
+                                    {result.mentorSessionData.userInsight}
+                                  </p>
+                                </div>
+                              )}
 
-                        {result.mentorSessionData?.mentorProjection && (
-                          <div>
-                            <p className="text-sm font-medium text-blue-400 pl-2">
-                              Proyección de Crecimiento del Mentor:
-                            </p>
-                            <p className="text-sm text-gray-300 pl-4">{result.mentorSessionData.mentorProjection}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                              {result.mentorSessionData?.userCommitment && (
+                                <div>
+                                  <h6 className="text-sm font-medium text-yellow-400 mb-1">Mi Compromiso de Acción:</h6>
+                                  <p className="text-sm text-gray-300 bg-gray-800/70 p-2 rounded-md">
+                                    {result.mentorSessionData.userCommitment}
+                                  </p>
+                                </div>
+                              )}
 
-                    {result.mentorSessionData?.sessionFeedback && (
-                      <div className="mt-3 pt-3 border-t border-gray-600">
-                        <h5 className="font-medium text-white mb-1">Tu Feedback sobre la Sesión:</h5>
-                        <div className="flex items-center mb-1">
-                          <p className="text-sm text-gray-300 mr-2">Calificación:</p>
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <span
-                                key={star}
-                                className={
-                                  star <= result.mentorSessionData!.sessionFeedback!.rating
-                                    ? "text-yellow-400"
-                                    : "text-gray-500"
-                                }
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        {result.mentorSessionData.sessionFeedback.comment && (
-                          <p className="text-sm text-gray-300 pl-2">
-                            "{result.mentorSessionData.sessionFeedback.comment}"
-                          </p>
-                        )}
-                      </div>
-                    )}
+                              {result.mentorSessionData?.mentorProjection && (
+                                <div>
+                                  <h6 className="text-sm font-medium text-blue-400 mb-1">
+                                    Proyección de Crecimiento del Mentor:
+                                  </h6>
+                                  <ReactMarkdown className="text-sm text-gray-300 bg-gray-800/70 p-2 rounded-md prose prose-invert prose-sm max-w-none">
+                                    {result.mentorSessionData.mentorProjection}
+                                  </ReactMarkdown>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
+
+                      {/* Item 5: Feedback de la Sesión (Opcional) */}
+                      {result.mentorSessionData?.sessionFeedback && (
+                        <AccordionItem value="feedback" className="border-b-0">
+                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
+                            <div className="flex items-center">
+                              <Star className="w-5 h-5 mr-2 text-yellow-400" />
+                              <span>Tu Feedback sobre la Sesión</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
+                            <div className="flex items-center mb-2">
+                              <p className="text-sm text-gray-300 mr-2">Calificación:</p>
+                              <div className="flex">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <span
+                                    key={star}
+                                    className={
+                                      star <= result.mentorSessionData!.sessionFeedback!.rating
+                                        ? "text-yellow-400"
+                                        : "text-gray-500"
+                                    }
+                                  >
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            {result.mentorSessionData.sessionFeedback.comment && (
+                              <div className="mt-2">
+                                <h6 className="text-sm font-medium text-gray-200 mb-1">Tu comentario:</h6>
+                                <p className="text-sm text-gray-300 italic bg-gray-800/70 p-2 rounded-md">
+                                  "{result.mentorSessionData.sessionFeedback.comment}"
+                                </p>
+                              </div>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
+                    </Accordion>
                   </div>
                 ))}
             </div>

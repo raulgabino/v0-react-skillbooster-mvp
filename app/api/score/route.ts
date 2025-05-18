@@ -179,11 +179,15 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
     )
 
     // Añadir la puntuación de la pregunta abierta a los indicadores
+    const openQuestionIndicadorInfo = skillDefinition.indicadores_info.find(
+      (info) => info.id === skillDefinition.open_question_id,
+    )
     likertScores.push({
       id: skillDefinition.open_question_id,
-      name: "Respuesta Abierta",
+      name: openQuestionIndicadorInfo ? openQuestionIndicadorInfo.nombre : "Respuesta Abierta",
       score: openScore,
       descripcion_indicador:
+        openQuestionIndicadorInfo?.descripcion_indicador ||
         "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
     })
 
@@ -191,42 +195,42 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
     if (openai) {
       // Solo proceder si OpenAI está configurado
       for (const indScore of likertScores) {
-        // Opcional: Decidir si se genera feedback para la pregunta abierta.
-        // Si la pregunta abierta no tiene una 'descripcion_indicador' clara o si se prefiere no darle feedback específico aquí,
-        // se puede añadir una condición para saltarla o darle un texto por defecto.
-        if (indScore.id === skillDefinition.open_question_id && !indScore.descripcion_indicador) {
-          indScore.feedback_especifico =
-            "Tu desempeño en la situación práctica ha sido considerado en tu puntaje global y en la sesión con el mentor."
-          continue // Saltar a la siguiente iteración del bucle
-        }
-
-        // Si no hay descripción del indicador, usar un texto genérico para el prompt de IA.
-        const descripcionParaPrompt =
-          indScore.descripcion_indicador || `Este es un aspecto clave de la habilidad '${skillDefinition.name}'.`
-
-        const systemContent = `Eres un tutor experto en ${skillDefinition.name}, con un tono alentador, conciso y orientado a la acción. Tu tarea es proporcionar un feedback muy breve (1-2 frases concisas, idealmente menos de 30 palabras) sobre el desempeño del usuario en un indicador específico. No utilices Markdown en tu respuesta.`
-
-        let userContent = ""
-        const score = indScore.score
-        const indicatorName = indScore.name
-
-        if (score >= 75) {
-          // Puntuación Alta
-          userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}"). 
-Proporciona un reconocimiento positivo y una sugerencia breve sobre cómo puede seguir aprovechando o expandiendo esta fortaleza. Ejemplo: "¡Excelente desempeño en ${indicatorName}! Sigue aplicando esta claridad para liderar con impacto."`
-        } else if (score >= 40) {
-          // Puntuación Media
-          userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
-Proporciona una observación constructiva y una sugerencia simple y accionable, o una pregunta breve para la reflexión enfocada en mejorar este aspecto. Ejemplo: "Has mostrado una base en ${indicatorName}. Para mejorar, considera practicar [acción simple]."`
-        } else {
-          // Puntuación Baja
-          userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
-Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable, o una pregunta que le ayude a identificar un posible obstáculo. Ejemplo: "Este es un área para enfocar tu desarrollo en ${indicatorName}. Un buen inicio sería [acción muy básica]."`
-        }
-        userContent +=
-          "\n\nInstrucciones Adicionales: Responde directamente al usuario. Tu respuesta debe ser solo el feedback, sin saludos, introducciones ni despedidas. Mantén la respuesta entre 1 y 2 frases concisas, no más de 35 palabras."
-
         try {
+          // Opcional: Decidir si se genera feedback para la pregunta abierta.
+          // Si la pregunta abierta no tiene una 'descripcion_indicador' clara o si se prefiere no darle feedback específico aquí,
+          // se puede añadir una condición para saltarla o darle un texto por defecto.
+          if (indScore.id === skillDefinition.open_question_id && !indScore.descripcion_indicador) {
+            indScore.feedback_especifico =
+              "Tu desempeño en la situación práctica ha sido considerado en tu puntaje global y en la sesión con el mentor."
+            continue // Saltar a la siguiente iteración del bucle
+          }
+
+          // Si no hay descripción del indicador, usar un texto genérico para el prompt de IA.
+          const descripcionParaPrompt =
+            indScore.descripcion_indicador || `Este es un aspecto clave de la habilidad '${skillDefinition.name}'.`
+
+          const systemContent = `Eres un tutor experto en ${skillDefinition.name}, con un tono alentador, conciso y orientado a la acción. Tu tarea es proporcionar un feedback muy breve (1-2 frases concisas, idealmente menos de 30 palabras) sobre el desempeño del usuario en un indicador específico. No utilices Markdown en tu respuesta.`
+
+          let userContent = ""
+          const score = indScore.score
+          const indicatorName = indScore.name
+
+          if (score >= 75) {
+            // Puntuación Alta
+            userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}"). 
+Proporciona un reconocimiento positivo y una sugerencia breve sobre cómo puede seguir aprovechando o expandiendo esta fortaleza. Ejemplo: "¡Excelente desempeño en ${indicatorName}! Sigue aplicando esta claridad para liderar con impacto."`
+          } else if (score >= 40) {
+            // Puntuación Media
+            userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
+Proporciona una observación constructiva y una sugerencia simple y accionable, o una pregunta breve para la reflexión enfocada en mejorar este aspecto. Ejemplo: "Has mostrado una base en ${indicatorName}. Para mejorar, considera practicar [acción simple]."`
+          } else {
+            // Puntuación Baja
+            userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
+Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable, o una pregunta que le ayude a identificar un posible obstáculo. Ejemplo: "Este es un área para enfocar tu desarrollo en ${indicatorName}. Un buen inicio sería [acción muy básica]."`
+          }
+          userContent +=
+            "\n\nInstrucciones Adicionales: Responde directamente al usuario. Tu respuesta debe ser solo el feedback, sin saludos, introducciones ni despedidas. Mantén la respuesta entre 1 y 2 frases concisas, no más de 35 palabras."
+
           const feedbackResponse = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
@@ -249,16 +253,16 @@ Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable,
           indScore.feedback_especifico = generatedFeedback
         } catch (feedbackError) {
           console.error(
-            `Error generando feedback específico para el indicador '${indicatorName}' (ID: ${indScore.id}):`,
+            `Error generando feedback específico para el indicador '${indScore.name}' (ID: ${indScore.id}):`,
             feedbackError,
           )
           // Fallback genérico si la IA falla para este indicador específico
-          if (score >= 75) {
-            indScore.feedback_especifico = `¡Buen trabajo en ${indicatorName}! Sigue aplicando tus fortalezas.`
-          } else if (score >= 40) {
-            indScore.feedback_especifico = `Sigue esforzándote en ${indicatorName}, ¡la práctica constante es clave!`
+          if (indScore.score >= 75) {
+            indScore.feedback_especifico = `¡Buen trabajo en ${indScore.name}! Sigue aplicando tus fortalezas.`
+          } else if (indScore.score >= 40) {
+            indScore.feedback_especifico = `Sigue esforzándote en ${indScore.name}, ¡la práctica constante es clave!`
           } else {
-            indScore.feedback_especifico = `Identificar áreas de mejora es el primer paso. ¡Con enfoque en ${indicatorName}, progresarás!`
+            indScore.feedback_especifico = `Identificar áreas de mejora es el primer paso. ¡Con enfoque en ${indScore.name}, progresarás!`
           }
         }
       }
