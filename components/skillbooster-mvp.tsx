@@ -154,9 +154,7 @@ export default function SkillboosterMVP() {
 
   // Manejadores de eventos
   const handleStartAssessment = () => {
-    if (acceptedTerms) {
-      setCurrentStep(1)
-    }
+    setCurrentStep(1)
   }
 
   const handleUserInfoSubmit = (e: React.FormEvent) => {
@@ -421,13 +419,7 @@ export default function SkillboosterMVP() {
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return (
-          <LandingStep
-            acceptedTerms={acceptedTerms}
-            setAcceptedTerms={setAcceptedTerms}
-            onStart={handleStartAssessment}
-          />
-        )
+        return <LandingStep onStart={handleStartAssessment} />
       case 1:
         return <UserInfoStep userInfo={userInfo} setUserInfo={setUserInfo} onSubmit={handleUserInfoSubmit} />
       case 2:
@@ -564,74 +556,36 @@ export default function SkillboosterMVP() {
 
 // Componentes para cada etapa
 function LandingStep({
-  acceptedTerms,
-  setAcceptedTerms,
   onStart,
 }: {
-  acceptedTerms: boolean
-  setAcceptedTerms: (value: boolean) => void
   onStart: () => void
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
-      <h1 className="text-5xl md:text-6xl font-bold mb-4">
+    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
+      <h1 className="text-5xl md:text-6xl font-bold mb-3">
         <span className="text-white">SkillBooster</span>
         <span className="text-blue-500">X</span>
       </h1>
-      <h2 className="text-3xl md:text-4xl font-semibold mb-8">Evalúa. Mejora. Despega.</h2>
+      <h2 className="text-3xl md:text-4xl font-semibold text-gray-300 mb-10">Evalúa. Mejora. Despega.</h2>
 
-      <div className="max-w-2xl mb-10 text-gray-300">
-        <p className="mb-6">
-          Tu equipo tiene el poder de sostener el cambio. Nosotros lo afinamos. SkillBoosterX es una herramienta ágil
-          para líderes y equipos que creen en la sostenibilidad con acción real.
-        </p>
-        <p className="mb-6">
-          Medimos, fortalecemos y activamos 4 micro-habilidades esenciales para que tu proyecto avance, incluso cuando
-          cambia la voz que lo lidera.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-left">
-          <div className="flex items-start">
-            <span className="mr-2 text-blue-500">💡</span>
-            <p>Mide brechas invisibles</p>
-          </div>
-          <div className="flex items-start">
-            <span className="mr-2 text-blue-500">🤝</span>
-            <p>Redistribuye roles con inteligencia</p>
-          </div>
-          <div className="flex items-start">
-            <span className="mr-2 text-blue-500">🚀</span>
-            <p>Asigna retos breves, personalizados y efectivos</p>
-          </div>
-          <div className="flex items-start">
-            <span className="mr-2 text-blue-500">📄</span>
-            <p>Descarga reportes con una visión clara de tu equipo</p>
-          </div>
-        </div>
-        <p className="italic">Porque los proyectos sustentables se construyen en equipo — no en piloto automático.</p>
-      </div>
-
-      <div className="mb-8 flex items-center">
-        <input
-          type="checkbox"
-          id="terms"
-          checked={acceptedTerms}
-          onChange={(e) => setAcceptedTerms(e.target.checked)}
-          className="mr-2 h-5 w-5"
-        />
-        <label htmlFor="terms" className="text-sm text-gray-300">
-          Acepto el uso de mis datos para la evaluación y generación de recomendaciones.
-        </label>
-      </div>
+      <p className="text-lg text-gray-200 max-w-2xl mx-auto mb-12 text-center">
+        Descubre y potencia las habilidades clave de tu equipo con micro-evaluaciones y mentoría IA personalizada.
+      </p>
 
       <button
         onClick={onStart}
-        disabled={!acceptedTerms}
-        className={`px-8 py-3 rounded-full text-lg font-medium transition-all ${
-          acceptedTerms ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-gray-700 text-gray-400 cursor-not-allowed"
-        }`}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full text-lg font-medium transition-colors duration-150 ease-in-out"
       >
         Empezar Evaluación
       </button>
+
+      <p className="text-xs text-gray-400 mt-4">
+        Al continuar, aceptas nuestros{" "}
+        <a href="#terminos" className="underline hover:text-blue-400">
+          Términos y Condiciones
+        </a>
+        .
+      </p>
     </div>
   )
 }
