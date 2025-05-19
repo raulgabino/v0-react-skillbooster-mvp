@@ -293,17 +293,51 @@ export default function SkillboosterMVP() {
         // 5. Pasamos a la pantalla de resultados
         setCurrentStep(4)
         setShowMentorSession(false)
-      } catch (error) {
-        console.error("Error al procesar la evaluación:", error)
-        // Mostrar alerta al usuario
+      } catch (error: any) {
+        // Especificar 'any' para poder acceder a propiedades específicas
+        console.error("Error DETALLADO al procesar la evaluación:", error)
+
+        // Extraer más información del error si está disponible
+        if (error && typeof error === "object") {
+          if (error.message) {
+            console.error("Mensaje de error:", error.message)
+          }
+          if (error.stack) {
+            console.error("Stack de error:", error.stack)
+          }
+          if (error.response) {
+            console.error("Datos de respuesta:", error.response)
+            if (error.response.data) {
+              console.error("Datos de error:", error.response.data)
+            }
+            if (error.response.status) {
+              console.error("Código de estado HTTP:", error.response.status)
+            }
+          }
+          if (error.request) {
+            console.error("Detalles de la solicitud:", error.request)
+          }
+          if (error.config) {
+            console.error("Configuración de la solicitud:", error.config)
+          }
+        }
+
+        // Mantenemos la alerta existente para el usuario
         alert(
           "Ocurrió un error al procesar tu evaluación. Se mostrarán resultados aproximados. Por favor, revisa tu conexión o intenta más tarde.",
         )
 
-        // En caso de error, mostramos un resultado simulado para no interrumpir el flujo
+        // Verificación adicional para currentSkill
+        const currentSkillId = selectedSkills[currentSkillIndex]
         const currentSkill = skills.find((s) => s.id === currentSkillId)
-        if (!currentSkill) return
 
+        if (!currentSkill) {
+          console.error("No se pudo encontrar currentSkill en el bloque catch de handleAnswerQuestion")
+          // Terminamos la ejecución si no podemos encontrar la habilidad actual
+          return
+        }
+
+        // Resto de la lógica del fallback existente
         const fallbackResult: SkillResult = {
           skillId: currentSkillId,
           skillName: currentSkill.name,
