@@ -142,14 +142,22 @@ export default function SkillboosterMVP() {
       try {
         // Llamada a la API para obtener las habilidades con datos completos
         const response = await fetch("/api/questions")
+
         if (!response.ok) {
-          throw new Error(`Error al cargar datos de habilidades: ${response.statusText}`)
+          const errorText = await response.text() // Intenta obtener más detalles del error como texto
+          console.error(`Error de API al cargar habilidades: ${response.status} ${response.statusText}`, errorText)
+          throw new Error(
+            `Error al cargar datos de habilidades: ${response.status} ${response.statusText}. Cuerpo del error: ${errorText}`,
+          )
         }
 
+        // Solo proceder con response.json() si response.ok es true
         const skillsData: Skill[] = await response.json()
         setSkills(skillsData)
       } catch (error) {
         console.error("Error al cargar las habilidades:", error)
+        // Mostrar un mensaje de error al usuario o establecer un estado de error
+        setSkills([]) // Establecer un array vacío para evitar errores de renderizado
       }
     }
 
