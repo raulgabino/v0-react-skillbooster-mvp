@@ -98,6 +98,9 @@ function mapLikertToScore(value: number): number {
 
 // --- Handler POST ---
 export async function POST(request: Request): Promise<NextResponse<ScoreResponsePayload | ErrorResponse>> {
+  // Log message to console
+  console.log("Simplified /api/score was hit!")
+
   try {
     if (!openai) {
       return NextResponse.json({ error: "OpenAI API no está configurada." }, { status: 500 })
@@ -289,10 +292,10 @@ Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable,
     }
     // --- FIN: Bloque para generar feedback_especifico por indicador ---
 
-    return NextResponse.json({
-      indicatorScores: likertScores,
-      globalScore,
-    })
+    return NextResponse.json(
+      { message: "Simplified score API reached successfully", indicatorScores: likertScores, globalScore },
+      { status: 200 },
+    )
   } catch (error) {
     console.error("Error al calcular la puntuación:", error)
     return NextResponse.json({ error: "Error al calcular la puntuación." }, { status: 500 })
