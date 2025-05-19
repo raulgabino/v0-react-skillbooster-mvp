@@ -128,7 +128,15 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
 
         // Buscar el nombre descriptivo del indicador
         const indicadorInfo = skillDefinition.indicadores_info.find((info) => info.id === indicator)
-        const indicatorName = indicadorInfo ? indicadorInfo.nombre : indicator
+
+        if (!indicadorInfo) {
+          console.warn(
+            `ADVERTENCIA: No se encontró información descriptiva para el indicador ${indicator} en la habilidad ${skillDefinition.name}. Verifique la consistencia de datos en skill_definitions.json.`,
+          )
+        }
+
+        // Usar nombre descriptivo o un fallback claro (no el ID crudo)
+        const indicatorName = indicadorInfo ? indicadorInfo.nombre : `Indicador sin nombre (${indicator})`
         const descripcionIndicador = indicadorInfo ? indicadorInfo.descripcion_indicador : undefined
 
         likertScores.push({
@@ -182,9 +190,16 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
     const openQuestionIndicadorInfo = skillDefinition.indicadores_info.find(
       (info) => info.id === skillDefinition.open_question_id,
     )
+
+    if (!openQuestionIndicadorInfo) {
+      console.warn(
+        `ADVERTENCIA: No se encontró información descriptiva para la pregunta abierta ${skillDefinition.open_question_id} en la habilidad ${skillDefinition.name}. Verifique la consistencia de datos en skill_definitions.json.`,
+      )
+    }
+
     likertScores.push({
       id: skillDefinition.open_question_id,
-      name: openQuestionIndicadorInfo ? openQuestionIndicadorInfo.nombre : "Respuesta Abierta",
+      name: openQuestionIndicadorInfo ? openQuestionIndicadorInfo.nombre : "Aplicación Práctica",
       score: openScore,
       descripcion_indicador:
         openQuestionIndicadorInfo?.descripcion_indicador ||

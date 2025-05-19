@@ -1355,7 +1355,6 @@ function SummaryStep({
                         <p className="mb-2 flex items-center">
                           <span className="font-medium text-green-400 mr-1">💪 Fortaleza: </span>
                           <span className="mr-1">{highestScore.name}</span>
-                          <span className="text-gray-400">({highestScore.score}/100)</span>
                           {highestScore.descripcion_indicador && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -1376,7 +1375,6 @@ function SummaryStep({
                         <p className="flex items-center">
                           <span className="font-medium text-yellow-400 mr-1">🔍 Oportunidad: </span>
                           <span className="mr-1">{lowestScore.name}</span>
-                          <span className="text-gray-400">({lowestScore.score}/100)</span>
                           {lowestScore.descripcion_indicador && (
                             <Tooltip>
                               <TooltipTrigger asChild>
