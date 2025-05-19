@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Progress } from "@/components/ui/progress"
 import { Info, MessageSquare, Lightbulb, Target, ClipboardList, TrendingUp, Star } from "lucide-react"
-import { Check, BarChart3, BookOpen, Sparkles } from "lucide-react"
+import { Check } from "lucide-react"
 
 // Importar tipos
 type UserInfo = {
@@ -915,22 +915,6 @@ function SkillSelectionStep({
     }
   }
 
-  // Function to get an appropriate icon for each skill
-  const getSkillIcon = (skillName: string) => {
-    const name = skillName.toLowerCase()
-
-    if (name.includes("comunicación")) return <MessageSquare className="h-8 w-8 text-blue-400 opacity-75" />
-    if (name.includes("pensamiento") || name.includes("sistémico"))
-      return <Lightbulb className="h-8 w-8 text-blue-400 opacity-75" />
-    if (name.includes("interpretación") || name.includes("datos"))
-      return <BarChart3 className="h-8 w-8 text-blue-400 opacity-75" />
-    if (name.includes("aprendizaje") || name.includes("adaptativo"))
-      return <BookOpen className="h-8 w-8 text-blue-400 opacity-75" />
-
-    // Default icon if no match
-    return <Sparkles className="h-8 w-8 text-blue-400 opacity-75" />
-  }
-
   // Function to get a brief description for the tooltip
   const getSkillDescription = (skill: Skill) => {
     // If we have indicadores_info, use the first one's description
@@ -948,46 +932,33 @@ function SkillSelectionStep({
         ¿Qué habilidades quieres evaluar hoy?
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-2xl mx-auto">
         {skills.map((skill) => (
           <div
             key={skill.id}
             onClick={() => toggleSkill(skill.id)}
-            className={`
-              relative p-6 rounded-xl transition-all duration-200 cursor-pointer
-              ${
-                selectedSkills.includes(skill.id)
-                  ? "bg-gray-800 border-2 border-blue-500"
-                  : "bg-gray-800 border border-gray-700 hover:bg-gray-700/70"
-              }
-            `}
+            className={`relative p-6 rounded-xl cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-[1.03] ${
+              selectedSkills.includes(skill.id)
+                ? "bg-blue-600/20 border-2 border-blue-500 text-white"
+                : "bg-gray-800 border border-gray-700 hover:bg-gray-700/70 text-gray-200"
+            }`}
           >
-            {/* Check icon for selected skills */}
-            {selectedSkills.includes(skill.id) && (
-              <div className="absolute top-3 right-3">
-                <Check className="h-5 w-5 text-blue-500" />
-              </div>
-            )}
+            {selectedSkills.includes(skill.id) && <Check className="h-5 w-5 text-blue-400 absolute top-4 right-4" />}
 
-            {/* Skill icon */}
-            <div className="mb-3">{getSkillIcon(skill.name)}</div>
-
-            {/* Skill name with tooltip */}
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center">
-                    <h3 className="text-xl font-semibold text-white">{skill.name}</h3>
-                    <Info className="h-4 w-4 text-gray-400 ml-2 inline-flex" />
+                    <h3 className="text-xl font-semibold mb-2">{skill.name}</h3>
+                    <Info className="h-4 w-4 text-gray-400 hover:text-white ml-2 inline-block" />
                   </div>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-700 text-gray-200 p-3 rounded-md max-w-xs">
+                <TooltipContent className="bg-gray-700 text-gray-200 border-gray-600 rounded-md shadow-lg p-3 text-sm max-w-xs">
                   <p>{getSkillDescription(skill)}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
-            {/* Indicators preview */}
             <div className="mt-4 space-y-1">
               {skill.indicadoresInfo.slice(0, 3).map((indicador) => (
                 <p key={indicador.id} className="text-sm text-gray-400 truncate">
