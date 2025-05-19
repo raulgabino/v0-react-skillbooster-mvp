@@ -295,16 +295,32 @@ export default function SkillboosterMVP() {
         setShowMentorSession(false)
       } catch (error) {
         console.error("Error al procesar la evaluación:", error)
+        // Mostrar alerta al usuario
+        alert(
+          "Ocurrió un error al procesar tu evaluación. Se mostrarán resultados aproximados. Por favor, revisa tu conexión o intenta más tarde.",
+        )
+
         // En caso de error, mostramos un resultado simulado para no interrumpir el flujo
+        const currentSkill = skills.find((s) => s.id === currentSkillId)
+        if (!currentSkill) return
+
         const fallbackResult: SkillResult = {
           skillId: currentSkillId,
           skillName: currentSkill.name,
           globalScore: 75,
-          indicatorScores: newAnswers[currentSkillId].map((answer) => ({
-            id: answer.questionId,
-            name: answer.questionId,
-            score: typeof answer.value === "number" ? answer.value * 20 : 60,
-          })),
+          indicatorScores: newAnswers[currentSkillId].map((answer) => {
+            // Mejorar el fallback para que use nombres descriptivos cuando sea posible
+            const question = currentSkill.questions.find((q) => q.id === answer.questionId)
+            const indicadorInfo = currentSkill.indicadoresInfo.find((info) => info.id === answer.questionId)
+
+            return {
+              id: answer.questionId,
+              name:
+                indicadorInfo?.nombre || question?.prompt?.substring(0, 30) + "..." || `Indicador ${answer.questionId}`,
+              score: typeof answer.value === "number" ? answer.value * 20 : 60,
+              descripcion_indicador: indicadorInfo?.descripcion_indicador,
+            }
+          }),
           tips: [
             "Fortaleza: Tienes buena capacidad de análisis general.",
             "Oportunidad: Podrías mejorar en la identificación de patrones específicos.",
@@ -1424,6 +1440,7 @@ function SummaryStep({
           </div>
         </div>
 
+        {/* Rest of the component remains unchanged */}
         {/* Dashboard del Ejercicio Práctico */}
         {resultsArray.some((result) => result.mentorSessionData?.exerciseScore !== undefined) && (
           <div className="mt-8 border-t border-gray-700 pt-6">

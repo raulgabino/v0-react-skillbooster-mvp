@@ -130,13 +130,13 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
         const indicadorInfo = skillDefinition.indicadores_info.find((info) => info.id === indicator)
 
         if (!indicadorInfo) {
-          console.warn(
-            `ADVERTENCIA: No se encontró información descriptiva para el indicador ${indicator} en la habilidad ${skillDefinition.name}. Verifique la consistencia de datos en skill_definitions.json.`,
+          console.error(
+            `Error: No se encontró indicadorInfo para el ID: ${indicator} en la habilidad: ${skillDefinition.name}. Verifique la consistencia de datos en skill_definitions.json.`,
           )
         }
 
         // Usar nombre descriptivo o un fallback claro (no el ID crudo)
-        const indicatorName = indicadorInfo ? indicadorInfo.nombre : `Indicador sin nombre (${indicator})`
+        const indicatorName = indicadorInfo ? indicadorInfo.nombre : `[NOMBRE PENDIENTE - ${indicator}]`
         const descripcionIndicador = indicadorInfo ? indicadorInfo.descripcion_indicador : undefined
 
         likertScores.push({
