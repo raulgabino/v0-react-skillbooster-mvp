@@ -71,7 +71,7 @@ if (openaiApiKey) {
     apiKey: openaiApiKey,
   })
 } else {
-  console.warn("OPENAI_API_KEY no está configurada. La API de lecciones no funcionará correctamente.")
+  console.warn("OPENAI_API_KEY no está configurada. La API de generación de tips no funcionará correctamente.")
 }
 
 // --- Carga de Definiciones ---
@@ -86,18 +86,18 @@ function loadSkillDefinitions(): AllSkillDefinitions {
     skillDefinitions = JSON.parse(fileContent)
     return skillDefinitions
   } catch (error) {
-    console.error("Error al cargar las definiciones de habilidades:", error)
+    console.error("Error al cargar las definiciones de habilidades para generación de tips:", error)
     throw new Error("No se pudieron cargar las definiciones de habilidades.")
   }
 }
 
 // --- Handler POST ---
 export async function POST(request: Request): Promise<NextResponse<LessonResponsePayload | ErrorResponse>> {
-  console.log("API /api/lesson was called for tip generation")
+  console.log("API /api/lesson iniciada para generación de tips personalizados")
 
   try {
     if (!openai) {
-      return NextResponse.json({ error: "OpenAI API no está configurada." }, { status: 500 })
+      return NextResponse.json({ error: "OpenAI API no está configurada para generación de tips." }, { status: 500 })
     }
 
     const { skillId, userInfo, indicatorScores, globalScore, openEndedAnswer } =
@@ -105,7 +105,7 @@ export async function POST(request: Request): Promise<NextResponse<LessonRespons
 
     // Validar datos requeridos
     if (!skillId || !userInfo || !indicatorScores || globalScore === undefined) {
-      return NextResponse.json({ error: "Datos requeridos faltantes en la solicitud." }, { status: 400 })
+      return NextResponse.json({ error: "Datos requeridos faltantes en la solicitud de tips." }, { status: 400 })
     }
 
     // Cargar definiciones de habilidades
@@ -113,7 +113,10 @@ export async function POST(request: Request): Promise<NextResponse<LessonRespons
     const skillDefinition = definitions[skillId]
 
     if (!skillDefinition) {
-      return NextResponse.json({ error: `Habilidad con ID '${skillId}' no encontrada.` }, { status: 404 })
+      return NextResponse.json(
+        { error: `Habilidad con ID '${skillId}' no encontrada para generación de tips.` },
+        { status: 404 },
+      )
     }
 
     // Identificar fortalezas y debilidades
@@ -133,7 +136,7 @@ ${skillDefinition.prompt_tutor_definition.focus_areas.map((area) => `- ${area}`)
 
 Enfoque de enseñanza: ${skillDefinition.prompt_tutor_definition.teaching_approach}
 
-INSTRUCCIONES CRÍTICAS: ${skillDefinition.prompt_tutor_definition.content_guidelines[0]}`
+INSTRUCCIONES CRÍTICAS PARA GENERACIÓN DE TIPS: ${skillDefinition.prompt_tutor_definition.content_guidelines[0]}`
 
     const userPrompt = `# Contexto del Usuario
 - Nombre: ${userInfo.name}
@@ -141,7 +144,7 @@ INSTRUCCIONES CRÍTICAS: ${skillDefinition.prompt_tutor_definition.content_guide
 - Experiencia: ${userInfo.experience} años
 - Proyecto/Contexto: ${userInfo.projectDescription}
 - Obstáculos principales: ${userInfo.obstacles}
-${userInfo.learningObjective ? `- Objetivo de aprendizaje: ${userInfo.learningObjective}` : ""}
+${userInfo.learningObjective ? `- Objetivo de aprendizaje específico: ${userInfo.learningObjective}` : ""}
 
 # Resultados de Evaluación en ${skillDefinition.name}
 - Puntuación Global: ${globalScore}/100
@@ -163,7 +166,7 @@ Estructura requerida:
 
 Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional.`
 
-    // Llamada a OpenAI
+    // Llamada a OpenAI para generación de tips
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -177,7 +180,7 @@ Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional
 
     const content = response.choices[0]?.message?.content
     if (!content) {
-      throw new Error("No se recibió respuesta de OpenAI")
+      throw new Error("No se recibió respuesta de OpenAI para generación de tips")
     }
 
     // Parsear la respuesta JSON
@@ -198,7 +201,7 @@ Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional
         if (values.length >= 3) {
           generatedTips = values.slice(0, 3) as string[]
         } else {
-          throw new Error("Estructura de respuesta inesperada de OpenAI")
+          throw new Error("Estructura de respuesta inesperada de OpenAI para tips")
         }
       }
 
@@ -215,7 +218,7 @@ Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional
 
       generatedTips = validTips
     } catch (parseError) {
-      console.error("Error al parsear la respuesta de OpenAI:", parseError)
+      console.error("Error al parsear la respuesta de OpenAI para tips:", parseError)
       console.error("Contenido recibido:", content)
 
       // Fallback: generar tips básicos basados en los datos disponibles
@@ -226,9 +229,10 @@ Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional
       ]
     }
 
+    console.log(`Tips generados exitosamente para la habilidad ${skillDefinition.name}`)
     return NextResponse.json({ tips: generatedTips }, { status: 200 })
   } catch (error) {
-    console.error("Error en la generación de tips:", error)
+    console.error("Error en la generación de tips personalizados:", error)
 
     // Fallback en caso de error completo
     const fallbackTips = [
