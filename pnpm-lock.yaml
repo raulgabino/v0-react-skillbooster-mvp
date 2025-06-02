@@ -133,7 +133,7 @@ importers:
         version: 0.4.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       openai:
         specifier: latest
-        version: 5.0.2(ws@8.18.2)(zod@3.25.48)
+        version: 5.0.2(ws@8.18.2)(zod@3.25.49)
       path:
         specifier: latest
         version: 0.12.7
@@ -175,7 +175,7 @@ importers:
         version: 8.18.2
       zod:
         specifier: latest
-        version: 3.25.48
+        version: 3.25.49
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -2391,8 +2391,8 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
-  zod@3.25.48:
-    resolution: {integrity: sha512-0X1mz8FtgEIvaxGjdIImYpZEaZMrund9pGXm3M6vM7Reba0e2eI71KPjSCGXBfwKDPwPoywf6waUKc3/tFvX2Q==}
+  zod@3.25.49:
+    resolution: {integrity: sha512-JMMPMy9ZBk3XFEdbM3iL1brx4NUSejd6xr3ELrrGEfGb355gjhiAWtG3K5o+AViV/3ZfkIrCzXsZn6SbLwTR8Q==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -4164,10 +4164,10 @@ snapshots:
 
   object-hash@3.0.0: {}
 
-  openai@5.0.2(ws@8.18.2)(zod@3.25.48):
+  openai@5.0.2(ws@8.18.2)(zod@3.25.49):
     optionalDependencies:
       ws: 8.18.2
-      zod: 3.25.48
+      zod: 3.25.49
 
   package-json-from-dist@1.0.1: {}
 
@@ -4721,6 +4721,6 @@ snapshots:
 
   yaml@2.8.0: {}
 
-  zod@3.25.48: {}
+  zod@3.25.49: {}
 
   zwitch@2.0.4: {}

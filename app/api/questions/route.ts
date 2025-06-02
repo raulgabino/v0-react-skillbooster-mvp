@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
+
+// Importación directa de archivos JSON para mayor robustez en serverless
+import intakeFormData from "@/data/intake_form.json"
+import skillDefinitionsData from "@/data/skill_definitions.json"
 
 // Tipos para la respuesta API estructurada
 interface IndicadorInfo {
@@ -41,24 +43,19 @@ interface Skill {
 
 export async function GET(request: Request) {
   try {
-    // Definir las rutas a los archivos JSON
-    const intakeFormPath = path.join(process.cwd(), "data", "intake_form.json")
-    const skillDefinitionsPath = path.join(process.cwd(), "data", "skill_definitions.json")
-
-    // Leer los archivos
-    const intakeFormContent = fs.readFileSync(intakeFormPath, "utf8")
-    const skillDefinitionsContent = fs.readFileSync(skillDefinitionsPath, "utf8")
-
-    // Parsear el contenido JSON
-    const intakeFormData: Question[] = JSON.parse(intakeFormContent)
-    const skillDefinitionsData: Record<string, SkillDefinitionFromJSON> = JSON.parse(skillDefinitionsContent)
+    // Usar datos importados directamente
+    const intakeFormQuestions: Question[] = intakeFormData as Question[]
+    const skillDefinitions: Record<string, SkillDefinitionFromJSON> = skillDefinitionsData as Record<
+      string,
+      SkillDefinitionFromJSON
+    >
 
     // Procesar y combinar los datos
     const combinedSkillsData: Skill[] = []
 
-    for (const skillDefKey in skillDefinitionsData) {
-      const definition = skillDefinitionsData[skillDefKey]
-      const skillQuestions = intakeFormData.filter((q) => q.axis === definition.name)
+    for (const skillDefKey in skillDefinitions) {
+      const definition = skillDefinitions[skillDefKey]
+      const skillQuestions = intakeFormQuestions.filter((q) => q.axis === definition.name)
 
       if (skillQuestions.length > 0) {
         combinedSkillsData.push({
@@ -71,10 +68,22 @@ export async function GET(request: Request) {
       }
     }
 
-    // Devolver los datos combinados como respuesta
+    // Validar que tenemos datos
+    if (combinedSkillsData.length === 0) {
+      console.warn("No se encontraron habilidades válidas en los datos")
+      return NextResponse.json({ error: "No se encontraron habilidades disponibles." }, { status: 404 })
+    }
+
+    console.log(`API /api/questions: ${combinedSkillsData.length} habilidades cargadas exitosamente`)
     return NextResponse.json(combinedSkillsData)
   } catch (error) {
     console.error("Error al cargar y combinar datos de habilidades:", error)
-    return NextResponse.json({ error: "No se pudieron cargar los datos de las habilidades." }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "No se pudieron cargar los datos de las habilidades.",
+        details: "Error interno del servidor. Contacte al administrador.",
+      },
+      { status: 500 },
+    )
   }
 }

@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
-import { useState, useEffect } from "react"
+import { useReducer, useEffect } from "react"
 import dynamic from "next/dynamic"
 import MentorSessionInterface, { type MentorSessionData } from "./mentor-session-interface"
 import ReactMarkdown from "react-markdown"
@@ -18,7 +18,7 @@ import { Progress } from "@/components/ui/progress"
 import { Info, MessageSquare, Lightbulb, Target, ClipboardList, TrendingUp, Star } from "lucide-react"
 import { Check } from "lucide-react"
 
-// Importar tipos
+// Tipos
 type UserInfo = {
   name: string
   role: string
@@ -65,34 +65,172 @@ type SkillResult = {
   mentorSessionData?: MentorSessionData
 }
 
-// Componente principal
-export default function SkillboosterMVP() {
-  const { toast } = useToast()
+// Estado de la aplicación
+interface AppState {
+  currentStep: number
+  userInfo: UserInfo
+  acceptedTerms: boolean
+  skills: Skill[]
+  selectedSkills: string[]
+  currentSkillIndex: number
+  currentQuestionIndex: number
+  answers: Record<string, Answer[]>
+  currentAnswer: string | number
+  results: Record<string, SkillResult>
+  loading: boolean
+  pdfGenerating: boolean
+  showMentorSession: boolean
+  currentSkillLearningObjective: string
+  skillObjectiveSubmitted: boolean
+}
 
-  // Estado para controlar el flujo
-  const [currentStep, setCurrentStep] = useState<number>(0)
-  const [userInfo, setUserInfo] = useState<UserInfo>({
+// Acciones del reducer
+type AppAction =
+  | { type: "SET_CURRENT_STEP"; payload: number }
+  | { type: "SET_USER_INFO"; payload: UserInfo }
+  | { type: "SET_ACCEPTED_TERMS"; payload: boolean }
+  | { type: "SET_SKILLS"; payload: Skill[] }
+  | { type: "SET_SELECTED_SKILLS"; payload: string[] }
+  | { type: "SET_CURRENT_SKILL_INDEX"; payload: number }
+  | { type: "SET_CURRENT_QUESTION_INDEX"; payload: number }
+  | { type: "SET_ANSWERS"; payload: Record<string, Answer[]> }
+  | { type: "ADD_ANSWER"; payload: { skillId: string; answer: Answer } }
+  | { type: "SET_CURRENT_ANSWER"; payload: string | number }
+  | { type: "SET_RESULTS"; payload: Record<string, SkillResult> }
+  | { type: "ADD_RESULT"; payload: { skillId: string; result: SkillResult } }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_PDF_GENERATING"; payload: boolean }
+  | { type: "SET_SHOW_MENTOR_SESSION"; payload: boolean }
+  | { type: "SET_CURRENT_SKILL_LEARNING_OBJECTIVE"; payload: string }
+  | { type: "SET_SKILL_OBJECTIVE_SUBMITTED"; payload: boolean }
+  | { type: "RESET_STATE" }
+  | { type: "NEXT_SKILL" }
+  | { type: "NEXT_QUESTION" }
+
+// Estado inicial
+const initialState: AppState = {
+  currentStep: 0,
+  userInfo: {
     name: "",
     role: "",
     experience: "",
     projectDescription: "",
     obstacles: "",
-  })
-  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false)
-  const [skills, setSkills] = useState<Skill[]>([])
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([])
-  const [currentSkillIndex, setCurrentSkillIndex] = useState<number>(0)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0)
-  const [answers, setAnswers] = useState<Record<string, Answer[]>>({})
-  const [currentAnswer, setCurrentAnswer] = useState<string | number>("")
-  const [results, setResults] = useState<Record<string, SkillResult>>({})
-  const [loading, setLoading] = useState<boolean>(false)
-  const [pdfGenerating, setPdfGenerating] = useState<boolean>(false)
-  const [showMentorSession, setShowMentorSession] = useState<boolean>(false)
+  },
+  acceptedTerms: false,
+  skills: [],
+  selectedSkills: [],
+  currentSkillIndex: 0,
+  currentQuestionIndex: 0,
+  answers: {},
+  currentAnswer: "",
+  results: {},
+  loading: false,
+  pdfGenerating: false,
+  showMentorSession: false,
+  currentSkillLearningObjective: "",
+  skillObjectiveSubmitted: false,
+}
 
-  // Nuevos estados para manejar el objetivo de aprendizaje específico de cada habilidad
-  const [currentSkillLearningObjective, setCurrentSkillLearningObjective] = useState<string>("")
-  const [skillObjectiveSubmitted, setSkillObjectiveSubmitted] = useState<boolean>(false)
+// Reducer
+function appReducer(state: AppState, action: AppAction): AppState {
+  switch (action.type) {
+    case "SET_CURRENT_STEP":
+      return { ...state, currentStep: action.payload }
+
+    case "SET_USER_INFO":
+      return { ...state, userInfo: action.payload }
+
+    case "SET_ACCEPTED_TERMS":
+      return { ...state, acceptedTerms: action.payload }
+
+    case "SET_SKILLS":
+      return { ...state, skills: action.payload }
+
+    case "SET_SELECTED_SKILLS":
+      return { ...state, selectedSkills: action.payload }
+
+    case "SET_CURRENT_SKILL_INDEX":
+      return { ...state, currentSkillIndex: action.payload }
+
+    case "SET_CURRENT_QUESTION_INDEX":
+      return { ...state, currentQuestionIndex: action.payload }
+
+    case "SET_ANSWERS":
+      return { ...state, answers: action.payload }
+
+    case "ADD_ANSWER":
+      return {
+        ...state,
+        answers: {
+          ...state.answers,
+          [action.payload.skillId]: [...(state.answers[action.payload.skillId] || []), action.payload.answer],
+        },
+      }
+
+    case "SET_CURRENT_ANSWER":
+      return { ...state, currentAnswer: action.payload }
+
+    case "SET_RESULTS":
+      return { ...state, results: action.payload }
+
+    case "ADD_RESULT":
+      return {
+        ...state,
+        results: {
+          ...state.results,
+          [action.payload.skillId]: action.payload.result,
+        },
+      }
+
+    case "SET_LOADING":
+      return { ...state, loading: action.payload }
+
+    case "SET_PDF_GENERATING":
+      return { ...state, pdfGenerating: action.payload }
+
+    case "SET_SHOW_MENTOR_SESSION":
+      return { ...state, showMentorSession: action.payload }
+
+    case "SET_CURRENT_SKILL_LEARNING_OBJECTIVE":
+      return { ...state, currentSkillLearningObjective: action.payload }
+
+    case "SET_SKILL_OBJECTIVE_SUBMITTED":
+      return { ...state, skillObjectiveSubmitted: action.payload }
+
+    case "NEXT_SKILL":
+      return {
+        ...state,
+        currentSkillIndex: state.currentSkillIndex + 1,
+        currentQuestionIndex: 0,
+        currentSkillLearningObjective: "",
+        skillObjectiveSubmitted: false,
+        currentStep: 3,
+        showMentorSession: false,
+      }
+
+    case "NEXT_QUESTION":
+      return {
+        ...state,
+        currentQuestionIndex: state.currentQuestionIndex + 1,
+        currentAnswer: "",
+      }
+
+    case "RESET_STATE":
+      return {
+        ...initialState,
+        skills: state.skills, // Mantener las habilidades cargadas
+      }
+
+    default:
+      return state
+  }
+}
+
+// Componente principal
+export default function SkillboosterMVP() {
+  const [state, dispatch] = useReducer(appReducer, initialState)
+  const { toast } = useToast()
 
   // Función para mostrar notificaciones de error mejoradas
   const showErrorToast = (title: string, description: string, variant: "destructive" | "warning" = "destructive") => {
@@ -113,9 +251,9 @@ export default function SkillboosterMVP() {
 
   // Función para renderizar el indicador de progreso general
   const renderOverallProgress = (): string => {
-    const totalSelectedSkills = selectedSkills.length
+    const totalSelectedSkills = state.selectedSkills.length
 
-    switch (currentStep) {
+    switch (state.currentStep) {
       case 0:
         return ""
       case 1:
@@ -124,25 +262,25 @@ export default function SkillboosterMVP() {
         return "Paso 2 de 4: Selección de Habilidades"
       case 3:
         if (totalSelectedSkills > 0) {
-          const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
+          const currentSkill = state.skills.find((s) => s.id === state.selectedSkills[state.currentSkillIndex])
           const skillName = currentSkill?.name || "Habilidad"
 
-          if (!skillObjectiveSubmitted) {
-            return `Paso 3 de 4: Definiendo Objetivo - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
+          if (!state.skillObjectiveSubmitted) {
+            return `Paso 3 de 4: Definiendo Objetivo - ${skillName} (${state.currentSkillIndex + 1}/${totalSelectedSkills})`
           } else {
-            return `Paso 3 de 4: Evaluación - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills}) - Pregunta ${currentQuestionIndex + 1}/${skills.find((s) => s.id === selectedSkills[currentSkillIndex])?.questions.length || 0}`
+            return `Paso 3 de 4: Evaluación - ${skillName} (${state.currentSkillIndex + 1}/${totalSelectedSkills}) - Pregunta ${state.currentQuestionIndex + 1}/${state.skills.find((s) => s.id === state.selectedSkills[state.currentSkillIndex])?.questions.length || 0}`
           }
         }
         return "Paso 3 de 4: Evaluación de Habilidad"
       case 4:
         if (totalSelectedSkills > 0) {
-          const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
+          const currentSkill = state.skills.find((s) => s.id === state.selectedSkills[state.currentSkillIndex])
           const skillName = currentSkill?.name || "Habilidad"
 
-          if (showMentorSession) {
-            return `Paso 3 de 4: Sesión de Mentoría - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
+          if (state.showMentorSession) {
+            return `Paso 3 de 4: Sesión de Mentoría - ${skillName} (${state.currentSkillIndex + 1}/${totalSelectedSkills})`
           } else {
-            return `Paso 3 de 4: Resultados - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
+            return `Paso 3 de 4: Resultados - ${skillName} (${state.currentSkillIndex + 1}/${totalSelectedSkills})`
           }
         }
         return "Paso 3 de 4: Resultados"
@@ -166,7 +304,7 @@ export default function SkillboosterMVP() {
         }
 
         const skillsData: Skill[] = await response.json()
-        setSkills(skillsData)
+        dispatch({ type: "SET_SKILLS", payload: skillsData })
         showSuccessToast("Datos cargados", "Las habilidades se han cargado correctamente")
       } catch (error) {
         console.error("Error al cargar las habilidades:", error)
@@ -174,7 +312,7 @@ export default function SkillboosterMVP() {
           "Error al cargar datos",
           "No se pudieron cargar las habilidades. Por favor, recarga la página o contacta al soporte técnico.",
         )
-        setSkills([])
+        dispatch({ type: "SET_SKILLS", payload: [] })
       }
     }
 
@@ -183,13 +321,13 @@ export default function SkillboosterMVP() {
 
   // Manejadores de eventos
   const handleStartAssessment = () => {
-    setCurrentStep(1)
+    dispatch({ type: "SET_CURRENT_STEP", payload: 1 })
   }
 
   const handleUserInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (userInfo.name && userInfo.role && userInfo.projectDescription && userInfo.obstacles) {
-      setCurrentStep(2)
+    if (state.userInfo.name && state.userInfo.role && state.userInfo.projectDescription && state.userInfo.obstacles) {
+      dispatch({ type: "SET_CURRENT_STEP", payload: 2 })
       showSuccessToast("Perfil completado", "Tu información ha sido guardada correctamente")
     } else {
       showErrorToast("Información incompleta", "Por favor, completa todos los campos requeridos")
@@ -197,22 +335,22 @@ export default function SkillboosterMVP() {
   }
 
   const handleSkillSelection = () => {
-    if (selectedSkills.length > 0) {
-      setCurrentSkillIndex(0)
-      setCurrentQuestionIndex(0)
-      setCurrentSkillLearningObjective("")
-      setSkillObjectiveSubmitted(false)
+    if (state.selectedSkills.length > 0) {
+      dispatch({ type: "SET_CURRENT_SKILL_INDEX", payload: 0 })
+      dispatch({ type: "SET_CURRENT_QUESTION_INDEX", payload: 0 })
+      dispatch({ type: "SET_CURRENT_SKILL_LEARNING_OBJECTIVE", payload: "" })
+      dispatch({ type: "SET_SKILL_OBJECTIVE_SUBMITTED", payload: false })
 
       const initialAnswers: Record<string, Answer[]> = {}
-      selectedSkills.forEach((skillId) => {
+      state.selectedSkills.forEach((skillId) => {
         initialAnswers[skillId] = []
       })
-      setAnswers(initialAnswers)
+      dispatch({ type: "SET_ANSWERS", payload: initialAnswers })
+      dispatch({ type: "SET_CURRENT_STEP", payload: 3 })
 
-      setCurrentStep(3)
       showSuccessToast(
         "Habilidades seleccionadas",
-        `Comenzarás la evaluación de ${selectedSkills.length} habilidad${selectedSkills.length > 1 ? "es" : ""}`,
+        `Comenzarás la evaluación de ${state.selectedSkills.length} habilidad${state.selectedSkills.length > 1 ? "es" : ""}`,
       )
     } else {
       showErrorToast("Selección requerida", "Debes seleccionar al menos una habilidad para continuar")
@@ -220,43 +358,57 @@ export default function SkillboosterMVP() {
   }
 
   const handleSubmitSkillObjective = () => {
-    setSkillObjectiveSubmitted(true)
+    dispatch({ type: "SET_SKILL_OBJECTIVE_SUBMITTED", payload: true })
     showSuccessToast("Objetivo definido", "Ahora comenzaremos con las preguntas de evaluación")
   }
 
   const handleAnswerQuestion = async () => {
-    const currentSkillId = selectedSkills[currentSkillIndex]
-    const currentSkill = skills.find((s) => s.id === currentSkillId)
+    const currentSkillId = state.selectedSkills[state.currentSkillIndex]
+    const currentSkill = state.skills.find((s) => s.id === currentSkillId)
 
     if (!currentSkill) {
       showErrorToast("Error del sistema", "No se pudo encontrar la habilidad actual")
       return
     }
 
-    const currentQuestion = currentSkill.questions[currentQuestionIndex]
+    const currentQuestion = currentSkill.questions[state.currentQuestionIndex]
 
     // Guardamos la respuesta actual
-    const newAnswers = { ...answers }
-    newAnswers[currentSkillId] = [
-      ...newAnswers[currentSkillId],
-      {
-        questionId: currentQuestion.id,
-        value: currentAnswer,
+    dispatch({
+      type: "ADD_ANSWER",
+      payload: {
+        skillId: currentSkillId,
+        answer: {
+          questionId: currentQuestion.id,
+          value: state.currentAnswer,
+        },
       },
-    ]
-    setAnswers(newAnswers)
-    setCurrentAnswer("")
+    })
+
+    dispatch({ type: "SET_CURRENT_ANSWER", payload: "" })
 
     // Verificamos si hay más preguntas para esta habilidad
-    if (currentQuestionIndex < currentSkill.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
+    if (state.currentQuestionIndex < currentSkill.questions.length - 1) {
+      dispatch({ type: "NEXT_QUESTION" })
     } else {
       // Última pregunta - Llamamos a las APIs para obtener puntuación y tips
-      setLoading(true)
+      dispatch({ type: "SET_LOADING", payload: true })
 
       try {
+        // Obtener las respuestas actualizadas
+        const updatedAnswers = {
+          ...state.answers,
+          [currentSkillId]: [
+            ...(state.answers[currentSkillId] || []),
+            {
+              questionId: currentQuestion.id,
+              value: state.currentAnswer,
+            },
+          ],
+        }
+
         // Encontrar la respuesta a la pregunta abierta
-        const openEndedAnswer = newAnswers[currentSkillId].find(
+        const openEndedAnswer = updatedAnswers[currentSkillId].find(
           (answer) => currentSkill.questions.find((q) => q.id === answer.questionId)?.type === "open",
         )?.value as string | undefined
 
@@ -268,7 +420,7 @@ export default function SkillboosterMVP() {
           },
           body: JSON.stringify({
             skillId: currentSkillId,
-            answers: newAnswers[currentSkillId],
+            answers: updatedAnswers[currentSkillId],
           }),
         })
 
@@ -298,8 +450,8 @@ export default function SkillboosterMVP() {
           body: JSON.stringify({
             skillId: currentSkillId,
             userInfo: {
-              ...userInfo,
-              learningObjective: currentSkillLearningObjective,
+              ...state.userInfo,
+              learningObjective: state.currentSkillLearningObjective,
             },
             indicatorScores,
             globalScore,
@@ -333,7 +485,7 @@ export default function SkillboosterMVP() {
           tips = [
             `Fortaleza: Tu ${strongest.name} es destacable, mantén desarrollando esta capacidad.`,
             `Oportunidad: Enfócate en mejorar tu ${weakest.name} para un desarrollo más equilibrado.`,
-            `Consejo: Practica regularmente las habilidades de ${currentSkill.name} en tu contexto de ${userInfo?.role || "trabajo"}.`,
+            `Consejo: Practica regularmente las habilidades de ${currentSkill.name} en tu contexto de ${state.userInfo?.role || "trabajo"}.`,
           ]
         }
 
@@ -347,13 +499,11 @@ export default function SkillboosterMVP() {
         }
 
         // 4. Actualizamos el estado
-        const newResults = { ...results }
-        newResults[currentSkillId] = result
-        setResults(newResults)
+        dispatch({ type: "ADD_RESULT", payload: { skillId: currentSkillId, result } })
 
         // 5. Pasamos a la pantalla de resultados
-        setCurrentStep(4)
-        setShowMentorSession(false)
+        dispatch({ type: "SET_CURRENT_STEP", payload: 4 })
+        dispatch({ type: "SET_SHOW_MENTOR_SESSION", payload: false })
         showSuccessToast("Evaluación completada", `Tu puntuación global es ${globalScore}/100`)
       } catch (error: any) {
         console.error("Error DETALLADO al procesar la evaluación:", error)
@@ -364,19 +514,30 @@ export default function SkillboosterMVP() {
         )
 
         // Fallback mejorado
-        const currentSkillId = selectedSkills[currentSkillIndex]
-        const currentSkill = skills.find((s) => s.id === currentSkillId)
+        const currentSkillId = state.selectedSkills[state.currentSkillIndex]
+        const currentSkill = state.skills.find((s) => s.id === currentSkillId)
 
         if (!currentSkill) {
           console.error("No se pudo encontrar currentSkill en el bloque catch")
           return
         }
 
+        const updatedAnswers = {
+          ...state.answers,
+          [currentSkillId]: [
+            ...(state.answers[currentSkillId] || []),
+            {
+              questionId: currentQuestion.id,
+              value: state.currentAnswer,
+            },
+          ],
+        }
+
         const fallbackResult: SkillResult = {
           skillId: currentSkillId,
           skillName: currentSkill.name,
           globalScore: 75,
-          indicatorScores: newAnswers[currentSkillId].map((answer) => {
+          indicatorScores: updatedAnswers[currentSkillId].map((answer) => {
             const question = currentSkill.questions.find((q) => q.id === answer.questionId)
             const indicadorInfo = currentSkill.indicadoresInfo.find((info) => info.id === answer.questionId)
 
@@ -396,66 +557,45 @@ export default function SkillboosterMVP() {
           ],
         }
 
-        const newResults = { ...results }
-        newResults[currentSkillId] = fallbackResult
-        setResults(newResults)
-        setCurrentStep(4)
-        setShowMentorSession(false)
+        dispatch({ type: "ADD_RESULT", payload: { skillId: currentSkillId, result: fallbackResult } })
+        dispatch({ type: "SET_CURRENT_STEP", payload: 4 })
+        dispatch({ type: "SET_SHOW_MENTOR_SESSION", payload: false })
       } finally {
-        setLoading(false)
+        dispatch({ type: "SET_LOADING", payload: false })
       }
     }
   }
 
   const handleNextSkill = () => {
-    if (currentSkillIndex < selectedSkills.length - 1) {
-      setCurrentSkillIndex(currentSkillIndex + 1)
-      setCurrentQuestionIndex(0)
-      setCurrentSkillLearningObjective("")
-      setSkillObjectiveSubmitted(false)
-      setCurrentStep(3)
-      setShowMentorSession(false)
+    if (state.currentSkillIndex < state.selectedSkills.length - 1) {
+      dispatch({ type: "NEXT_SKILL" })
     } else {
-      setCurrentStep(5)
+      dispatch({ type: "SET_CURRENT_STEP", payload: 5 })
       showSuccessToast("¡Evaluación completa!", "Has completado todas las habilidades seleccionadas")
     }
   }
 
   const handleRestart = () => {
-    setCurrentStep(0)
-    setUserInfo({
-      name: "",
-      role: "",
-      experience: "",
-      projectDescription: "",
-      obstacles: "",
-    })
-    setAcceptedTerms(false)
-    setSelectedSkills([])
-    setCurrentSkillIndex(0)
-    setCurrentQuestionIndex(0)
-    setCurrentSkillLearningObjective("")
-    setSkillObjectiveSubmitted(false)
-    setAnswers({})
-    setResults({})
-    setShowMentorSession(false)
+    dispatch({ type: "RESET_STATE" })
     showSuccessToast("Reinicio completo", "Puedes comenzar una nueva evaluación")
   }
 
   const handleStartMentorSession = () => {
-    setShowMentorSession(true)
+    dispatch({ type: "SET_SHOW_MENTOR_SESSION", payload: true })
     showSuccessToast("Sesión iniciada", "Comenzando tu sesión personalizada con el mentor")
   }
 
   const handleMentorSessionComplete = (sessionData: MentorSessionData) => {
-    const currentSkillId = selectedSkills[currentSkillIndex]
+    const currentSkillId = state.selectedSkills[state.currentSkillIndex]
+    const currentResult = state.results[currentSkillId]
 
-    const newResults = { ...results }
-    newResults[currentSkillId] = {
-      ...newResults[currentSkillId],
-      mentorSessionData: sessionData,
+    if (currentResult) {
+      const updatedResult = {
+        ...currentResult,
+        mentorSessionData: sessionData,
+      }
+      dispatch({ type: "ADD_RESULT", payload: { skillId: currentSkillId, result: updatedResult } })
     }
-    setResults(newResults)
 
     showSuccessToast("Sesión completada", "Tu sesión de mentoría ha sido guardada exitosamente")
     handleNextSkill()
@@ -468,7 +608,7 @@ export default function SkillboosterMVP() {
       return
     }
 
-    setPdfGenerating(true)
+    dispatch({ type: "SET_PDF_GENERATING", payload: true })
     try {
       const jsPDFModule = await import("jspdf")
       const html2canvasModule = await import("html2canvas")
@@ -504,38 +644,46 @@ export default function SkillboosterMVP() {
       console.error("Error al generar PDF:", error)
       showErrorToast("Error de descarga", "No se pudo generar el PDF. Intenta nuevamente o contacta al soporte.")
     } finally {
-      setPdfGenerating(false)
+      dispatch({ type: "SET_PDF_GENERATING", payload: false })
     }
   }
 
   // Renderizado condicional según la etapa actual
   const renderStep = () => {
-    switch (currentStep) {
+    switch (state.currentStep) {
       case 0:
         return <LandingStep onStart={handleStartAssessment} />
       case 1:
-        return <UserInfoStep userInfo={userInfo} setUserInfo={setUserInfo} onSubmit={handleUserInfoSubmit} />
+        return (
+          <UserInfoStep
+            userInfo={state.userInfo}
+            setUserInfo={(userInfo) => dispatch({ type: "SET_USER_INFO", payload: userInfo })}
+            onSubmit={handleUserInfoSubmit}
+          />
+        )
       case 2:
         return (
           <SkillSelectionStep
-            skills={skills}
-            selectedSkills={selectedSkills}
-            setSelectedSkills={setSelectedSkills}
+            skills={state.skills}
+            selectedSkills={state.selectedSkills}
+            setSelectedSkills={(skills) => dispatch({ type: "SET_SELECTED_SKILLS", payload: skills })}
             onContinue={handleSkillSelection}
           />
         )
       case 3:
-        const currentSkillId = selectedSkills[currentSkillIndex]
-        const currentSkill = skills.find((s) => s.id === currentSkillId)
+        const currentSkillId = state.selectedSkills[state.currentSkillIndex]
+        const currentSkill = state.skills.find((s) => s.id === currentSkillId)
 
         if (!currentSkill) return <div>Cargando habilidad...</div>
 
-        if (!skillObjectiveSubmitted) {
+        if (!state.skillObjectiveSubmitted) {
           return (
             <SkillObjectiveStep
               skillName={currentSkill.name}
-              learningObjective={currentSkillLearningObjective}
-              setLearningObjective={setCurrentSkillLearningObjective}
+              learningObjective={state.currentSkillLearningObjective}
+              setLearningObjective={(objective) =>
+                dispatch({ type: "SET_CURRENT_SKILL_LEARNING_OBJECTIVE", payload: objective })
+              }
               onSubmitObjective={handleSubmitSkillObjective}
               indicadoresInfo={currentSkill.indicadoresInfo}
             />
@@ -544,47 +692,48 @@ export default function SkillboosterMVP() {
           return (
             <AssessmentStep
               skill={currentSkill}
-              questionIndex={currentQuestionIndex}
-              currentAnswer={currentAnswer}
-              setCurrentAnswer={setCurrentAnswer}
+              questionIndex={state.currentQuestionIndex}
+              currentAnswer={state.currentAnswer}
+              setCurrentAnswer={(answer) => dispatch({ type: "SET_CURRENT_ANSWER", payload: answer })}
               onNext={handleAnswerQuestion}
             />
           )
         }
       case 4:
-        const resultSkillId = selectedSkills[currentSkillIndex]
-        const result = results[resultSkillId]
+        const resultSkillId = state.selectedSkills[state.currentSkillIndex]
+        const result = state.results[resultSkillId]
 
         if (!result) return <div>Cargando resultados...</div>
 
-        const currentSkill2 = skills.find((s) => s.id === resultSkillId)
+        const currentSkill2 = state.skills.find((s) => s.id === resultSkillId)
         const openEndedQuestionId = currentSkill2?.questions.find((q) => q.type === "open")?.id
-        const openEndedAnswer = answers[resultSkillId]?.find((answer) => answer.questionId === openEndedQuestionId)
-          ?.value as string | undefined
+        const openEndedAnswer = state.answers[resultSkillId]?.find(
+          (answer) => answer.questionId === openEndedQuestionId,
+        )?.value as string | undefined
 
         const userProfileForMentor = {
-          ...userInfo,
-          learningObjective: currentSkillLearningObjective,
+          ...state.userInfo,
+          learningObjective: state.currentSkillLearningObjective,
         }
 
-        const allSkillsForNavigation = selectedSkills.map((skillId) => {
-          const skillResult = results[skillId]
+        const allSkillsForNavigation = state.selectedSkills.map((skillId) => {
+          const skillResult = state.results[skillId]
           return {
             id: skillId,
-            name: skills.find((s) => s.id === skillId)?.name || skillId,
+            name: state.skills.find((s) => s.id === skillId)?.name || skillId,
             globalScore: skillResult?.globalScore,
             status: skillResult ? "evaluado" : "no_evaluado",
           }
         })
 
         const handleSelectSkill = (skillId: string) => {
-          const newIndex = selectedSkills.findIndex((id) => id === skillId)
+          const newIndex = state.selectedSkills.findIndex((id) => id === skillId)
           if (newIndex >= 0) {
-            setCurrentSkillIndex(newIndex)
+            dispatch({ type: "SET_CURRENT_SKILL_INDEX", payload: newIndex })
           }
         }
 
-        return showMentorSession ? (
+        return state.showMentorSession ? (
           <MentorSessionInterface
             skillId={resultSkillId}
             skillName={result.skillName}
@@ -597,21 +746,21 @@ export default function SkillboosterMVP() {
         ) : (
           <ResultsStep
             result={result}
-            hasMoreSkills={currentSkillIndex < selectedSkills.length - 1}
+            hasMoreSkills={state.currentSkillIndex < state.selectedSkills.length - 1}
             onNextSkill={handleNextSkill}
             onStartMentorSession={handleStartMentorSession}
-            allSkills={selectedSkills.length > 1 ? allSkillsForNavigation : undefined}
-            onSelectSkill={selectedSkills.length > 1 ? handleSelectSkill : undefined}
+            allSkills={state.selectedSkills.length > 1 ? allSkillsForNavigation : undefined}
+            onSelectSkill={state.selectedSkills.length > 1 ? handleSelectSkill : undefined}
           />
         )
       case 5:
         return (
           <SummaryStep
-            results={results}
+            results={state.results}
             onRestart={handleRestart}
             onDownloadPDF={handleDownloadPDF}
-            pdfGenerating={pdfGenerating}
-            setCurrentStep={setCurrentStep}
+            pdfGenerating={state.pdfGenerating}
+            setCurrentStep={(step) => dispatch({ type: "SET_CURRENT_STEP", payload: step })}
           />
         )
       default:
@@ -623,13 +772,13 @@ export default function SkillboosterMVP() {
     <div className="min-h-screen bg-gray-900 text-white font-sans">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Indicador de progreso general */}
-        {currentStep > 0 && (
+        {state.currentStep > 0 && (
           <div className="mb-6 text-center font-medium text-blue-400 tracking-wider bg-gray-800/50 py-2 px-4 rounded-lg shadow-inner">
             {renderOverallProgress()}
           </div>
         )}
 
-        {loading ? (
+        {state.loading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
             <p className="mt-4 text-xl">Procesando tu evaluación...</p>
@@ -718,12 +867,12 @@ function UserInfoStep({
   ]
 
   // State to track current field index
-  const [currentFieldIndex, setCurrentFieldIndex] = useState(0)
+  const [currentFieldIndex, setCurrentFieldIndex] = React.useState(0)
   const currentField = fields[currentFieldIndex]
 
   // Animation state
-  const [direction, setDirection] = useState<"entering" | "exiting">("entering")
-  const [isAnimating, setIsAnimating] = useState(false)
+  const [direction, setDirection] = React.useState<"entering" | "exiting">("entering")
+  const [isAnimating, setIsAnimating] = React.useState(false)
 
   // Handle field change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

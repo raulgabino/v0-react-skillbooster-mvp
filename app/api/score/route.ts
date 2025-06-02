@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
-import OpenAI from "openai"
 import { z } from "zod"
+import OpenAI from "openai"
+
+// Importación directa de archivos JSON para mayor robustez en serverless
+import skillDefinitionsData from "@/data/skill_definitions.json"
 
 // --- Validation Schemas ---
 const AnswerSchema = z.object({
@@ -74,21 +75,27 @@ if (openaiApiKey) {
   console.warn("OPENAI_API_KEY no está configurada. La API de puntuación no funcionará correctamente.")
 }
 
-// --- Carga de Definiciones ---
-let skillDefinitions: AllSkillDefinitions | null = null
+// --- Validación de Consistencia de Datos ---
+function validateDataConsistency(skillDefinition: SkillDefinition): string[] {
+  const errors: string[] = []
 
-function loadSkillDefinitions(): AllSkillDefinitions {
-  if (skillDefinitions) return skillDefinitions
-
-  try {
-    const filePath = path.join(process.cwd(), "data", "skill_definitions.json")
-    const fileContent = fs.readFileSync(filePath, "utf8")
-    skillDefinitions = JSON.parse(fileContent)
-    return skillDefinitions
-  } catch (error) {
-    console.error("Error al cargar las definiciones de habilidades:", error)
-    throw new Error("No se pudieron cargar las definiciones de habilidades.")
+  // Verificar que todos los likert_indicators tengan su correspondiente indicadorInfo
+  for (const indicatorId of skillDefinition.likert_indicators) {
+    const indicadorInfo = skillDefinition.indicadores_info.find((info) => info.id === indicatorId)
+    if (!indicadorInfo) {
+      errors.push(`Indicador Likert '${indicatorId}' no tiene información descriptiva en indicadores_info`)
+    }
   }
+
+  // Verificar que la pregunta abierta tenga su información
+  const openQuestionInfo = skillDefinition.indicadores_info.find((info) => info.id === skillDefinition.open_question_id)
+  if (!openQuestionInfo) {
+    errors.push(
+      `Pregunta abierta '${skillDefinition.open_question_id}' no tiene información descriptiva en indicadores_info`,
+    )
+  }
+
+  return errors
 }
 
 // --- Mapeo Likert ---
@@ -105,23 +112,23 @@ function mapLikertToScore(value: number): number {
 
 // --- Función mejorada para generar feedback por lotes ---
 async function generateBatchFeedback(
-  indicatorScores: IndicatorScore[],
+  validIndicatorScores: IndicatorScore[],
   skillName: string,
 ): Promise<Record<string, string>> {
-  if (!openai) {
+  if (!openai || validIndicatorScores.length === 0) {
     return {}
   }
 
   try {
-    // Preparar datos para el prompt
-    const indicatorsData = indicatorScores
-      .map((indicator) => ({
-        id: indicator.id,
-        name: indicator.name,
-        score: indicator.score,
-        description: indicator.descripcion_indicador || "Sin descripción disponible",
-      }))
-      .slice(0, 6) // Limitar a 6 indicadores para evitar prompts muy largos
+    // Solo procesar indicadores que tienen información completa
+    const indicatorsForAI = validIndicatorScores
+      .filter((indicator) => indicator.name && !indicator.name.includes("[NOMBRE PENDIENTE"))
+      .slice(0, 6) // Limitar para evitar prompts muy largos
+
+    if (indicatorsForAI.length === 0) {
+      console.warn("No hay indicadores válidos para generar feedback con IA")
+      return {}
+    }
 
     const systemPrompt = `Eres un tutor experto en ${skillName}. Tu tarea es generar feedback breve y específico para múltiples indicadores de desempeño. 
 
@@ -134,13 +141,13 @@ Responde ÚNICAMENTE con un objeto JSON válido donde las claves sean los IDs de
 
     const userPrompt = `Genera feedback para los siguientes indicadores de ${skillName}:
 
-${indicatorsData
+${indicatorsForAI
   .map(
     (ind) =>
       `ID: "${ind.id}"
 Nombre: "${ind.name}"
 Puntuación: ${ind.score}/100
-Descripción: "${ind.description}"`,
+Descripción: "${ind.descripcion_indicador || "Aspecto clave de la habilidad"}"`,
   )
   .join("\n\n")}
 
@@ -171,6 +178,17 @@ Formato de respuesta requerido:
   } catch (error) {
     console.error("Error generando feedback por lotes:", error)
     return {}
+  }
+}
+
+// --- Función para generar feedback genérico sin IA ---
+function generateGenericFeedback(score: number, skillName: string): string {
+  if (score >= 75) {
+    return `Excelente desempeño en este aspecto de ${skillName}. Sigue aplicando esta fortaleza.`
+  } else if (score >= 40) {
+    return `Buen progreso en este componente de ${skillName}. Con práctica constante seguirás mejorando.`
+  } else {
+    return `Esta es un área de oportunidad en ${skillName}. Enfócate en desarrollar este aspecto.`
   }
 }
 
@@ -209,8 +227,8 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
 
     const { skillId, answers } = requestData
 
-    // Cargar definiciones de habilidades
-    const definitions = loadSkillDefinitions()
+    // Cargar definiciones usando importación directa
+    const definitions = skillDefinitionsData as AllSkillDefinitions
     const skillDefinition = definitions[skillId]
     if (!skillDefinition) {
       return NextResponse.json(
@@ -219,32 +237,45 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
       )
     }
 
-    // Procesar respuestas Likert
+    // Validar consistencia de datos
+    const consistencyErrors = validateDataConsistency(skillDefinition)
+    if (consistencyErrors.length > 0) {
+      console.error(`Errores de consistencia en skill_definitions.json para ${skillId}:`, consistencyErrors)
+      // Continuar con advertencias pero no fallar completamente
+    }
+
+    // Procesar respuestas Likert con mejor manejo de errores
     const likertScores: IndicatorScore[] = []
+    const dataInconsistencies: string[] = []
     let likertTotal = 0
 
     for (const indicator of skillDefinition.likert_indicators) {
       const answer = answers.find((a) => a.questionId === indicator)
       if (answer && typeof answer.value === "number") {
         const score = mapLikertToScore(answer.value)
-
         const indicadorInfo = skillDefinition.indicadores_info.find((info) => info.id === indicator)
 
         if (!indicadorInfo) {
-          console.error(
-            `Error: No se encontró indicadorInfo para el ID: ${indicator} en la habilidad: ${skillDefinition.name}`,
-          )
+          const errorMsg = `Indicador '${indicator}' no tiene información descriptiva en skill_definitions.json`
+          console.error(errorMsg)
+          dataInconsistencies.push(errorMsg)
+
+          // Usar información genérica en lugar de placeholder
+          likertScores.push({
+            id: indicator,
+            name: "Aspecto de la Habilidad", // Nombre genérico sin ID
+            score,
+            descripcion_indicador: "Componente importante de esta habilidad",
+            feedback_especifico: generateGenericFeedback(score, skillDefinition.name),
+          })
+        } else {
+          likertScores.push({
+            id: indicator,
+            name: indicadorInfo.nombre,
+            score,
+            descripcion_indicador: indicadorInfo.descripcion_indicador,
+          })
         }
-
-        const indicatorName = indicadorInfo ? indicadorInfo.nombre : `[NOMBRE PENDIENTE - ${indicator}]`
-        const descripcionIndicador = indicadorInfo ? indicadorInfo.descripcion_indicador : undefined
-
-        likertScores.push({
-          id: indicator,
-          name: indicatorName,
-          score,
-          descripcion_indicador: descripcionIndicador,
-        })
 
         likertTotal += score
       }
@@ -304,6 +335,11 @@ Evalúa esta respuesta y responde con un JSON en este formato exacto:
       (info) => info.id === skillDefinition.open_question_id,
     )
 
+    if (!openQuestionIndicadorInfo) {
+      console.warn(`Pregunta abierta '${skillDefinition.open_question_id}' no tiene información descriptiva`)
+      dataInconsistencies.push(`Pregunta abierta '${skillDefinition.open_question_id}' sin información descriptiva`)
+    }
+
     likertScores.push({
       id: skillDefinition.open_question_id,
       name: openQuestionIndicadorInfo ? openQuestionIndicadorInfo.nombre : "Aplicación Práctica",
@@ -313,24 +349,32 @@ Evalúa esta respuesta y responde con un JSON en este formato exacto:
         "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
     })
 
-    // Generar feedback por lotes (mejorado)
-    const batchFeedback = await generateBatchFeedback(likertScores, skillDefinition.name)
+    // Generar feedback por lotes solo para indicadores válidos
+    const validIndicatorsForAI = likertScores.filter(
+      (ind) => ind.name && !ind.name.includes("[NOMBRE PENDIENTE") && !ind.feedback_especifico, // Solo los que no tienen feedback ya asignado
+    )
+
+    const batchFeedback = await generateBatchFeedback(validIndicatorsForAI, skillDefinition.name)
 
     // Aplicar feedback generado o usar fallbacks
     likertScores.forEach((indScore) => {
+      if (indScore.feedback_especifico) {
+        // Ya tiene feedback (caso de inconsistencia de datos)
+        return
+      }
+
       if (batchFeedback[indScore.id]) {
         indScore.feedback_especifico = batchFeedback[indScore.id]
       } else {
-        // Fallback basado en puntuación
-        if (indScore.score >= 75) {
-          indScore.feedback_especifico = `¡Excelente desempeño en ${indScore.name}! Sigue aplicando esta fortaleza.`
-        } else if (indScore.score >= 40) {
-          indScore.feedback_especifico = `Buen progreso en ${indScore.name}. Con práctica constante seguirás mejorando.`
-        } else {
-          indScore.feedback_especifico = `${indScore.name} es un área de oportunidad. Enfócate en desarrollar este aspecto.`
-        }
+        // Fallback genérico
+        indScore.feedback_especifico = generateGenericFeedback(indScore.score, skillDefinition.name)
       }
     })
+
+    // Log de advertencias si hay inconsistencias
+    if (dataInconsistencies.length > 0) {
+      console.warn(`Inconsistencias de datos detectadas para ${skillDefinition.name}:`, dataInconsistencies)
+    }
 
     console.log(`Evaluación completada exitosamente para la habilidad: ${skillDefinition.name}`)
     return NextResponse.json({ indicatorScores: likertScores, globalScore }, { status: 200 })
