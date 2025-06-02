@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import MentorSessionInterface, { type MentorSessionData } from "./mentor-session-interface"
 import ReactMarkdown from "react-markdown"
+import { useToast } from "@/hooks/use-toast"
 
 // Importación dinámica de jsPDF y html2canvas para evitar problemas de SSR
 const jsPDF = dynamic(() => import("jspdf"), { ssr: false })
@@ -24,7 +25,6 @@ type UserInfo = {
   experience: string
   projectDescription: string
   obstacles: string
-  // Se elimina learningObjective del UserInfo general
 }
 
 type Skill = {
@@ -67,6 +67,8 @@ type SkillResult = {
 
 // Componente principal
 export default function SkillboosterMVP() {
+  const { toast } = useToast()
+
   // Estado para controlar el flujo
   const [currentStep, setCurrentStep] = useState<number>(0)
   const [userInfo, setUserInfo] = useState<UserInfo>({
@@ -75,7 +77,6 @@ export default function SkillboosterMVP() {
     experience: "",
     projectDescription: "",
     obstacles: "",
-    // Se elimina learningObjective del estado inicial
   })
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false)
   const [skills, setSkills] = useState<Skill[]>([])
@@ -93,18 +94,35 @@ export default function SkillboosterMVP() {
   const [currentSkillLearningObjective, setCurrentSkillLearningObjective] = useState<string>("")
   const [skillObjectiveSubmitted, setSkillObjectiveSubmitted] = useState<boolean>(false)
 
+  // Función para mostrar notificaciones de error mejoradas
+  const showErrorToast = (title: string, description: string, variant: "destructive" | "warning" = "destructive") => {
+    toast({
+      title,
+      description,
+      variant,
+    })
+  }
+
+  const showSuccessToast = (title: string, description: string) => {
+    toast({
+      title,
+      description,
+      variant: "success",
+    })
+  }
+
   // Función para renderizar el indicador de progreso general
   const renderOverallProgress = (): string => {
     const totalSelectedSkills = selectedSkills.length
 
     switch (currentStep) {
-      case 0: // LandingStep
-        return "" // No mostramos progreso en la página de inicio
-      case 1: // UserInfoStep
+      case 0:
+        return ""
+      case 1:
         return "Paso 1 de 4: Perfil de Usuario"
-      case 2: // SkillSelectionStep
+      case 2:
         return "Paso 2 de 4: Selección de Habilidades"
-      case 3: // SkillObjectiveStep o AssessmentStep
+      case 3:
         if (totalSelectedSkills > 0) {
           const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
           const skillName = currentSkill?.name || "Habilidad"
@@ -116,7 +134,7 @@ export default function SkillboosterMVP() {
           }
         }
         return "Paso 3 de 4: Evaluación de Habilidad"
-      case 4: // ResultsStep o MentorSessionInterface
+      case 4:
         if (totalSelectedSkills > 0) {
           const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
           const skillName = currentSkill?.name || "Habilidad"
@@ -128,36 +146,35 @@ export default function SkillboosterMVP() {
           }
         }
         return "Paso 3 de 4: Resultados"
-      case 5: // SummaryStep
+      case 5:
         return "Paso 4 de 4: Resumen Final"
       default:
         return ""
     }
   }
 
-  // Cargar datos de preguntas
+  // Cargar datos de preguntas con mejor manejo de errores
   useEffect(() => {
-    // Cargamos los datos desde la API
     const loadSkillsData = async () => {
       try {
-        // Llamada a la API para obtener las habilidades con datos completos
         const response = await fetch("/api/questions")
 
         if (!response.ok) {
-          const errorText = await response.text() // Intenta obtener más detalles del error como texto
+          const errorText = await response.text()
           console.error(`Error de API al cargar habilidades: ${response.status} ${response.statusText}`, errorText)
-          throw new Error(
-            `Error al cargar datos de habilidades: ${response.status} ${response.statusText}. Cuerpo del error: ${errorText}`,
-          )
+          throw new Error(`Error ${response.status}: ${response.statusText}`)
         }
 
-        // Solo proceder con response.json() si response.ok es true
         const skillsData: Skill[] = await response.json()
         setSkills(skillsData)
+        showSuccessToast("Datos cargados", "Las habilidades se han cargado correctamente")
       } catch (error) {
         console.error("Error al cargar las habilidades:", error)
-        // Mostrar un mensaje de error al usuario o establecer un estado de error
-        setSkills([]) // Establecer un array vacío para evitar errores de renderizado
+        showErrorToast(
+          "Error al cargar datos",
+          "No se pudieron cargar las habilidades. Por favor, recarga la página o contacta al soporte técnico.",
+        )
+        setSkills([])
       }
     }
 
@@ -173,6 +190,9 @@ export default function SkillboosterMVP() {
     e.preventDefault()
     if (userInfo.name && userInfo.role && userInfo.projectDescription && userInfo.obstacles) {
       setCurrentStep(2)
+      showSuccessToast("Perfil completado", "Tu información ha sido guardada correctamente")
+    } else {
+      showErrorToast("Información incompleta", "Por favor, completa todos los campos requeridos")
     }
   }
 
@@ -180,30 +200,38 @@ export default function SkillboosterMVP() {
     if (selectedSkills.length > 0) {
       setCurrentSkillIndex(0)
       setCurrentQuestionIndex(0)
-      setCurrentSkillLearningObjective("") // Limpiar para la nueva habilidad
-      setSkillObjectiveSubmitted(false) // Reiniciar para la nueva habilidad
+      setCurrentSkillLearningObjective("")
+      setSkillObjectiveSubmitted(false)
 
-      // Inicializamos el objeto de respuestas para cada habilidad seleccionada
       const initialAnswers: Record<string, Answer[]> = {}
       selectedSkills.forEach((skillId) => {
         initialAnswers[skillId] = []
       })
       setAnswers(initialAnswers)
 
-      setCurrentStep(3) // Ir al nuevo SkillObjectiveStep
+      setCurrentStep(3)
+      showSuccessToast(
+        "Habilidades seleccionadas",
+        `Comenzarás la evaluación de ${selectedSkills.length} habilidad${selectedSkills.length > 1 ? "es" : ""}`,
+      )
+    } else {
+      showErrorToast("Selección requerida", "Debes seleccionar al menos una habilidad para continuar")
     }
   }
 
-  // Función para manejar el envío del objetivo de la habilidad
   const handleSubmitSkillObjective = () => {
     setSkillObjectiveSubmitted(true)
+    showSuccessToast("Objetivo definido", "Ahora comenzaremos con las preguntas de evaluación")
   }
 
   const handleAnswerQuestion = async () => {
     const currentSkillId = selectedSkills[currentSkillIndex]
     const currentSkill = skills.find((s) => s.id === currentSkillId)
 
-    if (!currentSkill) return
+    if (!currentSkill) {
+      showErrorToast("Error del sistema", "No se pudo encontrar la habilidad actual")
+      return
+    }
 
     const currentQuestion = currentSkill.questions[currentQuestionIndex]
 
@@ -217,13 +245,10 @@ export default function SkillboosterMVP() {
       },
     ]
     setAnswers(newAnswers)
-
-    // Limpiamos la respuesta actual
     setCurrentAnswer("")
 
     // Verificamos si hay más preguntas para esta habilidad
     if (currentQuestionIndex < currentSkill.questions.length - 1) {
-      // Pasamos a la siguiente pregunta
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     } else {
       // Última pregunta - Llamamos a las APIs para obtener puntuación y tips
@@ -248,20 +273,20 @@ export default function SkillboosterMVP() {
         })
 
         if (!scoreResponse.ok) {
-          throw new Error(`Error en la API de puntuación: ${scoreResponse.statusText}`)
+          const errorData = await scoreResponse.json().catch(() => ({}))
+          throw new Error(
+            errorData.details || errorData.error || `Error ${scoreResponse.status}: ${scoreResponse.statusText}`,
+          )
         }
 
         const scoreData = await scoreResponse.json()
-        console.log("Respuesta de API score:", scoreData) // Para diagnóstico
+        console.log("Respuesta de API score:", scoreData)
 
-        // Extraer los datos correctamente, manejando diferentes estructuras posibles
         const indicatorScores = scoreData.indicatorScores || []
         const globalScore = scoreData.globalScore || 0
 
-        // Verificar que tenemos datos válidos
         if (!indicatorScores.length) {
-          console.error("No se recibieron indicatorScores válidos de la API")
-          throw new Error("Datos de evaluación incompletos")
+          throw new Error("No se recibieron datos de evaluación válidos")
         }
 
         // 2. Llamada a la API de lecciones para generar tips personalizados
@@ -286,9 +311,21 @@ export default function SkillboosterMVP() {
         if (lessonResponse.ok) {
           const lessonData = await lessonResponse.json()
           tips = lessonData.tips || []
+          if (lessonData.error) {
+            showErrorToast(
+              "Consejos limitados",
+              "Se generaron consejos básicos debido a un problema técnico temporal",
+              "warning",
+            )
+          }
         } else {
           console.warn("Error al obtener tips personalizados, usando tips por defecto")
-          // Fallback tips basados en los datos reales
+          showErrorToast(
+            "Consejos no disponibles",
+            "No se pudieron generar consejos personalizados. Se mostrarán consejos generales.",
+            "warning",
+          )
+
           const sortedIndicators = [...indicatorScores].sort((a, b) => b.score - a.score)
           const strongest = sortedIndicators[0] || { name: "habilidad principal", score: 0 }
           const weakest = sortedIndicators[sortedIndicators.length - 1] || { name: "área de mejora", score: 0 }
@@ -306,7 +343,7 @@ export default function SkillboosterMVP() {
           skillName: currentSkill.name,
           globalScore,
           indicatorScores,
-          tips, // Use the tips from the lesson API
+          tips,
         }
 
         // 4. Actualizamos el estado
@@ -317,57 +354,29 @@ export default function SkillboosterMVP() {
         // 5. Pasamos a la pantalla de resultados
         setCurrentStep(4)
         setShowMentorSession(false)
+        showSuccessToast("Evaluación completada", `Tu puntuación global es ${globalScore}/100`)
       } catch (error: any) {
-        // Especificar 'any' para poder acceder a propiedades específicas
         console.error("Error DETALLADO al procesar la evaluación:", error)
 
-        // Extraer más información del error si está disponible
-        if (error && typeof error === "object") {
-          if (error.message) {
-            console.error("Mensaje de error:", error.message)
-          }
-          if (error.stack) {
-            console.error("Stack de error:", error.stack)
-          }
-          if (error.response) {
-            console.error("Datos de respuesta:", error.response)
-            if (error.response.data) {
-              console.error("Datos de error:", error.response.data)
-            }
-            if (error.response.status) {
-              console.error("Código de estado HTTP:", error.response.status)
-            }
-          }
-          if (error.request) {
-            console.error("Detalles de la solicitud:", error.request)
-          }
-          if (error.config) {
-            console.error("Configuración de la solicitud:", error.config)
-          }
-        }
-
-        // Mantenemos la alerta existente para el usuario
-        alert(
-          "Ocurrió un error al procesar tu evaluación. Se mostrarán resultados aproximados. Por favor, revisa tu conexión o intenta más tarde.",
+        showErrorToast(
+          "Error en la evaluación",
+          error.message || "Ocurrió un problema al procesar tu evaluación. Se mostrarán resultados aproximados.",
         )
 
-        // Verificación adicional para currentSkill
+        // Fallback mejorado
         const currentSkillId = selectedSkills[currentSkillIndex]
         const currentSkill = skills.find((s) => s.id === currentSkillId)
 
         if (!currentSkill) {
-          console.error("No se pudo encontrar currentSkill en el bloque catch de handleAnswerQuestion")
-          // Terminamos la ejecución si no podemos encontrar la habilidad actual
+          console.error("No se pudo encontrar currentSkill en el bloque catch")
           return
         }
 
-        // Resto de la lógica del fallback existente
         const fallbackResult: SkillResult = {
           skillId: currentSkillId,
           skillName: currentSkill.name,
           globalScore: 75,
           indicatorScores: newAnswers[currentSkillId].map((answer) => {
-            // Mejorar el fallback para que use nombres descriptivos cuando sea posible
             const question = currentSkill.questions.find((q) => q.id === answer.questionId)
             const indicadorInfo = currentSkill.indicadoresInfo.find((info) => info.id === answer.questionId)
 
@@ -377,6 +386,7 @@ export default function SkillboosterMVP() {
                 indicadorInfo?.nombre || question?.prompt?.substring(0, 30) + "..." || `Indicador ${answer.questionId}`,
               score: typeof answer.value === "number" ? answer.value * 20 : 60,
               descripcion_indicador: indicadorInfo?.descripcion_indicador,
+              feedback_especifico: "Evaluación aproximada debido a un problema técnico temporal.",
             }
           }),
           tips: [
@@ -398,23 +408,20 @@ export default function SkillboosterMVP() {
   }
 
   const handleNextSkill = () => {
-    // Verificamos si hay más habilidades por evaluar
     if (currentSkillIndex < selectedSkills.length - 1) {
-      // Pasamos a la siguiente habilidad
       setCurrentSkillIndex(currentSkillIndex + 1)
       setCurrentQuestionIndex(0)
-      setCurrentSkillLearningObjective("") // Limpiar para la nueva habilidad
-      setSkillObjectiveSubmitted(false) // Reiniciar para la nueva habilidad
-      setCurrentStep(3) // Volvemos a la pantalla de objetivo de habilidad
+      setCurrentSkillLearningObjective("")
+      setSkillObjectiveSubmitted(false)
+      setCurrentStep(3)
       setShowMentorSession(false)
     } else {
-      // Pasamos a la pantalla de resumen final
       setCurrentStep(5)
+      showSuccessToast("¡Evaluación completa!", "Has completado todas las habilidades seleccionadas")
     }
   }
 
   const handleRestart = () => {
-    // Reiniciamos todo el proceso
     setCurrentStep(0)
     setUserInfo({
       name: "",
@@ -427,21 +434,22 @@ export default function SkillboosterMVP() {
     setSelectedSkills([])
     setCurrentSkillIndex(0)
     setCurrentQuestionIndex(0)
-    setCurrentSkillLearningObjective("") // Limpiar el objetivo de aprendizaje
-    setSkillObjectiveSubmitted(false) // Reiniciar el estado de envío
+    setCurrentSkillLearningObjective("")
+    setSkillObjectiveSubmitted(false)
     setAnswers({})
     setResults({})
     setShowMentorSession(false)
+    showSuccessToast("Reinicio completo", "Puedes comenzar una nueva evaluación")
   }
 
   const handleStartMentorSession = () => {
     setShowMentorSession(true)
+    showSuccessToast("Sesión iniciada", "Comenzando tu sesión personalizada con el mentor")
   }
 
   const handleMentorSessionComplete = (sessionData: MentorSessionData) => {
     const currentSkillId = selectedSkills[currentSkillIndex]
 
-    // Actualizar los resultados con los datos de la sesión de mentoría
     const newResults = { ...results }
     newResults[currentSkillId] = {
       ...newResults[currentSkillId],
@@ -449,31 +457,29 @@ export default function SkillboosterMVP() {
     }
     setResults(newResults)
 
-    // Avanzar automáticamente al siguiente paso en el flujo
+    showSuccessToast("Sesión completada", "Tu sesión de mentoría ha sido guardada exitosamente")
     handleNextSkill()
   }
 
   const handleDownloadPDF = async () => {
     const summaryElement = document.getElementById("summary-content-to-pdf")
     if (!summaryElement) {
-      console.error("Elemento del resumen no encontrado para generar PDF.")
+      showErrorToast("Error de descarga", "No se pudo encontrar el contenido para generar el PDF")
       return
     }
 
     setPdfGenerating(true)
     try {
-      // Importar dinámicamente las librerías
       const jsPDFModule = await import("jspdf")
       const html2canvasModule = await import("html2canvas")
 
       const JsPDF = jsPDFModule.default
       const html2canvas = html2canvasModule.default
 
-      // Crear el canvas
       const canvas = await html2canvas(summaryElement, {
-        scale: 2, // Aumenta la escala para mejor calidad de imagen en el PDF
-        useCORS: true, // Si tienes imágenes externas
-        logging: false, // Para depuración
+        scale: 2,
+        useCORS: true,
+        logging: false,
       })
 
       const imgData = canvas.toDataURL("image/png")
@@ -488,14 +494,15 @@ export default function SkillboosterMVP() {
       const imgWidth = canvas.width
       const imgHeight = canvas.height
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
-      const imgX = (pdfWidth - imgWidth * ratio) / 2 // Centrar imagen
-      const imgY = 10 // Margen superior
+      const imgX = (pdfWidth - imgWidth * ratio) / 2
+      const imgY = 10
 
       pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio)
       pdf.save("reporte-skillboosterx.pdf")
+      showSuccessToast("PDF generado", "Tu reporte ha sido descargado exitosamente")
     } catch (error) {
       console.error("Error al generar PDF:", error)
-      // Aquí podrías mostrar un mensaje de error al usuario
+      showErrorToast("Error de descarga", "No se pudo generar el PDF. Intenta nuevamente o contacta al soporte.")
     } finally {
       setPdfGenerating(false)
     }
@@ -523,11 +530,10 @@ export default function SkillboosterMVP() {
 
         if (!currentSkill) return <div>Cargando habilidad...</div>
 
-        // Renderizar SkillObjectiveStep o AssessmentStep según el estado
         if (!skillObjectiveSubmitted) {
           return (
             <SkillObjectiveStep
-              skillName={currentSkill.name} // Usar name en lugar de axis
+              skillName={currentSkill.name}
               learningObjective={currentSkillLearningObjective}
               setLearningObjective={setCurrentSkillLearningObjective}
               onSubmitObjective={handleSubmitSkillObjective}
@@ -551,19 +557,16 @@ export default function SkillboosterMVP() {
 
         if (!result) return <div>Cargando resultados...</div>
 
-        // Encontrar la respuesta a la pregunta abierta
         const currentSkill2 = skills.find((s) => s.id === resultSkillId)
         const openEndedQuestionId = currentSkill2?.questions.find((q) => q.type === "open")?.id
         const openEndedAnswer = answers[resultSkillId]?.find((answer) => answer.questionId === openEndedQuestionId)
           ?.value as string | undefined
 
-        // Crear un perfil de usuario que incluya el objetivo de aprendizaje específico
         const userProfileForMentor = {
           ...userInfo,
-          learningObjective: currentSkillLearningObjective, // Añadir el objetivo específico de la habilidad
+          learningObjective: currentSkillLearningObjective,
         }
 
-        // Preparar datos para el navegador de habilidades
         const allSkillsForNavigation = selectedSkills.map((skillId) => {
           const skillResult = results[skillId]
           return {
@@ -574,7 +577,6 @@ export default function SkillboosterMVP() {
           }
         })
 
-        // Función para cambiar a otra habilidad evaluada
         const handleSelectSkill = (skillId: string) => {
           const newIndex = selectedSkills.findIndex((id) => id === skillId)
           if (newIndex >= 0) {
@@ -589,7 +591,7 @@ export default function SkillboosterMVP() {
             globalScore={result.globalScore}
             indicatorScores={result.indicatorScores}
             openEndedAnswer={openEndedAnswer}
-            userProfile={userProfileForMentor} // Pasar el perfil modificado
+            userProfile={userProfileForMentor}
             onSessionComplete={handleMentorSessionComplete}
           />
         ) : (
@@ -630,7 +632,8 @@ export default function SkillboosterMVP() {
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-            <p className="mt-4 text-xl">Procesando...</p>
+            <p className="mt-4 text-xl">Procesando tu evaluación...</p>
+            <p className="mt-2 text-sm text-gray-400">Esto puede tomar unos momentos</p>
           </div>
         ) : (
           renderStep()
@@ -640,7 +643,7 @@ export default function SkillboosterMVP() {
   )
 }
 
-// Componentes para cada etapa
+// Componentes para cada etapa (manteniendo los existentes sin cambios)
 function LandingStep({
   onStart,
 }: {
@@ -1498,7 +1501,6 @@ function SummaryStep({
           </div>
         </div>
 
-        {/* Rest of the component remains unchanged */}
         {/* Dashboard del Ejercicio Práctico */}
         {resultsArray.some((result) => result.mentorSessionData?.exerciseScore !== undefined) && (
           <div className="mt-8 border-t border-gray-700 pt-6">

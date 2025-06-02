@@ -2,6 +2,33 @@ import { NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
 import OpenAI from "openai"
+import { z } from "zod"
+
+// --- Validation Schemas ---
+const IndicatorScoreSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  score: z.number().min(0).max(100),
+  descripcion_indicador: z.string().optional(),
+  feedback_especifico: z.string().optional(),
+})
+
+const UserInfoSchema = z.object({
+  name: z.string().min(1, "Nombre es requerido"),
+  role: z.string().min(1, "Rol es requerido"),
+  experience: z.string(),
+  projectDescription: z.string().min(1, "Descripción del proyecto es requerida"),
+  obstacles: z.string().min(1, "Obstáculos son requeridos"),
+  learningObjective: z.string().optional(),
+})
+
+const LessonRequestSchema = z.object({
+  skillId: z.string().min(1, "skillId es requerido"),
+  userInfo: UserInfoSchema,
+  indicatorScores: z.array(IndicatorScoreSchema).min(1, "Se requieren puntuaciones de indicadores"),
+  globalScore: z.number().min(0).max(100),
+  openEndedAnswer: z.string().optional(),
+})
 
 // --- Tipos ---
 interface IndicatorScore {
@@ -46,20 +73,13 @@ interface AllSkillDefinitions {
   [key: string]: SkillDefinition
 }
 
-interface LessonRequestPayload {
-  skillId: string
-  userInfo: UserInfo
-  indicatorScores: IndicatorScore[]
-  globalScore: number
-  openEndedAnswer?: string
-}
-
 interface LessonResponsePayload {
   tips: string[]
 }
 
 interface ErrorResponse {
   error: string
+  details?: string
 }
 
 // --- Configuración OpenAI ---
@@ -97,16 +117,37 @@ export async function POST(request: Request): Promise<NextResponse<LessonRespons
 
   try {
     if (!openai) {
-      return NextResponse.json({ error: "OpenAI API no está configurada para generación de tips." }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: "OpenAI API no está configurada para generación de tips.",
+          details: "Contacte al administrador del sistema.",
+        },
+        { status: 500 },
+      )
     }
 
-    const { skillId, userInfo, indicatorScores, globalScore, openEndedAnswer } =
-      (await request.json()) as LessonRequestPayload
-
-    // Validar datos requeridos
-    if (!skillId || !userInfo || !indicatorScores || globalScore === undefined) {
-      return NextResponse.json({ error: "Datos requeridos faltantes en la solicitud de tips." }, { status: 400 })
+    // Validar entrada
+    let requestData
+    try {
+      const rawData = await request.json()
+      requestData = LessonRequestSchema.parse(rawData)
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: "Datos de entrada inválidos para generación de tips",
+            details: validationError.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", "),
+          },
+          { status: 400 },
+        )
+      }
+      return NextResponse.json(
+        { error: "Error al procesar la solicitud de tips", details: "Formato de datos incorrecto" },
+        { status: 400 },
+      )
     }
+
+    const { skillId, userInfo, indicatorScores, globalScore, openEndedAnswer } = requestData
 
     // Cargar definiciones de habilidades
     const definitions = loadSkillDefinitions()
@@ -114,7 +155,10 @@ export async function POST(request: Request): Promise<NextResponse<LessonRespons
 
     if (!skillDefinition) {
       return NextResponse.json(
-        { error: `Habilidad con ID '${skillId}' no encontrada para generación de tips.` },
+        {
+          error: `Habilidad con ID '${skillId}' no encontrada para generación de tips.`,
+          details: "Verifique el ID de la habilidad.",
+        },
         { status: 404 },
       )
     }
@@ -124,7 +168,7 @@ export async function POST(request: Request): Promise<NextResponse<LessonRespons
     const strongest = sortedByScore[0] || { name: "habilidad principal", score: 0 }
     const weakest = sortedByScore[sortedByScore.length - 1] || { name: "área de mejora", score: 0 }
 
-    // Construir el prompt para OpenAI basado en las content_guidelines
+    // Construir el prompt para OpenAI con formato JSON estructurado
     const systemPrompt = `Eres un ${skillDefinition.prompt_tutor_definition.role} especializado en ${skillDefinition.name}.
 
 ${skillDefinition.prompt_tutor_definition.expertise}
@@ -157,16 +201,19 @@ ${indicatorScores.map((indicator) => `- ${indicator.name}: ${indicator.score}/10
 ${openEndedAnswer ? `# Respuesta a Pregunta Abierta:\n"${openEndedAnswer}"` : ""}
 
 # Tu Tarea:
-Genera exactamente 3 tips como un array JSON válido de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores. No incluyas los puntajes numéricos directamente en el texto del tip.
+Genera exactamente 3 tips personalizados. Responde con un JSON en este formato exacto:
 
-Estructura requerida:
-1. **Tip 1 (Fortaleza):** Reconoce la fortaleza principal "${strongest.name}" y explica cómo puede aprovecharla mejor en su contexto como ${userInfo.role}.
-2. **Tip 2 (Oportunidad):** Identifica el área de mejora "${weakest.name}" y ofrece una sugerencia específica y accionable, conectándola con sus obstáculos si es relevante.
-3. **Tip 3 (Consejo General):** Proporciona un consejo motivador y práctico para seguir desarrollando ${skillDefinition.name} en su contexto profesional.
+{
+  "tips": [
+    "Tip 1 (Fortaleza): [Reconoce '${strongest.name}' y explica cómo aprovecharla mejor como ${userInfo.role}]",
+    "Tip 2 (Oportunidad): [Identifica '${weakest.name}' y ofrece sugerencia específica y accionable]", 
+    "Tip 3 (Consejo General): [Consejo motivador y práctico para desarrollar ${skillDefinition.name}]"
+  ]
+}
 
-Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional.`
+Cada tip debe ser una frase completa, natural y orientada a la acción. No uses IDs internos ni puntajes numéricos directamente.`
 
-    // Llamada a OpenAI para generación de tips
+    // Llamada a OpenAI para generación de tips con formato JSON
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -183,31 +230,20 @@ Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional
       throw new Error("No se recibió respuesta de OpenAI para generación de tips")
     }
 
-    // Parsear la respuesta JSON
+    // Parsear la respuesta JSON estructurada
     let generatedTips: string[]
     try {
       const parsedResponse = JSON.parse(content)
 
-      // Intentar extraer el array de tips de diferentes estructuras posibles
-      if (Array.isArray(parsedResponse)) {
-        generatedTips = parsedResponse
-      } else if (parsedResponse.tips && Array.isArray(parsedResponse.tips)) {
+      if (parsedResponse.tips && Array.isArray(parsedResponse.tips)) {
         generatedTips = parsedResponse.tips
-      } else if (parsedResponse.array && Array.isArray(parsedResponse.array)) {
-        generatedTips = parsedResponse.array
       } else {
-        // Si no encontramos un array, intentar extraer valores del objeto
-        const values = Object.values(parsedResponse).filter((value) => typeof value === "string")
-        if (values.length >= 3) {
-          generatedTips = values.slice(0, 3) as string[]
-        } else {
-          throw new Error("Estructura de respuesta inesperada de OpenAI para tips")
-        }
+        throw new Error("Formato de respuesta inesperado: no se encontró array 'tips'")
       }
 
       // Validar que tenemos exactamente 3 tips
-      if (!generatedTips || generatedTips.length !== 3) {
-        throw new Error(`Se esperaban 3 tips, pero se recibieron ${generatedTips?.length || 0}`)
+      if (generatedTips.length !== 3) {
+        throw new Error(`Se esperaban 3 tips, pero se recibieron ${generatedTips.length}`)
       }
 
       // Validar que todos los tips sean strings no vacíos
@@ -241,6 +277,13 @@ Responde ÚNICAMENTE con un array JSON válido de 3 strings, sin texto adicional
       "Consejo: Practica regularmente y busca oportunidades para aplicar estas habilidades en tu trabajo diario.",
     ]
 
-    return NextResponse.json({ tips: fallbackTips }, { status: 200 })
+    return NextResponse.json(
+      {
+        tips: fallbackTips,
+        error: "Se generaron tips de respaldo debido a un error técnico",
+        details: "Los tips personalizados no estuvieron disponibles temporalmente.",
+      },
+      { status: 200 },
+    )
   }
 }
