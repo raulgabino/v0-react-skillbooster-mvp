@@ -99,7 +99,7 @@ function mapLikertToScore(value: number): number {
 // --- Handler POST ---
 export async function POST(request: Request): Promise<NextResponse<ScoreResponsePayload | ErrorResponse>> {
   // Log message to console
-  console.log("Simplified /api/score was hit!")
+  console.log("API /api/score was called for skill evaluation")
 
   try {
     if (!openai) {
@@ -110,15 +110,10 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
 
     // Cargar definiciones de habilidades
     const definitions = loadSkillDefinitions()
-    const skillKey = Object.keys(definitions).find(
-      (key) => definitions[key].name.toLowerCase().replace(/\s+/g, "_") === skillId,
-    )
-
-    if (!skillKey) {
-      return NextResponse.json({ error: "Habilidad no encontrada." }, { status: 404 })
+    const skillDefinition = definitions[skillId]
+    if (!skillDefinition) {
+      return NextResponse.json({ error: `Habilidad con ID '${skillId}' no encontrada.` }, { status: 404 })
     }
-
-    const skillDefinition = definitions[skillKey]
 
     // Procesar respuestas Likert
     const likertScores: IndicatorScore[] = []

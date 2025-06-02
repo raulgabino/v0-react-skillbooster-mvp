@@ -252,18 +252,53 @@ export default function SkillboosterMVP() {
         }
 
         const scoreData = await scoreResponse.json()
-        const { indicatorScores, globalScore } = scoreData
+        console.log("Respuesta de API score:", scoreData) // Para diagnóstico
 
-        // 2. Generar tips basados en los indicatorScores recibidos
-        const sortedIndicators = [...indicatorScores].sort((a, b) => b.score - a.score)
-        const strongest = sortedIndicators[0]
-        const weakest = sortedIndicators[sortedIndicators.length - 1]
+        // Extraer los datos correctamente, manejando diferentes estructuras posibles
+        const indicatorScores = scoreData.indicatorScores || []
+        const globalScore = scoreData.globalScore || 0
 
-        const tips = [
-          `Fortaleza: Tu ${strongest.name} es destacable, mantén desarrollando esta capacidad.`,
-          `Oportunidad: Enfócate en mejorar tu ${weakest.name} para un desarrollo más equilibrado.`,
-          `Consejo: Practica regularmente las habilidades de ${currentSkill.name} en tu contexto de ${userInfo?.role || "trabajo"}.`,
-        ]
+        // Verificar que tenemos datos válidos
+        if (!indicatorScores.length) {
+          console.error("No se recibieron indicatorScores válidos de la API")
+          throw new Error("Datos de evaluación incompletos")
+        }
+
+        // 2. Llamada a la API de lecciones para generar tips personalizados
+        const lessonResponse = await fetch("/api/lesson", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            skillId: currentSkillId,
+            userInfo: {
+              ...userInfo,
+              learningObjective: currentSkillLearningObjective,
+            },
+            indicatorScores,
+            globalScore,
+            openEndedAnswer,
+          }),
+        })
+
+        let tips: string[]
+        if (lessonResponse.ok) {
+          const lessonData = await lessonResponse.json()
+          tips = lessonData.tips || []
+        } else {
+          console.warn("Error al obtener tips personalizados, usando tips por defecto")
+          // Fallback tips basados en los datos reales
+          const sortedIndicators = [...indicatorScores].sort((a, b) => b.score - a.score)
+          const strongest = sortedIndicators[0] || { name: "habilidad principal", score: 0 }
+          const weakest = sortedIndicators[sortedIndicators.length - 1] || { name: "área de mejora", score: 0 }
+
+          tips = [
+            `Fortaleza: Tu ${strongest.name} es destacable, mantén desarrollando esta capacidad.`,
+            `Oportunidad: Enfócate en mejorar tu ${weakest.name} para un desarrollo más equilibrado.`,
+            `Consejo: Practica regularmente las habilidades de ${currentSkill.name} en tu contexto de ${userInfo?.role || "trabajo"}.`,
+          ]
+        }
 
         // 3. Construimos el resultado completo
         const result: SkillResult = {
@@ -271,7 +306,7 @@ export default function SkillboosterMVP() {
           skillName: currentSkill.name,
           globalScore,
           indicatorScores,
-          tips, // Usar los tips generados arriba
+          tips, // Use the tips from the lesson API
         }
 
         // 4. Actualizamos el estado
