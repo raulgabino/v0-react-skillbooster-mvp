@@ -133,7 +133,7 @@ importers:
         version: 0.4.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       openai:
         specifier: latest
-        version: 5.0.2(ws@8.18.2)(zod@3.25.49)
+        version: 5.1.0(ws@8.18.2)(zod@3.25.50)
       path:
         specifier: latest
         version: 0.12.7
@@ -175,7 +175,7 @@ importers:
         version: 8.18.2
       zod:
         specifier: latest
-        version: 3.25.49
+        version: 3.25.50
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -1897,8 +1897,8 @@ packages:
     resolution: {integrity: sha512-RSn9F68PjH9HqtltsSnqYC1XXoWe9Bju5+213R98cNGttag9q9yAOTzdbsqvIa7aNm5WffBZFpWYr2aWrklWAw==}
     engines: {node: '>= 6'}
 
-  openai@5.0.2:
-    resolution: {integrity: sha512-NN7LAAImgBmd4RIe6WyRpLmwCbn+HQ1iaXeIG7K9DM3Auy/G2waKFhrDfRgaEeY0UUPnm6nohaCsqcS+zO8+2g==}
+  openai@5.1.0:
+    resolution: {integrity: sha512-YQBgPJykHrDOlngB/8QpOsFNg36yofBatpeDWg1zejl9R59/ELuN7AMPSU95ZIdChbKc/o5vg1UnBJ1OEB0IJA==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -2391,8 +2391,8 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
-  zod@3.25.49:
-    resolution: {integrity: sha512-JMMPMy9ZBk3XFEdbM3iL1brx4NUSejd6xr3ELrrGEfGb355gjhiAWtG3K5o+AViV/3ZfkIrCzXsZn6SbLwTR8Q==}
+  zod@3.25.50:
+    resolution: {integrity: sha512-VstOnRxf4tlSq0raIwbn0n+LA34SxVoZ8r3pkwSUM0jqNiA/HCMQEVjTuS5FZmHsge+9MDGTiAuHyml5T0um6A==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -4164,10 +4164,10 @@ snapshots:
 
   object-hash@3.0.0: {}
 
-  openai@5.0.2(ws@8.18.2)(zod@3.25.49):
+  openai@5.1.0(ws@8.18.2)(zod@3.25.50):
     optionalDependencies:
       ws: 8.18.2
-      zod: 3.25.49
+      zod: 3.25.50
 
   package-json-from-dist@1.0.1: {}
 
@@ -4721,6 +4721,6 @@ snapshots:
 
   yaml@2.8.0: {}
 
-  zod@3.25.49: {}
+  zod@3.25.50: {}
 
   zwitch@2.0.4: {}
