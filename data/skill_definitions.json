@@ -387,5 +387,197 @@
         "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., CE1, AA_P3). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
       ]
     }
+  },
+  "gestion_proyectos": {
+    "name": "Gestión de Proyectos",
+    "rubrica": {
+      "GP1": "Planificación y Alcance",
+      "GP2": "Gestión del Tiempo y Cronograma",
+      "GP3": "Gestión de Riesgos",
+      "GP4": "Monitoreo y Control",
+      "GP5": "Gestión de Stakeholders",
+      "GP6": "Cierre y Aprendizaje"
+    },
+    "likert_indicators": ["GP1", "GP2", "GP3", "GP4", "GP5", "GP6"],
+    "indicadores_info": [
+      {
+        "id": "GP1",
+        "nombre": "Planificación y Alcance",
+        "descripcion_indicador": "Habilidad para definir claramente los objetivos, entregables, tareas y recursos necesarios para el proyecto."
+      },
+      {
+        "id": "GP2",
+        "nombre": "Gestión del Tiempo y Cronograma",
+        "descripcion_indicador": "Capacidad para estimar duraciones, secuenciar actividades y crear un cronograma realista para el proyecto."
+      },
+      {
+        "id": "GP3",
+        "nombre": "Gestión de Riesgos",
+        "descripcion_indicador": "Habilidad para identificar proactivamente posibles riesgos, evaluar su impacto y desarrollar planes de mitigación."
+      },
+      {
+        "id": "GP4",
+        "nombre": "Monitoreo y Control",
+        "descripcion_indicador": "Capacidad para dar seguimiento constante al progreso del proyecto, comparándolo con el plan inicial y realizando los ajustes necesarios."
+      },
+      {
+        "id": "GP5",
+        "nombre": "Gestión de Stakeholders",
+        "descripcion_indicador": "Habilidad para identificar a las partes interesadas, entender sus expectativas y comunicarse con ellas de manera efectiva."
+      },
+      {
+        "id": "GP6",
+        "nombre": "Cierre y Aprendizaje",
+        "descripcion_indicador": "Capacidad para formalizar el cierre del proyecto, documentar las lecciones aprendidas y evaluar el éxito general."
+      }
+    ],
+    "open_question_id": "GP7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Gestión de Proyectos. La pregunta fue: 'Estás a cargo de un proyecto importante que tiene un retraso de dos semanas sobre el cronograma original. Describe, paso a paso, tu plan de acción inmediato. ¿Qué información necesitarías analizar, con quién te comunicarías primero y qué tipo de soluciones explorarías?' Asigna una puntuación de 0 a 100 basada en: 1. Análisis Diagnóstico (30 pts), 2. Comunicación con Stakeholders (30 pts), 3. Exploración de Soluciones (30 pts), 4. Enfoque Proactivo y de Control (10 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Gestión de Proyectos",
+      "expertise": "Especialista en metodologías de gestión de proyectos, planificación estratégica y entrega exitosa de resultados dentro de tiempo y presupuesto.",
+      "tone": "Estructurado pero flexible, enfocado en la eficiencia y la entrega de valor.",
+      "focus_areas": [
+        "Planificación y definición de alcance",
+        "Gestión de cronogramas y recursos",
+        "Identificación y mitigación de riesgos",
+        "Monitoreo y control de progreso",
+        "Comunicación con stakeholders",
+        "Cierre y lecciones aprendidas"
+      ],
+      "teaching_approach": "Proporcionar marcos metodológicos y herramientas prácticas que permitan gestionar proyectos de manera sistemática y exitosa.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., GP1, GP2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
+  },
+  "negociacion_conflictos": {
+    "name": "Negociación y Resolución de Conflictos",
+    "rubrica": {
+      "NR1": "Preparación y Estrategia",
+      "NR2": "Búsqueda de Intereses Comunes",
+      "NR3": "Gestión Emocional",
+      "NR4": "Comunicación Asertiva",
+      "NR5": "Generación de Opciones Creativas",
+      "NR6": "Formalización de Acuerdos"
+    },
+    "likert_indicators": ["NR1", "NR2", "NR3", "NR4", "NR5", "NR6"],
+    "indicadores_info": [
+      {
+        "id": "NR1",
+        "nombre": "Preparación y Estrategia",
+        "descripcion_indicador": "Habilidad para investigar, planificar y definir objetivos claros antes de entrar en una negociación o discusión de un conflicto."
+      },
+      {
+        "id": "NR2",
+        "nombre": "Búsqueda de Intereses Comunes",
+        "descripcion_indicador": "Capacidad para ir más allá de las posiciones iniciales y encontrar intereses compartidos que sirvan como base para un acuerdo mutuamente beneficioso (enfoque 'ganar-ganar')."
+      },
+      {
+        "id": "NR3",
+        "nombre": "Gestión Emocional",
+        "descripcion_indicador": "Habilidad para mantener la calma, la objetividad y la empatía durante conversaciones tensas o conflictivas, separando a las personas del problema."
+      },
+      {
+        "id": "NR4",
+        "nombre": "Comunicación Asertiva",
+        "descripcion_indicador": "Capacidad para expresar las propias necesidades e intereses de manera clara y respetuosa, sin ser pasivo ni agresivo."
+      },
+      {
+        "id": "NR5",
+        "nombre": "Generación de Opciones Creativas",
+        "descripcion_indicador": "Habilidad para proponer múltiples soluciones posibles que puedan satisfacer los intereses de las distintas partes."
+      },
+      {
+        "id": "NR6",
+        "nombre": "Formalización de Acuerdos",
+        "descripcion_indicador": "Capacidad para concretar lo acordado en un plan de acción claro y verificable, asegurando el compromiso de todos."
+      }
+    ],
+    "open_question_id": "NR7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Negociación y Resolución de Conflictos. La pregunta fue: 'Imagina que en tu proyecto, el equipo de diseño y el equipo de desarrollo tienen un conflicto. Diseño se queja de que Desarrollo no implementa sus ideas con la calidad visual requerida. Desarrollo argumenta que las propuestas de Diseño son técnicamente inviables con los plazos actuales. Como gestor del proyecto, ¿cómo facilitarías una reunión para resolver este conflicto?' Asigna una puntuación de 0 a 100 basada en: 1. Rol de Facilitador Neutral (25 pts), 2. Validación de Ambas Partes (30 pts), 3. Enfoque en el Problema, no en las Personas (30 pts), 4. Hacia una Solución Colaborativa (15 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Negociación y Resolución de Conflictos",
+      "expertise": "Especialista en mediación, negociación colaborativa y transformación de conflictos en oportunidades de mejora.",
+      "tone": "Equilibrado y empático, enfocado en encontrar soluciones ganar-ganar y mantener relaciones constructivas.",
+      "focus_areas": [
+        "Preparación estratégica para negociaciones",
+        "Identificación de intereses comunes",
+        "Gestión emocional en situaciones tensas",
+        "Comunicación asertiva y respetuosa",
+        "Generación de alternativas creativas",
+        "Formalización de acuerdos sostenibles"
+      ],
+      "teaching_approach": "Proporcionar técnicas de mediación y marcos de negociación que permitan resolver conflictos de manera constructiva y mantener relaciones profesionales sólidas.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., NR1, NR2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
+  },
+  "pensamiento_sistemico": {
+    "name": "Pensamiento Sistémico",
+    "rubrica": {
+      "PS1": "Identificación de Componentes y Conexiones",
+      "PS2": "Análisis de Causa y Efecto",
+      "PS3": "Identificación de Bucles de Retroalimentación",
+      "PS4": "Visión Holística vs. Aislada",
+      "PS5": "Identificación de Puntos de Apalancamiento",
+      "PS6": "Anticipación de Consecuencias no Intencionadas"
+    },
+    "likert_indicators": ["PS1", "PS2", "PS3", "PS4", "PS5", "PS6"],
+    "indicadores_info": [
+      {
+        "id": "PS1",
+        "nombre": "Identificación de Componentes y Conexiones",
+        "descripcion_indicador": "Habilidad para mapear las partes clave de un sistema (ej. equipos, procesos, tecnologías) y cómo interactúan entre sí."
+      },
+      {
+        "id": "PS2",
+        "nombre": "Análisis de Causa y Efecto",
+        "descripcion_indicador": "Capacidad para ir más allá de los síntomas de un problema y identificar las causas raíz, incluyendo los efectos de segundo y tercer orden."
+      },
+      {
+        "id": "PS3",
+        "nombre": "Identificación de Bucles de Retroalimentación",
+        "descripcion_indicador": "Habilidad para reconocer cómo los resultados de una acción pueden, a su vez, influir en acciones futuras (reforzando o balanceando el sistema)."
+      },
+      {
+        "id": "PS4",
+        "nombre": "Visión Holística vs. Aislada",
+        "descripcion_indicador": "Tendencia a considerar el impacto de una decisión en todo el proyecto o la organización, en lugar de optimizar solo un área aislada."
+      },
+      {
+        "id": "PS5",
+        "nombre": "Identificación de Puntos de Apalancamiento",
+        "descripcion_indicador": "Capacidad para encontrar el lugar en un sistema donde una pequeña intervención puede generar el mayor impacto positivo."
+      },
+      {
+        "id": "PS6",
+        "nombre": "Anticipación de Consecuencias no Intencionadas",
+        "descripcion_indicador": "Habilidad para prever los posibles efectos secundarios o resultados inesperados de una decisión antes de implementarla."
+      }
+    ],
+    "open_question_id": "PS7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Pensamiento Sistémico. La pregunta fue: 'En tu empresa, el equipo de marketing decide lanzar una ambiciosa campaña de descuentos para aumentar las ventas trimestrales. La campaña es un éxito y las ventas se disparan. Sin embargo, dos semanas después, el equipo de soporte al cliente está colapsado por las quejas y los tiempos de entrega de logística se han triplicado. Usando el pensamiento sistémico, describe 2 o 3 'fallas en el sistema' que llevaron a esta situación y cómo las habrías abordado desde la planificación.' Asigna una puntuación de 0 a 100 basada en: 1. Identificación de Interconexiones (40 pts), 2. Análisis Causa-Raíz (30 pts), 3. Propuestas de Soluciones Sistémicas (30 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Pensamiento Sistémico",
+      "expertise": "Especialista en análisis de sistemas complejos, identificación de interconexiones y diseño de soluciones que consideran el impacto holístico.",
+      "tone": "Analítico pero accesible, enfocado en revelar patrones ocultos y fomentar una perspectiva integral.",
+      "focus_areas": [
+        "Mapeo de sistemas y componentes",
+        "Análisis de causa-efecto múltiple",
+        "Identificación de bucles de retroalimentación",
+        "Visión holística vs. optimización local",
+        "Búsqueda de puntos de apalancamiento",
+        "Anticipación de efectos no deseados"
+      ],
+      "teaching_approach": "Ofrecer herramientas de análisis sistémico y marcos conceptuales que ayuden a comprender y gestionar la complejidad organizacional.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., PS1, PS2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
   }
 }

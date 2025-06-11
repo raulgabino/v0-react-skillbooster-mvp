@@ -292,5 +292,152 @@
     "type": "open",
     "indicator": "AA_P7_open",
     "prompt": "Imagina que estás diseñando una sección dentro de una herramienta de desarrollo de habilidades (como SkillBoosterX) para ayudar a un usuario a mejorar su habilidad de **'Gestión del Tiempo'**. Describe brevemente cómo aplicarías los principios de **Aprendizaje Adaptativo (Personalización Contextual)** para esta tarea. ¿Qué información clave del usuario y de su contexto intentarías capturar y cómo la usarías para personalizar la secuencia de aprendizaje (ej., tipo de contenido, dificultad, feedback) sobre **'Gestión del Tiempo'**?"
+  },
+  {
+    "id": "GP1",
+    "axis": "Gestión de Proyectos",
+    "type": "likert",
+    "indicator": "GP1",
+    "prompt": "Antes de iniciar la ejecución de cualquier proyecto, me aseguro de tener un documento claro (aunque sea breve) que defina qué se va a entregar, qué no se va a entregar y quién es responsable de cada cosa."
+  },
+  {
+    "id": "GP2",
+    "axis": "Gestión de Proyectos",
+    "type": "likert",
+    "indicator": "GP2",
+    "prompt": "Mi enfoque para crear cronogramas implica descomponer las tareas grandes en partes más pequeñas y estimar el tiempo para cada una, en lugar de solo asignar una fecha límite general al proyecto."
+  },
+  {
+    "id": "GP3",
+    "axis": "Gestión de Proyectos",
+    "type": "likert",
+    "indicator": "GP3",
+    "prompt": "Al planificar un proyecto, dedico tiempo a una sesión de '¿qué podría salir mal?', donde activamente pienso y documento los posibles obstáculos y cómo podríamos reaccionar."
+  },
+  {
+    "id": "GP4",
+    "axis": "Gestión de Proyectos",
+    "type": "likert",
+    "indicator": "GP4",
+    "prompt": "Tengo un sistema recurrente (diario o semanal) para revisar el progreso del proyecto frente al plan, lo que me permite detectar desviaciones de manera temprana."
+  },
+  {
+    "id": "GP5",
+    "axis": "Gestión de Proyectos",
+    "type": "likert",
+    "indicator": "GP5",
+    "prompt": "Al inicio de un proyecto, hago una lista de todas las personas o equipos que se verán afectados o que tienen interés en él, y pienso en qué información necesita cada uno y con qué frecuencia."
+  },
+  {
+    "id": "GP6",
+    "axis": "Gestión de Proyectos",
+    "type": "likert",
+    "indicator": "GP6",
+    "prompt": "Una vez que un proyecto termina, mi práctica habitual es organizar una breve reunión de 'lecciones aprendidas' con el equipo para discutir qué funcionó bien y qué podríamos mejorar la próxima vez, incluso si el proyecto fue un éxito."
+  },
+  {
+    "id": "GP7_open",
+    "axis": "Gestión de Proyectos",
+    "type": "open",
+    "indicator": "GP7_open",
+    "prompt": "Estás a cargo de un proyecto importante que tiene un retraso de dos semanas sobre el cronograma original. Describe, paso a paso, tu plan de acción inmediato. ¿Qué información necesitarías analizar, con quién te comunicarías primero y qué tipo de soluciones explorarías?"
+  },
+  {
+    "id": "NR1",
+    "axis": "Negociación y Resolución de Conflictos",
+    "type": "likert",
+    "indicator": "NR1",
+    "prompt": "Antes de una reunión para resolver un desacuerdo importante, dedico tiempo a pensar no solo en lo que quiero, sino también en lo que la otra parte podría necesitar y cuáles son mis límites."
+  },
+  {
+    "id": "NR2",
+    "axis": "Negociación y Resolución de Conflictos",
+    "type": "likert",
+    "indicator": "NR2",
+    "prompt": "En una negociación, mi enfoque es tratar de entender el 'porqué' detrás de la petición de la otra persona, buscando activamente puntos en los que nuestros intereses se alineen."
+  },
+  {
+    "id": "NR3",
+    "axis": "Negociación y Resolución de Conflictos",
+    "type": "likert",
+    "indicator": "NR3",
+    "prompt": "Si una conversación sobre un conflicto se vuelve tensa, soy capaz de hacer una pausa y decir algo como: 'Entiendo que esto es frustrante para ambos, enfoquémonos en el problema, no en nosotros'."
+  },
+  {
+    "id": "NR4",
+    "axis": "Negociación y Resolución de Conflictos",
+    "type": "likert",
+    "indicator": "NR4",
+    "prompt": "Me siento cómodo expresando mi punto de vista en un desacuerdo, diciendo frases como 'Necesito que se cumpla el plazo por esta razón...' en lugar de simplemente ceder o atacar la posición del otro."
+  },
+  {
+    "id": "NR5",
+    "axis": "Negociación y Resolución de Conflictos",
+    "type": "likert",
+    "indicator": "NR5",
+    "prompt": "Cuando las partes están estancadas en dos opciones opuestas, mi reacción es proponer una lluvia de ideas para encontrar una tercera o cuarta alternativa que no habíamos considerado."
+  },
+  {
+    "id": "NR6",
+    "axis": "Negociación y Resolución de Conflictos",
+    "type": "likert",
+    "indicator": "NR6",
+    "prompt": "Al final de una negociación exitosa, mi práctica es resumir los puntos acordados en un correo electrónico para asegurar que todos tenemos el mismo entendimiento y sabemos cuáles son los siguientes pasos."
+  },
+  {
+    "id": "NR7_open",
+    "axis": "Negociación y Resolución de Conflictos",
+    "type": "open",
+    "indicator": "NR7_open",
+    "prompt": "Imagina que en tu proyecto, el equipo de diseño y el equipo de desarrollo tienen un conflicto. Diseño se queja de que Desarrollo no implementa sus ideas con la calidad visual requerida. Desarrollo argumenta que las propuestas de Diseño son técnicamente inviables con los plazos actuales. Como gestor del proyecto, ¿cómo facilitarías una reunión para resolver este conflicto?"
+  },
+  {
+    "id": "PS1",
+    "axis": "Pensamiento Sistémico",
+    "type": "likert",
+    "indicator": "PS1",
+    "prompt": "Cuando se introduce un nuevo proceso, mi primer paso es dibujar un mapa mental o un diagrama simple para visualizar cómo afectará a otros equipos y herramientas que ya utilizamos."
+  },
+  {
+    "id": "PS2",
+    "axis": "Pensamiento Sistémico",
+    "type": "likert",
+    "indicator": "PS2",
+    "prompt": "Si un equipo repetidamente no cumple con sus plazos, mi análisis va más allá de 'necesitan trabajar más rápido' y exploro factores como la claridad de los requerimientos, las dependencias de otros equipos o la complejidad técnica."
+  },
+  {
+    "id": "PS3",
+    "axis": "Pensamiento Sistémico",
+    "type": "likert",
+    "indicator": "PS3",
+    "prompt": "Reconozco situaciones donde una 'solución rápida' (como añadir más gente a un proyecto retrasado) podría en realidad empeorar el problema a largo plazo (aumentando la necesidad de comunicación y coordinación)."
+  },
+  {
+    "id": "PS4",
+    "axis": "Pensamiento Sistémico",
+    "type": "likert",
+    "indicator": "PS4",
+    "prompt": "Cuando mi equipo propone una mejora que optimiza nuestro trabajo, una de mis preguntas clave es: 'Excelente, ¿y cómo podría afectar esto negativamente al equipo de ventas o de soporte al cliente?'."
+  },
+  {
+    "id": "PS5",
+    "axis": "Pensamiento Sistémico",
+    "type": "likert",
+    "indicator": "PS5",
+    "prompt": "Frente a un problema complejo, busco identificar el 'cuello de botella' o el factor limitante que, si se soluciona, podría desbloquear el progreso en muchas otras áreas a la vez."
+  },
+  {
+    "id": "PS6",
+    "axis": "Pensamiento Sistémico",
+    "type": "likert",
+    "indicator": "PS6",
+    "prompt": "Antes de aprobar un cambio significativo en un proyecto, me pregunto activamente: '¿Cuál es el resultado no deseado más probable de esta decisión y cómo podríamos prepararnos para ello?'."
+  },
+  {
+    "id": "PS7_open",
+    "axis": "Pensamiento Sistémico",
+    "type": "open",
+    "indicator": "PS7_open",
+    "prompt": "En tu empresa, el equipo de marketing decide lanzar una ambiciosa campaña de descuentos para aumentar las ventas trimestrales. La campaña es un éxito y las ventas se disparan. Sin embargo, dos semanas después, el equipo de soporte al cliente está colapsado por las quejas y los tiempos de entrega de logística se han triplicado. Usando el pensamiento sistémico, describe 2 o 3 'fallas en el sistema' que llevaron a esta situación y cómo las habrías abordado desde la planificación."
   }
 ]

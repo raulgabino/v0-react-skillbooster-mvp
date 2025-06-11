@@ -22,5 +22,12 @@
     "description": "Combina habilidades de comunicación estratégica con diseño de experiencias de aprendizaje adaptativo para crear soluciones innovadoras y personalizadas.",
     "targetAudience": "Diseñadores de experiencias, educadores, consultores en innovación y profesionales en desarrollo de productos educativos.",
     "skills": ["comunicacion_estrategica", "aprendizaje_adaptativo_personalizacion_contextual"]
+  },
+  "gestor_proyectos_exitosos": {
+    "id": "gestor_proyectos_exitosos",
+    "name": "Paquete: Gestor de Proyectos Exitosos",
+    "description": "Adquiere las habilidades clave para planificar, ejecutar y entregar proyectos a tiempo y dentro del presupuesto, gestionando recursos y stakeholders de manera efectiva.",
+    "targetAudience": "Gerentes de Proyecto, coordinadores, líderes de producto y miembros de equipos de proyecto.",
+    "skills": ["gestion_proyectos", "negociacion_conflictos", "pensamiento_sistemico"]
   }
 }
