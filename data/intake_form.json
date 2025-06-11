@@ -1,45 +1,94 @@
 [
   {
+    "id": "LE1",
+    "axis": "Liderazgo de Equipos",
+    "type": "likert",
+    "indicator": "LE1",
+    "prompt": "Al iniciar un nuevo proyecto, dedico una sesión específica para explicar no solo 'qué' haremos, sino 'por qué' es importante para la organización, y respondo preguntas hasta que todos lo tienen claro."
+  },
+  {
+    "id": "LE2",
+    "axis": "Liderazgo de Equipos",
+    "type": "likert",
+    "indicator": "LE2",
+    "prompt": "Más allá de las evaluaciones formales, busco activamente oportunidades en el día a día (ej. en un chat de equipo o al final de una reunión) para destacar públicamente una contribución específica de un miembro del equipo."
+  },
+  {
+    "id": "LE3",
+    "axis": "Liderazgo de Equipos",
+    "type": "likert",
+    "indicator": "LE3",
+    "prompt": "Cuando delego una tarea importante, mi instinto principal es definir claramente el resultado final y luego dar al miembro del equipo total libertad sobre el 'cómo', incluso si yo lo haría de otra manera."
+  },
+  {
+    "id": "LE4",
+    "axis": "Liderazgo de Equipos",
+    "type": "likert",
+    "indicator": "LE4",
+    "prompt": "En mis conversaciones uno a uno, consistentemente pregunto sobre las aspiraciones de carrera de los miembros de mi equipo y juntos exploramos cómo su rol actual puede ayudarles a llegar allí."
+  },
+  {
+    "id": "LE5",
+    "axis": "Liderazgo de Equipos",
+    "type": "likert",
+    "indicator": "LE5",
+    "prompt": "Cuando surgen desacuerdos o silos entre miembros del equipo, mi primer paso es facilitar una conversación directa entre ellos en lugar de intervenir y resolverlo yo mismo."
+  },
+  {
+    "id": "LE6",
+    "axis": "Liderazgo de Equipos",
+    "type": "likert",
+    "indicator": "LE6",
+    "prompt": "Si noto una caída en el rendimiento de alguien, mi enfoque inmediato es programar una conversación privada para entender las posibles causas, en lugar de esperar a que el problema se agrave."
+  },
+  {
+    "id": "LE7_open",
+    "axis": "Liderazgo de Equipos",
+    "type": "open",
+    "indicator": "LE7_open",
+    "prompt": "Imagina que un miembro talentoso de tu equipo muestra signos de desmotivación y su rendimiento ha disminuido. Describe, paso a paso, cómo abordarías esta situación, desde la preparación de la conversación hasta las acciones de seguimiento que implementarías."
+  },
+  {
     "id": "CE1",
     "axis": "Comunicación Estratégica",
     "type": "likert",
     "indicator": "CE1",
-    "prompt": "Al comunicarme, me aseguro de que mis ideas centrales sean fáciles de entender para mi interlocutor."
+    "prompt": "Antes de una comunicación importante (un correo, una presentación), suelo tomarme un momento para definir los 1-3 puntos clave que la otra persona *debe* recordar, y estructuro todo mi mensaje alrededor de ellos."
   },
   {
     "id": "CE2",
     "axis": "Comunicación Estratégica",
     "type": "likert",
     "indicator": "CE2",
-    "prompt": "Adapto mi lenguaje, tono y contenido según la persona o grupo con el que me estoy comunicando."
+    "prompt": "Cuando explico un tema complejo a alguien de otro departamento, conscientemente evito la jerga técnica de mi área y busco activamente analogías o ejemplos que esa persona pueda entender."
   },
   {
     "id": "CE3",
     "axis": "Comunicación Estratégica",
     "type": "likert",
     "indicator": "CE3",
-    "prompt": "Presto atención completa a lo que otros dicen, haciendo preguntas para asegurar mi comprensión antes de responder."
+    "prompt": "En medio de una conversación, es común que yo diga frases como 'Entonces, si entiendo bien, lo que te preocupa es...' para verificar mi comprensión antes de ofrecer mi punto de vista."
   },
   {
     "id": "CE4",
     "axis": "Comunicación Estratégica",
     "type": "likert",
     "indicator": "CE4",
-    "prompt": "Soy consciente de mi lenguaje corporal (gestos, postura, contacto visual) y lo utilizo para reforzar mi mensaje."
+    "prompt": "En reuniones virtuales importantes, soy consciente de mirar directamente a la cámara para simular contacto visual y mantener una postura erguida que proyecte seguridad y atención."
   },
   {
     "id": "CE5",
     "axis": "Comunicación Estratégica",
     "type": "likert",
     "indicator": "CE5",
-    "prompt": "Elijo el medio de comunicación más adecuado (email, llamada, reunión, etc.) para cada situación y mensaje."
+    "prompt": "Si un tema requiere un debate matizado o podría generar malentendidos, mi inclinación es proponer una llamada rápida o una reunión en lugar de intentar resolverlo en un largo hilo de correos electrónicos."
   },
   {
     "id": "CE6",
     "axis": "Comunicación Estratégica",
     "type": "likert",
     "indicator": "CE6",
-    "prompt": "Busco activamente retroalimentación sobre mi comunicación y estoy dispuesto/a a ajustar mi enfoque según sea necesario."
+    "prompt": "Después de una presentación clave, me siento cómodo acercándome a un colega de confianza para preguntarle: '¿Qué parte fue la menos clara?' o '¿En qué momento sentiste que perdí tu atención?'."
   },
   {
     "id": "CE7_open",
@@ -47,6 +96,55 @@
     "type": "open",
     "indicator": "CE7_open",
     "prompt": "Imagina que debes presentar una propuesta de proyecto innovador a un directivo que tiene poco tiempo y es escéptico sobre nuevas ideas. Describe brevemente cómo estructurarías los primeros 2 minutos de tu comunicación para captar su interés y transmitir el valor principal de tu propuesta. Menciona qué dirías y cómo lo dirías."
+  },
+  {
+    "id": "FC1",
+    "axis": "Feedback Efectivo y Coaching",
+    "type": "likert",
+    "indicator": "FC1",
+    "prompt": "Cuando doy feedback, evito generalidades como 'buen trabajo' y en su lugar digo algo como: 'La forma en que estructuraste la presentación del proyecto X ayudó a que el cliente entendiera el punto clave de inmediato'."
+  },
+  {
+    "id": "FC2",
+    "axis": "Feedback Efectivo y Coaching",
+    "type": "likert",
+    "indicator": "FC2",
+    "prompt": "Si observo un comportamiento que necesita ser corregido, prefiero tener una breve conversación privada el mismo día o al día siguiente, en lugar de guardarlo para la evaluación de desempeño trimestral."
+  },
+  {
+    "id": "FC3",
+    "axis": "Feedback Efectivo y Coaching",
+    "type": "likert",
+    "indicator": "FC3",
+    "prompt": "Mi intención principal al dar feedback, incluso si es correctivo, es que la persona se vaya de la conversación sintiendo que tiene las herramientas o la claridad para mejorar, no sintiéndose derrotada."
+  },
+  {
+    "id": "FC4",
+    "axis": "Feedback Efectivo y Coaching",
+    "type": "likert",
+    "indicator": "FC4",
+    "prompt": "Después de compartir mis observaciones en una sesión de feedback, mi siguiente paso suele ser preguntar: '¿Cómo lo viste tú?' o '¿Qué perspectiva tienes sobre esta situación?'."
+  },
+  {
+    "id": "FC5",
+    "axis": "Feedback Efectivo y Coaching",
+    "type": "likert",
+    "indicator": "FC5",
+    "prompt": "En lugar de dar la solución directamente, tiendo a hacer preguntas como: '¿Qué opciones has considerado para abordar este desafío?' o '¿Qué necesitarías para sentirte más seguro en esta tarea?'."
+  },
+  {
+    "id": "FC6",
+    "axis": "Feedback Efectivo y Coaching",
+    "type": "likert",
+    "indicator": "FC6",
+    "prompt": "Normalmente, una conversación de desarrollo termina con nosotros acordando uno o dos pasos concretos que la persona tomará y cómo yo puedo apoyarla, y lo dejamos anotado para revisarlo más adelante."
+  },
+  {
+    "id": "FC7_open",
+    "axis": "Feedback Efectivo y Coaching",
+    "type": "open",
+    "indicator": "FC7_open",
+    "prompt": "Un miembro junior de tu equipo ha cometido un error en una tarea importante de cara al cliente. Afortunadamente, pudiste corregirlo antes de que tuviera un impacto mayor. Describe cómo estructurarías la conversación de feedback con esta persona. ¿Cuáles serían tus objetivos principales para esta conversación y qué preguntas clave harías?"
   },
   {
     "id": "PS_P1",

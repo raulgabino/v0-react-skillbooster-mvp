@@ -1,0 +1,26 @@
+{
+  "lider_equipo_emergente": {
+    "id": "lider_equipo_emergente",
+    "name": "Paquete: Líder de Equipo Emergente",
+    "description": "Desarrolla las competencias fundamentales para liderar, motivar y guiar equipos hacia el éxito, pasando de ser un contribuidor individual a un líder que inspira.",
+    "targetAudience": "Nuevos gerentes, líderes de equipo, supervisores y profesionales que aspiran a su primer rol de liderazgo.",
+    "skills": ["liderazgo_equipos", "comunicacion_estrategica", "feedback_coaching"]
+  },
+  "sostenibilidad_y_sistemas": {
+    "id": "sostenibilidad_y_sistemas",
+    "name": "Paquete: Sostenibilidad y Sistemas",
+    "description": "Desarrolla habilidades para analizar sistemas complejos, interpretar datos ambientales y tomar decisiones que equilibren factores económicos, sociales y ambientales.",
+    "targetAudience": "Profesionales en sostenibilidad, gestión ambiental, responsabilidad social corporativa y roles que requieren análisis de impacto sistémico.",
+    "skills": [
+      "pensamiento_sistemico_consumo_costos_medioambiente",
+      "interpretacion_de_datos_ambientales_sensores_recibos"
+    ]
+  },
+  "innovacion_y_aprendizaje": {
+    "id": "innovacion_y_aprendizaje",
+    "name": "Paquete: Innovación y Aprendizaje",
+    "description": "Combina habilidades de comunicación estratégica con diseño de experiencias de aprendizaje adaptativo para crear soluciones innovadoras y personalizadas.",
+    "targetAudience": "Diseñadores de experiencias, educadores, consultores en innovación y profesionales en desarrollo de productos educativos.",
+    "skills": ["comunicacion_estrategica", "aprendizaje_adaptativo_personalizacion_contextual"]
+  }
+}

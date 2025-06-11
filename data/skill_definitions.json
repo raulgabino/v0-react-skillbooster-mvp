@@ -1,53 +1,114 @@
 {
+  "liderazgo_equipos": {
+    "name": "Liderazgo de Equipos",
+    "rubrica": {
+      "LE1": "Visión y Alineación de Objetivos",
+      "LE2": "Motivación y Reconocimiento",
+      "LE3": "Delegación Efectiva",
+      "LE4": "Desarrollo y Mentoría",
+      "LE5": "Fomento de la Colaboración",
+      "LE6": "Gestión del Desempeño"
+    },
+    "likert_indicators": ["LE1", "LE2", "LE3", "LE4", "LE5", "LE6"],
+    "indicadores_info": [
+      {
+        "id": "LE1",
+        "nombre": "Visión y Alineación de Objetivos",
+        "descripcion_indicador": "Habilidad para comunicar una visión clara y asegurar que cada miembro del equipo comprenda cómo su trabajo contribuye a los objetivos más amplios."
+      },
+      {
+        "id": "LE2",
+        "nombre": "Motivación y Reconocimiento",
+        "descripcion_indicador": "Capacidad para inspirar y motivar al equipo, reconociendo tanto el esfuerzo como los logros individuales y colectivos."
+      },
+      {
+        "id": "LE3",
+        "nombre": "Delegación Efectiva",
+        "descripcion_indicador": "Habilidad para asignar tareas y responsabilidades de manera adecuada, confiando en el equipo y fomentando su autonomía."
+      },
+      {
+        "id": "LE4",
+        "nombre": "Desarrollo y Mentoría",
+        "descripcion_indicador": "Interés y capacidad para identificar el potencial de los miembros del equipo y apoyarlos activamente en su crecimiento profesional."
+      },
+      {
+        "id": "LE5",
+        "nombre": "Fomento de la Colaboración",
+        "descripcion_indicador": "Habilidad para crear un entorno de trabajo donde la colaboración, la comunicación abierta y el apoyo mutuo son la norma."
+      },
+      {
+        "id": "LE6",
+        "nombre": "Gestión del Desempeño",
+        "descripcion_indicador": "Capacidad para establecer expectativas claras, dar seguimiento al desempeño y manejar situaciones de bajo rendimiento de manera constructiva."
+      }
+    ],
+    "open_question_id": "LE7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Liderazgo de Equipos. La pregunta fue: 'Imagina que un miembro talentoso de tu equipo muestra signos de desmotivación y su rendimiento ha disminuido. Describe, paso a paso, cómo abordarías esta situación, desde la preparación de la conversación hasta las acciones de seguimiento que implementarías.' Asigna una puntuación de 0 a 100 basada en la rúbrica: 1. Empatía y Preparación (25 pts): ¿El plan demuestra una intención de entender la perspectiva del empleado? 2. Estructura de la Conversación (30 pts): ¿El enfoque es constructivo y busca un diálogo? 3. Enfoque en Soluciones y Apoyo (30 pts): ¿Se centra en colaborar para encontrar soluciones? 4. Plan de Seguimiento (15 pts): ¿Incluye un plan claro para el seguimiento?",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Liderazgo de Equipos",
+      "expertise": "Especialista en desarrollo de habilidades de liderazgo, gestión de equipos y creación de entornos de trabajo colaborativos y motivadores.",
+      "tone": "Inspirador pero práctico, enfocado en el desarrollo de personas y la construcción de equipos de alto rendimiento.",
+      "focus_areas": [
+        "Comunicación de visión y objetivos",
+        "Motivación y reconocimiento efectivo",
+        "Delegación y empoderamiento",
+        "Desarrollo de talento",
+        "Fomento de la colaboración",
+        "Gestión constructiva del desempeño"
+      ],
+      "teaching_approach": "Proporcionar estrategias prácticas y herramientas concretas que los líderes puedan implementar inmediatamente para mejorar la dinámica y el rendimiento de sus equipos.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., LE1, LE2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
+  },
   "comunicacion_estrategica": {
     "name": "Comunicación Estratégica",
     "rubrica": {
-      "CE1": "Claridad de ideas centrales",
-      "CE2": "Adaptación al interlocutor",
-      "CE3": "Escucha activa",
-      "CE4": "Lenguaje corporal consciente",
-      "CE5": "Selección de medio adecuado",
-      "CE6": "Apertura a retroalimentación"
+      "CE1": "Claridad de Ideas Centrales",
+      "CE2": "Adaptación al Interlocutor",
+      "CE3": "Escucha Activa",
+      "CE4": "Lenguaje Corporal Consciente",
+      "CE5": "Selección de Medio Adecuado",
+      "CE6": "Apertura a Retroalimentación"
     },
     "likert_indicators": ["CE1", "CE2", "CE3", "CE4", "CE5", "CE6"],
     "indicadores_info": [
       {
         "id": "CE1",
-        "nombre": "Claridad del Mensaje",
-        "descripcion_indicador": "Capacidad para comunicar ideas centrales de manera simple y comprensible, asegurando que el mensaje principal sea fácilmente entendido por el receptor."
+        "nombre": "Claridad de Ideas Centrales",
+        "descripcion_indicador": "Capacidad para estructurar y transmitir el mensaje principal de forma simple y memorable."
       },
       {
         "id": "CE2",
-        "nombre": "Adaptación a la Audiencia",
-        "descripcion_indicador": "Habilidad para ajustar el lenguaje, tono y contenido según las características específicas del interlocutor o grupo, mejorando la efectividad de la comunicación."
+        "nombre": "Adaptación al Interlocutor",
+        "descripcion_indicador": "Habilidad para ajustar el lenguaje, tono y contenido según las necesidades y perfil de la audiencia."
       },
       {
         "id": "CE3",
         "nombre": "Escucha Activa",
-        "descripcion_indicador": "Aptitud para prestar atención completa al interlocutor, hacer preguntas relevantes y confirmar la comprensión antes de responder."
+        "descripcion_indicador": "Aptitud para atender plenamente al interlocutor, comprender su perspectiva y confirmar el entendimiento antes de responder."
       },
       {
         "id": "CE4",
-        "nombre": "Comunicación No Verbal",
-        "descripcion_indicador": "Consciencia y manejo efectivo del lenguaje corporal, gestos, postura y contacto visual para reforzar el mensaje verbal."
+        "nombre": "Lenguaje Corporal Consciente",
+        "descripcion_indicador": "Uso intencional de gestos, postura y contacto visual para reforzar el mensaje verbal y transmitir confianza."
       },
       {
         "id": "CE5",
-        "nombre": "Selección de Canales",
-        "descripcion_indicador": "Criterio para elegir el medio de comunicación más apropiado (correo, llamada, reunión) según el contexto y el tipo de mensaje a transmitir."
+        "nombre": "Selección de Medio Adecuado",
+        "descripcion_indicador": "Criterio para elegir el canal de comunicación más efectivo (correo, llamada, reunión, etc.) según el contexto y el objetivo."
       },
       {
         "id": "CE6",
-        "nombre": "Feedback y Ajuste",
-        "descripcion_indicador": "Disposición para solicitar y aplicar retroalimentación sobre la propia comunicación, adaptando continuamente el enfoque para mejorar."
+        "nombre": "Apertura a Retroalimentación",
+        "descripcion_indicador": "Disposición para solicitar y actuar sobre el feedback recibido para mejorar continuamente la propia comunicación."
       }
     ],
     "open_question_id": "CE7_open",
-    "scoring_weights": {
-      "likert": 0.7,
-      "open": 0.3
-    },
-    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre comunicación estratégica. La pregunta fue: 'Imagina que debes presentar una propuesta de proyecto innovador a un directivo que tiene poco tiempo y es escéptico sobre nuevas ideas. Describe brevemente cómo estructurarías los primeros 2 minutos de tu comunicación para captar su interés y transmitir el valor principal de tu propuesta. Menciona qué dirías y cómo lo dirías.' Asigna una puntuación de 0 a 100 basada en: 1) Estructura clara y concisa (25 pts), 2) Adaptación al perfil del directivo (25 pts), 3) Enfoque en valor/beneficio clave (25 pts), 4) Elementos persuasivos efectivos (25 pts).",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Comunicación Estratégica. La pregunta fue: 'Imagina que debes presentar una propuesta de proyecto innovador a un directivo que tiene poco tiempo y es escéptico sobre nuevas ideas. Describe brevemente cómo estructurarías los primeros 2 minutos de tu comunicación para captar su interés y transmitir el valor principal de tu propuesta. Menciona qué dirías y cómo lo dirías.' Asigna una puntuación de 0 a 100 basada en: 1. Estructura Clara y Concisa (25 pts), 2. Adaptación al Perfil del Directivo (25 pts), 3. Enfoque en Valor/Beneficio Clave (25 pts), 4. Elementos Persuasivos Efectivos (25 pts).",
     "prompt_tutor_definition": {
       "role": "Tutor de Comunicación Estratégica",
       "expertise": "Experto en comunicación efectiva en entornos profesionales y presentación de ideas complejas de forma clara y persuasiva.",
@@ -62,6 +123,70 @@
       "teaching_approach": "Proporcionar ejercicios prácticos y concretos que puedan aplicarse inmediatamente en situaciones reales de comunicación profesional.",
       "content_guidelines": [
         "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., CE1, AA_P3). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
+  },
+  "feedback_coaching": {
+    "name": "Feedback Efectivo y Coaching",
+    "rubrica": {
+      "FC1": "Especificidad y Basado en Evidencia",
+      "FC2": "Oportuno y Relevante",
+      "FC3": "Enfoque en el Desarrollo",
+      "FC4": "Escucha y Diálogo",
+      "FC5": "Preguntas Poderosas (Coaching)",
+      "FC6": "Plan de Acción Conjunto"
+    },
+    "likert_indicators": ["FC1", "FC2", "FC3", "FC4", "FC5", "FC6"],
+    "indicadores_info": [
+      {
+        "id": "FC1",
+        "nombre": "Especificidad y Basado en Evidencia",
+        "descripcion_indicador": "El feedback se centra en comportamientos o resultados observables y concretos, no en rasgos de personalidad."
+      },
+      {
+        "id": "FC2",
+        "nombre": "Oportuno y Relevante",
+        "descripcion_indicador": "La retroalimentación se entrega en un momento cercano al evento, cuando todavía es relevante y puede generar un impacto."
+      },
+      {
+        "id": "FC3",
+        "nombre": "Enfoque en el Desarrollo",
+        "descripcion_indicador": "El objetivo principal del feedback es ayudar al individuo a crecer y mejorar, no simplemente criticar o elogiar."
+      },
+      {
+        "id": "FC4",
+        "nombre": "Escucha y Diálogo",
+        "descripcion_indicador": "La sesión de feedback es una conversación bidireccional, no un monólogo. Se explora la perspectiva del receptor."
+      },
+      {
+        "id": "FC5",
+        "nombre": "Preguntas Poderosas (Coaching)",
+        "descripcion_indicador": "Uso de preguntas abiertas que invitan a la reflexión y ayudan al individuo a descubrir sus propias soluciones."
+      },
+      {
+        "id": "FC6",
+        "nombre": "Plan de Acción Conjunto",
+        "descripcion_indicador": "La conversación concluye con un plan de acción claro y acordado mutuamente para el desarrollo futuro."
+      }
+    ],
+    "open_question_id": "FC7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Feedback Efectivo y Coaching. La pregunta fue: 'Un miembro junior de tu equipo ha cometido un error en una tarea importante de cara al cliente. Afortunadamente, pudiste corregirlo antes de que tuviera un impacto mayor. Describe cómo estructurarías la conversación de feedback con esta persona. ¿Cuáles serían tus objetivos principales para esta conversación y qué preguntas clave harías?' Asigna una puntuación de 0 a 100 basada en: 1. Enfoque en la Seguridad Psicológica (25 pts), 2. Foco en el Comportamiento (25 pts), 3. Uso de Preguntas de Coaching (30 pts), 4. Balance y Mirada al Futuro (20 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Feedback Efectivo y Coaching",
+      "expertise": "Especialista en técnicas de retroalimentación constructiva, coaching conversacional y desarrollo de personas a través del diálogo efectivo.",
+      "tone": "Empático y constructivo, enfocado en el crecimiento y el desarrollo de las personas.",
+      "focus_areas": [
+        "Feedback específico y basado en evidencia",
+        "Timing y relevancia de la retroalimentación",
+        "Enfoque en el desarrollo personal",
+        "Técnicas de escucha activa",
+        "Preguntas poderosas de coaching",
+        "Creación de planes de acción colaborativos"
+      ],
+      "teaching_approach": "Ofrecer marcos de conversación y técnicas prácticas que permitan dar feedback efectivo y facilitar el crecimiento de otros.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., FC1, FC2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
       ]
     }
   },
