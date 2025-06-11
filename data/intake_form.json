@@ -439,5 +439,54 @@
     "type": "open",
     "indicator": "ID7_open",
     "prompt": "Tu empresa nota una caída del 15% en la renovación de suscripciones de clientes en el último trimestre. Te dan acceso a una hoja de cálculo con datos de los clientes que no renovaron (incluyendo su plan, antigüedad, último mes de actividad y número de tickets de soporte). Describe tu proceso paso a paso para interpretar estos datos y presentar tus hallazgos iniciales. ¿Qué buscarías y cómo lo comunicarías?"
+  },
+  {
+    "id": "AC1",
+    "axis": "Pensamiento Analítico y Crítico",
+    "type": "likert",
+    "indicator": "AC1",
+    "prompt": "Cuando me enfrento a un desafío grande y abrumador, mi primer paso es dividirlo en una lista de problemas más pequeños y específicos que puedo abordar uno por uno."
+  },
+  {
+    "id": "AC2",
+    "axis": "Pensamiento Analítico y Crítico",
+    "type": "likert",
+    "indicator": "AC2",
+    "prompt": "Al escuchar una propuesta, a menudo me pregunto: '¿Qué estamos asumiendo como verdadero para que esta idea funcione?'."
+  },
+  {
+    "id": "AC3",
+    "axis": "Pensamiento Analítico y Crítico",
+    "type": "likert",
+    "indicator": "AC3",
+    "prompt": "Si alguien presenta un dato o una estadística sorprendente para respaldar su argumento, mi reacción inmediata es preguntar: '¿Cuál es la fuente de ese dato y qué tan reciente es?'."
+  },
+  {
+    "id": "AC4",
+    "axis": "Pensamiento Analítico y Crítico",
+    "type": "likert",
+    "indicator": "AC4",
+    "prompt": "Soy consciente de mi propia tendencia a buscar información que confirma mis ideas iniciales, y activamente me esfuerzo por encontrar argumentos o datos que las contradigan."
+  },
+  {
+    "id": "AC5",
+    "axis": "Pensamiento Analítico y Crítico",
+    "type": "likert",
+    "indicator": "AC5",
+    "prompt": "Cuando presento una conclusión, me aseguro de poder explicar claramente la cadena de razonamiento y la evidencia que me llevó desde el problema inicial hasta mi recomendación final."
+  },
+  {
+    "id": "AC6",
+    "axis": "Pensamiento Analítico y Crítico",
+    "type": "likert",
+    "indicator": "AC6",
+    "prompt": "Antes de tomar una decisión importante, hago un esfuerzo deliberado por ponerme en el lugar de las personas que se verán más afectadas y considerar cómo verían ellos la situación."
+  },
+  {
+    "id": "AC7_open",
+    "axis": "Pensamiento Analítico y Crítico",
+    "type": "open",
+    "indicator": "AC7_open",
+    "prompt": "Un colega te presenta una propuesta entusiasta para comprar un nuevo software que, según él, 'revolucionará la productividad del equipo'. Te muestra un gráfico de la página del proveedor que indica un 'aumento de productividad del 150%'. Describe, paso a paso, el proceso de pensamiento crítico y analítico que seguirías antes de apoyar o rechazar esta propuesta."
   }
 ]

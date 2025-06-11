@@ -19,5 +19,12 @@
     "description": "Aprende a integrar herramientas de IA y automatización para optimizar procesos, mejorar la toma de decisiones y aumentar la productividad de tu equipo.",
     "targetAudience": "Gerentes, analistas, profesionales de operaciones y cualquier rol que busque una ventaja competitiva.",
     "skills": ["ia_negocios", "optimizacion_procesos", "interpretacion_datos"]
+  },
+  "toma_decisiones_datos": {
+    "id": "toma_decisiones_datos",
+    "name": "Paquete: Toma de Decisiones Basada en Datos",
+    "description": "Transforma tu manera de decidir. Aprende a analizar datos, evaluar argumentos de forma crítica y comunicar tus conclusiones con impacto y evidencia.",
+    "targetAudience": "Líderes, gerentes y analistas que necesitan justificar sus decisiones estratégicas con datos sólidos.",
+    "skills": ["pensamiento_analitico", "interpretacion_datos", "comunicacion_estrategica"]
   }
 }
