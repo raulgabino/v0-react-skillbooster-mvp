@@ -147,153 +147,6 @@
     "prompt": "Un miembro junior de tu equipo ha cometido un error en una tarea importante de cara al cliente. Afortunadamente, pudiste corregirlo antes de que tuviera un impacto mayor. Describe cómo estructurarías la conversación de feedback con esta persona. ¿Cuáles serían tus objetivos principales para esta conversación y qué preguntas clave harías?"
   },
   {
-    "id": "PS_P1",
-    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "type": "likert",
-    "indicator": "PS1",
-    "prompt": "Al tomar decisiones en un proyecto, considero cómo las opciones de consumo de recursos afectarán los costos Y el medio ambiente a la vez."
-  },
-  {
-    "id": "PS_P2",
-    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "type": "likert",
-    "indicator": "PS2",
-    "prompt": "Evalúo los pros y contras de una acción considerando sus implicaciones económicas, sociales Y ambientales, no solo una de ellas."
-  },
-  {
-    "id": "PS_P3",
-    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "type": "likert",
-    "indicator": "PS4",
-    "prompt": "Antes de implementar una solución, pienso en sus posibles efectos a largo plazo, más allá de los resultados inmediatos."
-  },
-  {
-    "id": "PS_P4",
-    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "type": "likert",
-    "indicator": "PS5",
-    "prompt": "Busco activamente información sobre los costos \"ocultos\" (sociales o ambientales) de las diferentes alternativas, no solo los precios directos."
-  },
-  {
-    "id": "PS_P5",
-    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "type": "likert",
-    "indicator": "PS6",
-    "prompt": "Cuando analizo un problema complejo, intento identificar los puntos clave donde una intervención podría tener el mayor impacto positivo."
-  },
-  {
-    "id": "PS_P6",
-    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "type": "likert",
-    "indicator": "PS8",
-    "prompt": "Adapto mis planes y estrategias cuando nueva información revela conexiones o consecuencias inesperadas en el sistema."
-  },
-  {
-    "id": "PS_P7",
-    "axis": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "type": "open",
-    "indicator": "PS7_open",
-    "prompt": "Describe una situación en un proyecto (real o hipotético) donde una decisión sobre consumo o costos tuvo un impacto socioambiental inesperado. ¿Cómo analizarías ahora esa interconexión para proponer una mejor alternativa?"
-  },
-  {
-    "id": "IDA_P1",
-    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "type": "likert",
-    "indicator": "IDA1",
-    "prompt": "Evalúo la calidad y fiabilidad (ej. precisión, fuente, posibles errores) de los datos ambientales (de sensores, recibos, etc.) antes de usarlos para análisis."
-  },
-  {
-    "id": "IDA_P2",
-    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "type": "likert",
-    "indicator": "IDA2",
-    "prompt": "Selecciono métodos o herramientas de análisis (ej. estadísticas básicas, gráficos, comparaciones) que considero adecuados para el tipo de dato ambiental y la pregunta que busco responder."
-  },
-  {
-    "id": "IDA_P3",
-    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "type": "likert",
-    "indicator": "IDA3",
-    "prompt": "Al analizar datos ambientales, logro identificar patrones importantes, cambios a lo largo del tiempo (tendencias) o valores inusuales (anomalías)."
-  },
-  {
-    "id": "IDA_P4",
-    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "type": "likert",
-    "indicator": "IDA4",
-    "prompt": "Tengo en cuenta el objetivo específico del proyecto de sostenibilidad o gestión de recursos al momento de interpretar qué significan los datos analizados."
-  },
-  {
-    "id": "IDA_P5",
-    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "type": "likert",
-    "indicator": "IDA5",
-    "prompt": "Soy capaz de traducir los resultados del análisis de datos ambientales en conclusiones prácticas o ideas concretas que ayuden a tomar decisiones."
-  },
-  {
-    "id": "IDA_P6",
-    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "type": "likert",
-    "indicator": "IDA6",
-    "prompt": "Comunico los hallazgos principales de mi interpretación de datos ambientales de forma que otros (miembros del equipo, comunidad) puedan entenderlos fácilmente."
-  },
-  {
-    "id": "IDA_P7",
-    "axis": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "type": "open",
-    "indicator": "IDA7_open",
-    "prompt": "Describe brevemente una situación en la que tuviste que interpretar datos de consumo (ej. recibos de luz, agua) o de sensores ambientales para un proyecto o iniciativa. ¿Qué pasos seguiste para entender los datos y qué conclusión práctica obtuviste?"
-  },
-  {
-    "id": "AA_P1",
-    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "type": "likert",
-    "indicator": "AA_P1",
-    "prompt": "Evalúo mi capacidad para identificar y priorizar los factores del contexto (ej. entorno del proyecto, recursos disponibles, estado anímico) que son más relevantes para adaptar una experiencia de aprendizaje de liderazgo social."
-  },
-  {
-    "id": "AA_P2",
-    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "type": "likert",
-    "indicator": "AA_P2",
-    "prompt": "Evalúo mi capacidad para diseñar métodos (ej. preguntas clave, observación, análisis de datos de uso) para inferir el progreso y las necesidades de aprendizaje de un usuario en tiempo real dentro de la app."
-  },
-  {
-    "id": "AA_P3",
-    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "type": "likert",
-    "indicator": "AA_P3",
-    "prompt": "Evalúo mi capacidad para definir reglas claras (ej. \"SI el usuario muestra dificultad con X Y está en contexto Y, ENTONCES ofrecer micro-ejercicio Z\") que guíen la personalización de contenidos o actividades."
-  },
-  {
-    "id": "AA_P4",
-    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "type": "likert",
-    "indicator": "AA_P4",
-    "prompt": "Evalúo mi capacidad para seleccionar o diseñar micro-contenidos y micro-ejercicios variados que respondan eficazmente a diferentes necesidades y contextos identificados por el sistema adaptativo."
-  },
-  {
-    "id": "AA_P5",
-    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "type": "likert",
-    "indicator": "AA_P5",
-    "prompt": "Evalúo mi capacidad para proponer indicadores y métodos sencillos para evaluar si las adaptaciones realizadas por la app están realmente ayudando al usuario a desarrollar la competencia de liderazgo."
-  },
-  {
-    "id": "AA_P6",
-    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "type": "likert",
-    "indicator": "AA_P6",
-    "prompt": "Evalúo mi capacidad para anticipar y proponer soluciones a posibles problemas éticos (privacidad, sesgo) o de usabilidad (confusión, falta de control) al diseñar las funciones adaptativas de la app."
-  },
-  {
-    "id": "AA_P7",
-    "axis": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "type": "open",
-    "indicator": "AA_P7_open",
-    "prompt": "Imagina que estás diseñando una sección dentro de una herramienta de desarrollo de habilidades (como SkillBoosterX) para ayudar a un usuario a mejorar su habilidad de **'Gestión del Tiempo'**. Describe brevemente cómo aplicarías los principios de **Aprendizaje Adaptativo (Personalización Contextual)** para esta tarea. ¿Qué información clave del usuario y de su contexto intentarías capturar y cómo la usarías para personalizar la secuencia de aprendizaje (ej., tipo de contenido, dificultad, feedback) sobre **'Gestión del Tiempo'**?"
-  },
-  {
     "id": "GP1",
     "axis": "Gestión de Proyectos",
     "type": "likert",
@@ -439,5 +292,152 @@
     "type": "open",
     "indicator": "PS7_open",
     "prompt": "En tu empresa, el equipo de marketing decide lanzar una ambiciosa campaña de descuentos para aumentar las ventas trimestrales. La campaña es un éxito y las ventas se disparan. Sin embargo, dos semanas después, el equipo de soporte al cliente está colapsado por las quejas y los tiempos de entrega de logística se han triplicado. Usando el pensamiento sistémico, describe 2 o 3 'fallas en el sistema' que llevaron a esta situación y cómo las habrías abordado desde la planificación."
+  },
+  {
+    "id": "IA1",
+    "axis": "Fundamentos de IA para Negocios",
+    "type": "likert",
+    "indicator": "IA1",
+    "prompt": "Cuando analizo un proceso repetitivo en mi área, mi mente automáticamente se pregunta: '¿Podría una herramienta de IA hacer esto de manera más eficiente?'."
+  },
+  {
+    "id": "IA2",
+    "axis": "Fundamentos de IA para Negocios",
+    "type": "likert",
+    "indicator": "IA2",
+    "prompt": "Aunque no soy programador, me siento cómodo explicando a un colega la diferencia básica entre una IA que predice un resultado (Machine Learning) y una que crea contenido nuevo (IA Generativa)."
+  },
+  {
+    "id": "IA3",
+    "axis": "Fundamentos de IA para Negocios",
+    "type": "likert",
+    "indicator": "IA3",
+    "prompt": "Antes de proponer una nueva solución de IA, mi primer paso es hacer un cálculo rápido sobre los beneficios esperados (ej. horas ahorradas, reducción de errores) frente a los posibles costos de implementación."
+  },
+  {
+    "id": "IA4",
+    "axis": "Fundamentos de IA para Negocios",
+    "type": "likert",
+    "indicator": "IA4",
+    "prompt": "Cuando se discute un proyecto de IA, una de mis primeras preguntas es: '¿Tenemos los datos necesarios para esto? ¿Están limpios y son accesibles?'."
+  },
+  {
+    "id": "IA5",
+    "axis": "Fundamentos de IA para Negocios",
+    "type": "likert",
+    "indicator": "IA5",
+    "prompt": "Al evaluar una herramienta de IA que toma decisiones (ej. seleccionar candidatos), considero activamente: '¿Qué sesgos no intencionados podría tener este sistema y cómo podríamos mitigarlos?'."
+  },
+  {
+    "id": "IA6",
+    "axis": "Fundamentos de IA para Negocios",
+    "type": "likert",
+    "indicator": "IA6",
+    "prompt": "Si un equipo técnico me dice que una idea de IA es 'demasiado compleja', mi respuesta es preguntar '¿Podrían explicarme cuál es el principal obstáculo técnico para que yo pueda entender las limitaciones y pensar en una alternativa más simple?'."
+  },
+  {
+    "id": "IA7_open",
+    "axis": "Fundamentos de IA para Negocios",
+    "type": "open",
+    "indicator": "IA7_open",
+    "prompt": "En tu departamento, el equipo dedica muchas horas a la semana a leer cientos de comentarios de clientes (de encuestas, redes sociales, etc.) para luego resumirlos en un informe semanal. Describe cómo plantearías el uso de Inteligencia Artificial para optimizar este proceso. ¿Qué tipo de herramientas de IA investigarías y cómo le 'venderías' la idea a tu gerente, enfocándote en los beneficios y los posibles riesgos?"
+  },
+  {
+    "id": "OP1",
+    "axis": "Optimización de Procesos con Automatización",
+    "type": "likert",
+    "indicator": "OP1",
+    "prompt": "Cuando me enfrento a un proceso complejo, mi primer instinto es tomar una pizarra o una herramienta digital para dibujar cajas y flechas que representen cómo fluye el trabajo actualmente."
+  },
+  {
+    "id": "OP2",
+    "axis": "Optimización de Procesos con Automatización",
+    "type": "likert",
+    "indicator": "OP2",
+    "prompt": "Revisando mis tareas semanales, frecuentemente identifico y marco actividades como 'copiar y pegar datos entre aplicaciones' o 'enviar el mismo tipo de correo de recordatorio' como candidatas principales para automatizar."
+  },
+  {
+    "id": "OP3",
+    "axis": "Optimización de Procesos con Automatización",
+    "type": "likert",
+    "indicator": "OP3",
+    "prompt": "Entiendo la diferencia entre usar una simple regla en mi cliente de correo para organizar la información y usar una herramienta como Zapier o Make para conectar acciones entre diferentes aplicaciones web."
+  },
+  {
+    "id": "OP4",
+    "axis": "Optimización de Procesos con Automatización",
+    "type": "likert",
+    "indicator": "OP4",
+    "prompt": "Al diseñar una automatización, no solo pienso en el 'camino feliz'; también considero '¿qué pasa si falta un dato?' o '¿a quién se debe notificar si la automatización falla?'."
+  },
+  {
+    "id": "OP5",
+    "axis": "Optimización de Procesos con Automatización",
+    "type": "likert",
+    "indicator": "OP5",
+    "prompt": "Después de configurar una nueva automatización, realizo varias pruebas con datos de ejemplo para asegurarme de que el resultado es exactamente el esperado antes de aplicarla al flujo de trabajo real."
+  },
+  {
+    "id": "OP6",
+    "axis": "Optimización de Procesos con Automatización",
+    "type": "likert",
+    "indicator": "OP6",
+    "prompt": "Cuando implemento una automatización, establezco una métrica clara desde el principio, como 'reducir el tiempo de procesamiento de facturas de 15 a 2 minutos', para poder demostrar su valor."
+  },
+  {
+    "id": "OP7_open",
+    "axis": "Optimización de Procesos con Automatización",
+    "type": "open",
+    "indicator": "OP7_open",
+    "prompt": "Cada vez que se cierra una venta importante, un miembro de tu equipo debe realizar manualmente las siguientes tareas: 1) Crear una carpeta para el nuevo cliente en Google Drive con una estructura de subcarpetas predefinida. 2) Enviar un correo de bienvenida estándar al cliente. 3) Añadir una tarea en Asana para que el gestor de cuentas agende una llamada de kickoff. Describe cómo automatizarías este flujo de trabajo. ¿Qué herramientas podrías usar y qué pasos seguirías para diseñarlo?"
+  },
+  {
+    "id": "ID1",
+    "axis": "Interpretación de Datos para la Toma de Decisiones",
+    "type": "likert",
+    "indicator": "ID1",
+    "prompt": "Cuando alguien me pide 'analizar unos datos', mi primera pregunta es: 'Exactamente qué decisión queremos tomar o qué pregunta de negocio específica estamos tratando de responder con esto?'."
+  },
+  {
+    "id": "ID2",
+    "axis": "Interpretación de Datos para la Toma de Decisiones",
+    "type": "likert",
+    "indicator": "ID2",
+    "prompt": "Antes de realizar cualquier cálculo o gráfico, mi primer paso es siempre revisar los datos en busca de errores obvios, celdas vacías o números que no tienen sentido."
+  },
+  {
+    "id": "ID3",
+    "axis": "Interpretación de Datos para la Toma de Decisiones",
+    "type": "likert",
+    "indicator": "ID3",
+    "prompt": "Me siento cómodo utilizando tablas dinámicas en Excel/Google Sheets o herramientas similares para agrupar datos y descubrir patrones que no son evidentes a primera vista."
+  },
+  {
+    "id": "ID4",
+    "axis": "Interpretación de Datos para la Toma de Decisiones",
+    "type": "likert",
+    "indicator": "ID4",
+    "prompt": "Si observo una correlación en los datos (ej. 'las ventas suben cuando invertimos más en marketing'), mi siguiente paso es investigar si realmente es una relación de causa y efecto o si podría haber otros factores influyendo."
+  },
+  {
+    "id": "ID5",
+    "axis": "Interpretación de Datos para la Toma de Decisiones",
+    "type": "likert",
+    "indicator": "ID5",
+    "prompt": "Prefiero presentar mis hallazgos con un gráfico simple y un titular claro que resuma la conclusión principal, en lugar de mostrar una tabla llena de números."
+  },
+  {
+    "id": "ID6",
+    "axis": "Interpretación de Datos para la Toma de Decisiones",
+    "type": "likert",
+    "indicator": "ID6",
+    "prompt": "Al presentar un análisis, mi objetivo final es siempre concluir con una recomendación clara y accionable, como 'Sugiero que enfoquemos nuestros esfuerzos en el segmento X, ya que los datos muestran que tiene el mayor potencial de crecimiento'."
+  },
+  {
+    "id": "ID7_open",
+    "axis": "Interpretación de Datos para la Toma de Decisiones",
+    "type": "open",
+    "indicator": "ID7_open",
+    "prompt": "Tu empresa nota una caída del 15% en la renovación de suscripciones de clientes en el último trimestre. Te dan acceso a una hoja de cálculo con datos de los clientes que no renovaron (incluyendo su plan, antigüedad, último mes de actividad y número de tickets de soporte). Describe tu proceso paso a paso para interpretar estos datos y presentar tus hallazgos iniciales. ¿Qué buscarías y cómo lo comunicarías?"
   }
 ]

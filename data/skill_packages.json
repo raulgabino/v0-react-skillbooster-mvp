@@ -6,28 +6,18 @@
     "targetAudience": "Nuevos gerentes, líderes de equipo, supervisores y profesionales que aspiran a su primer rol de liderazgo.",
     "skills": ["liderazgo_equipos", "comunicacion_estrategica", "feedback_coaching"]
   },
-  "sostenibilidad_y_sistemas": {
-    "id": "sostenibilidad_y_sistemas",
-    "name": "Paquete: Sostenibilidad y Sistemas",
-    "description": "Desarrolla habilidades para analizar sistemas complejos, interpretar datos ambientales y tomar decisiones que equilibren factores económicos, sociales y ambientales.",
-    "targetAudience": "Profesionales en sostenibilidad, gestión ambiental, responsabilidad social corporativa y roles que requieren análisis de impacto sistémico.",
-    "skills": [
-      "pensamiento_sistemico_consumo_costos_medioambiente",
-      "interpretacion_de_datos_ambientales_sensores_recibos"
-    ]
-  },
-  "innovacion_y_aprendizaje": {
-    "id": "innovacion_y_aprendizaje",
-    "name": "Paquete: Innovación y Aprendizaje",
-    "description": "Combina habilidades de comunicación estratégica con diseño de experiencias de aprendizaje adaptativo para crear soluciones innovadoras y personalizadas.",
-    "targetAudience": "Diseñadores de experiencias, educadores, consultores en innovación y profesionales en desarrollo de productos educativos.",
-    "skills": ["comunicacion_estrategica", "aprendizaje_adaptativo_personalizacion_contextual"]
-  },
   "gestor_proyectos_exitosos": {
     "id": "gestor_proyectos_exitosos",
     "name": "Paquete: Gestor de Proyectos Exitosos",
     "description": "Adquiere las habilidades clave para planificar, ejecutar y entregar proyectos a tiempo y dentro del presupuesto, gestionando recursos y stakeholders de manera efectiva.",
     "targetAudience": "Gerentes de Proyecto, coordinadores, líderes de producto y miembros de equipos de proyecto.",
     "skills": ["gestion_proyectos", "negociacion_conflictos", "pensamiento_sistemico"]
+  },
+  "ia_productividad": {
+    "id": "ia_productividad",
+    "name": "Paquete: Inteligencia Artificial para la Productividad",
+    "description": "Aprende a integrar herramientas de IA y automatización para optimizar procesos, mejorar la toma de decisiones y aumentar la productividad de tu equipo.",
+    "targetAudience": "Gerentes, analistas, profesionales de operaciones y cualquier rol que busque una ventaja competitiva.",
+    "skills": ["ia_negocios", "optimizacion_procesos", "interpretacion_datos"]
   }
 }

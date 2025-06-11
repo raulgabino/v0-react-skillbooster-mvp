@@ -190,204 +190,6 @@
       ]
     }
   },
-  "pensamiento_sistemico_consumo_costos_medioambiente": {
-    "name": "Pensamiento Sistémico (Consumo, Costos, Medioambiente)",
-    "rubrica": {
-      "PS_P1": "Consideración integrada de recursos, costos y ambiente",
-      "PS_P2": "Evaluación multidimensional de impactos",
-      "PS_P3": "Visión de efectos a largo plazo",
-      "PS_P4": "Identificación de costos ocultos",
-      "PS_P5": "Identificación de puntos de intervención clave",
-      "PS_P6": "Adaptabilidad ante nueva información"
-    },
-    "likert_indicators": ["PS_P1", "PS_P2", "PS_P3", "PS_P4", "PS_P5", "PS_P6"],
-    "indicadores_info": [
-      {
-        "id": "PS_P1",
-        "nombre": "Identificación de Conexiones",
-        "descripcion_indicador": "Capacidad para reconocer cómo las decisiones sobre consumo, costos y ambiente están interconectadas y se afectan mutuamente, permitiendo una comprensión holística de los sistemas."
-      },
-      {
-        "id": "PS_P2",
-        "nombre": "Análisis Multidimensional",
-        "descripcion_indicador": "Habilidad para evaluar simultáneamente las implicaciones económicas, sociales y ambientales de las decisiones, considerando múltiples dimensiones de impacto."
-      },
-      {
-        "id": "PS_P3",
-        "nombre": "Visión de Largo Plazo",
-        "descripcion_indicador": "Capacidad para anticipar y considerar las consecuencias a largo plazo de las acciones, más allá de los resultados inmediatos o aparentes."
-      },
-      {
-        "id": "PS_P4",
-        "nombre": "Identificación de Costos Ocultos",
-        "descripcion_indicador": "Habilidad para detectar y cuantificar costos indirectos, externalidades o impactos no evidentes (sociales o ambientales) en las alternativas consideradas."
-      },
-      {
-        "id": "PS_P5",
-        "nombre": "Búsqueda de Puntos de Apalancamiento",
-        "descripcion_indicador": "Capacidad para identificar los puntos clave en un sistema donde una intervención puede generar el máximo impacto positivo con el mínimo esfuerzo."
-      },
-      {
-        "id": "PS_P6",
-        "nombre": "Mentalidad de Aprendizaje/Adaptación",
-        "descripcion_indicador": "Flexibilidad para modificar estrategias y planes cuando nueva información revela conexiones o consecuencias inesperadas en el sistema analizado."
-      }
-    ],
-    "open_question_id": "PS_P7",
-    "scoring_weights": {
-      "likert": 0.6,
-      "open": 0.4
-    },
-    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre pensamiento sistémico. La pregunta fue: 'Describe una situación en un proyecto (real o hipotético) donde una decisión sobre consumo o costos tuvo un impacto socioambiental inesperado. ¿Cómo analizarías ahora esa interconexión para proponer una mejor alternativa?' Asigna una puntuación de 0 a 100 basada en: 1) Identificación clara de interconexiones (25 pts), 2) Análisis de impactos no evidentes (25 pts), 3) Consideración de múltiples dimensiones (económica, social, ambiental) (25 pts), 4) Propuesta de alternativa que equilibre las tres dimensiones (25 pts).",
-    "prompt_tutor_definition": {
-      "role": "Tutor de Pensamiento Sistémico",
-      "expertise": "Especialista en análisis de sistemas complejos y toma de decisiones que consideran impactos económicos, sociales y ambientales de forma integrada.",
-      "tone": "Analítico pero accesible, enfocado en revelar conexiones no evidentes y estimular un pensamiento más holístico.",
-      "focus_areas": [
-        "Identificación de interconexiones",
-        "Análisis de ciclos de retroalimentación",
-        "Evaluación de impactos a largo plazo",
-        "Identificación de puntos de apalancamiento",
-        "Equilibrio entre factores económicos, sociales y ambientales"
-      ],
-      "teaching_approach": "Ofrecer marcos de análisis y ejercicios prácticos que ayuden a visualizar sistemas complejos y sus interrelaciones.",
-      "content_guidelines": [
-        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., CE1, AA_P3). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
-      ]
-    }
-  },
-  "interpretacion_de_datos_ambientales_sensores_recibos": {
-    "name": "Interpretación de Datos Ambientales (Sensores/Recibos)",
-    "rubrica": {
-      "IDA_P1": "Evaluación de calidad y fiabilidad de datos",
-      "IDA_P2": "Selección de métodos de análisis adecuados",
-      "IDA_P3": "Identificación de patrones y anomalías",
-      "IDA_P4": "Contextualización según objetivos del proyecto",
-      "IDA_P5": "Traducción a conclusiones prácticas",
-      "IDA_P6": "Comunicación efectiva de hallazgos"
-    },
-    "likert_indicators": ["IDA_P1", "IDA_P2", "IDA_P3", "IDA_P4", "IDA_P5", "IDA_P6"],
-    "indicadores_info": [
-      {
-        "id": "IDA_P1",
-        "nombre": "Evaluación de Calidad y Fiabilidad",
-        "descripcion_indicador": "Capacidad para valorar críticamente la precisión, relevancia y fiabilidad de los datos ambientales antes de utilizarlos para análisis y toma de decisiones."
-      },
-      {
-        "id": "IDA_P2",
-        "nombre": "Selección y Aplicación de Técnicas",
-        "descripcion_indicador": "Habilidad para elegir y aplicar métodos analíticos apropiados según el tipo de datos ambientales y la pregunta específica que se busca responder."
-      },
-      {
-        "id": "IDA_P3",
-        "nombre": "Identificación de Patrones",
-        "descripcion_indicador": "Aptitud para reconocer tendencias significativas, anomalías o correlaciones relevantes en conjuntos de datos ambientales o de consumo de recursos."
-      },
-      {
-        "id": "IDA_P4",
-        "nombre": "Comprensión del Contexto",
-        "descripcion_indicador": "Capacidad para interpretar datos ambientales en función de los objetivos específicos del proyecto y su contexto particular de sostenibilidad."
-      },
-      {
-        "id": "IDA_P5",
-        "nombre": "Generación de Insights Prácticos",
-        "descripcion_indicador": "Habilidad para transformar análisis de datos en conclusiones accionables, recomendaciones concretas o decisiones prácticas sobre gestión de recursos."
-      },
-      {
-        "id": "IDA_P6",
-        "nombre": "Comunicación de Hallazgos",
-        "descripcion_indicador": "Capacidad para presentar los resultados del análisis de datos ambientales de forma clara, concisa y comprensible para diversos públicos."
-      }
-    ],
-    "open_question_id": "IDA_P7",
-    "scoring_weights": {
-      "likert": 0.65,
-      "open": 0.35
-    },
-    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre interpretación de datos ambientales. La pregunta fue: 'Describe brevemente una situación en la que tuviste que interpretar datos de consumo (ej. recibos de luz, agua) o de sensores ambientales para un proyecto o iniciativa. ¿Qué pasos seguiste para entender los datos y qué conclusión práctica obtuviste?' Asigna una puntuación de 0 a 100 basada en: 1) Metodología clara de análisis (25 pts), 2) Evaluación crítica de los datos (25 pts), 3) Identificación de patrones relevantes (25 pts), 4) Derivación de conclusiones prácticas y accionables (25 pts).",
-    "prompt_tutor_definition": {
-      "role": "Tutor de Interpretación de Datos Ambientales",
-      "expertise": "Especialista en análisis e interpretación de datos relacionados con consumo de recursos y variables ambientales para la toma de decisiones informadas.",
-      "tone": "Metódico pero accesible, enfocado en desarrollar capacidades analíticas prácticas sin tecnicismos innecesarios.",
-      "focus_areas": [
-        "Evaluación de calidad de datos",
-        "Métodos de análisis apropiados",
-        "Identificación de patrones significativos",
-        "Contextualización de datos",
-        "Comunicación efectiva de hallazgos"
-      ],
-      "teaching_approach": "Proporcionar métodos paso a paso y ejercicios prácticos que desarrollen habilidades de análisis aplicables a situaciones cotidianas de gestión de recursos.",
-      "content_guidelines": [
-        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., CE1, AA_P3). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
-      ]
-    }
-  },
-  "aprendizaje_adaptativo_personalizacion_contextual": {
-    "name": "Aprendizaje Adaptativo (Personalización Contextual)",
-    "rubrica": {
-      "AA_P1": "Identificación de factores contextuales relevantes",
-      "AA_P2": "Diseño de métodos para inferir necesidades",
-      "AA_P3": "Definición de reglas de adaptación claras",
-      "AA_P4": "Diseño de micro-contenidos variados",
-      "AA_P5": "Evaluación de efectividad de adaptaciones",
-      "AA_P6": "Anticipación de problemas éticos y de usabilidad"
-    },
-    "likert_indicators": ["AA_P1", "AA_P2", "AA_P3", "AA_P4", "AA_P5", "AA_P6"],
-    "indicadores_info": [
-      {
-        "id": "AA_P1",
-        "nombre": "Modelado del Contexto",
-        "descripcion_indicador": "Capacidad para identificar y priorizar los factores contextuales más relevantes (entorno, recursos, estado emocional) que influyen en una experiencia de aprendizaje."
-      },
-      {
-        "id": "AA_P2",
-        "nombre": "Modelado del Estado del Usuario",
-        "descripcion_indicador": "Habilidad para diseñar métodos efectivos que permitan inferir en tiempo real el progreso, necesidades y preferencias de aprendizaje de un usuario."
-      },
-      {
-        "id": "AA_P3",
-        "nombre": "Diseño de Estrategias Adaptativas",
-        "descripcion_indicador": "Aptitud para crear reglas lógicas claras que definan cómo personalizar contenidos o actividades basándose en las variables del usuario y su contexto."
-      },
-      {
-        "id": "AA_P4",
-        "nombre": "Selección y Mapeo de Contenido",
-        "descripcion_indicador": "Capacidad para diseñar o seleccionar micro-contenidos variados y relevantes que respondan a las diferentes necesidades identificadas por el sistema adaptativo."
-      },
-      {
-        "id": "AA_P5",
-        "nombre": "Evaluación de Efectividad",
-        "descripcion_indicador": "Habilidad para desarrollar indicadores y métodos que midan objetivamente si las adaptaciones están mejorando el aprendizaje o desarrollo de competencias."
-      },
-      {
-        "id": "AA_P6",
-        "nombre": "Consideraciones Éticas/Usabilidad",
-        "descripcion_indicador": "Capacidad para anticipar y resolver cuestiones éticas (privacidad, sesgos) y de usabilidad en el diseño de sistemas adaptativos de aprendizaje."
-      }
-    ],
-    "open_question_id": "AA_P7",
-    "scoring_weights": {
-      "likert": 0.6,
-      "open": 0.4
-    },
-    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre aprendizaje adaptativo. La pregunta fue: 'Imagina que estás diseñando una sección dentro de una herramienta de desarrollo de habilidades (como SkillBoosterX) para ayudar a un usuario a mejorar su habilidad de **'Gestión del Tiempo'**. Describe brevemente cómo aplicarías los principios de **Aprendizaje Adaptativo (Personalización Contextual)** para esta tarea. ¿Qué información clave del usuario y de su contexto intentarías capturar y cómo la usarías para personalizar la secuencia de aprendizaje (ej., tipo de contenido, dificultad, feedback) sobre **'Gestión del Tiempo'**?' Asigna una puntuación de 0 a 100 basada en: 1) Identificación clara de variables de usuario y contexto relevantes para personalizar el aprendizaje de 'Gestión del Tiempo'. (25 pts), 2) Propuestas de métodos efectivos y no invasivos para capturar dicha información. (25 pts), 3) Descripción de una lógica de adaptación clara (ej., reglas, cómo la información afecta la secuencia/contenido). (25 pts), 4) Ejemplos concretos de cómo se personalizaría el contenido, la dificultad o el feedback para la habilidad de 'Gestión del Tiempo'. (25 pts)",
-    "prompt_tutor_definition": {
-      "role": "Tutor de Aprendizaje Adaptativo",
-      "expertise": "Especialista en diseño de experiencias de aprendizaje personalizadas que se adaptan a las necesidades, contexto y progreso del usuario.",
-      "tone": "Empático y orientado al usuario, con enfoque en soluciones prácticas y personalizadas.",
-      "focus_areas": [
-        "Identificación de variables contextuales",
-        "Métodos de inferencia de necesidades",
-        "Diseño de reglas de adaptación",
-        "Creación de micro-contenidos personalizados",
-        "Evaluación de efectividad de adaptaciones"
-      ],
-      "teaching_approach": "Ofrecer marcos de diseño y ejemplos concretos que ayuden a crear experiencias de aprendizaje que respondan a las necesidades específicas de cada usuario en su contexto particular.",
-      "content_guidelines": [
-        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., CE1, AA_P3). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
-      ]
-    }
-  },
   "gestion_proyectos": {
     "name": "Gestión de Proyectos",
     "rubrica": {
@@ -577,6 +379,197 @@
       "teaching_approach": "Ofrecer herramientas de análisis sistémico y marcos conceptuales que ayuden a comprender y gestionar la complejidad organizacional.",
       "content_guidelines": [
         "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., PS1, PS2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
+  },
+  "ia_negocios": {
+    "name": "Fundamentos de IA para Negocios",
+    "rubrica": {
+      "IA1": "Identificación de Casos de Uso",
+      "IA2": "Comprensión de Conceptos Clave",
+      "IA3": "Evaluación de Viabilidad y ROI",
+      "IA4": "Gestión de Datos",
+      "IA5": "Consideraciones Éticas",
+      "IA6": "Comunicación con Equipos Técnicos"
+    },
+    "likert_indicators": ["IA1", "IA2", "IA3", "IA4", "IA5", "IA6"],
+    "indicadores_info": [
+      {
+        "id": "IA1",
+        "nombre": "Identificación de Casos de Uso",
+        "descripcion_indicador": "Habilidad para reconocer procesos o problemas de negocio que pueden ser optimizados o resueltos mediante la aplicación de IA."
+      },
+      {
+        "id": "IA2",
+        "nombre": "Comprensión de Conceptos Clave",
+        "descripcion_indicador": "Entendimiento funcional de los conceptos básicos de IA (ej. Machine Learning, NLP, IA Generativa) sin necesidad de una profunda experiencia técnica."
+      },
+      {
+        "id": "IA3",
+        "nombre": "Evaluación de Viabilidad y ROI",
+        "descripcion_indicador": "Capacidad para realizar una evaluación inicial de la viabilidad, el esfuerzo requerido y el posible retorno de la inversión de una iniciativa de IA."
+      },
+      {
+        "id": "IA4",
+        "nombre": "Gestión de Datos",
+        "descripcion_indicador": "Comprensión de la importancia de la calidad y cantidad de los datos necesarios para entrenar y operar un sistema de IA de manera efectiva."
+      },
+      {
+        "id": "IA5",
+        "nombre": "Consideraciones Éticas",
+        "descripcion_indicador": "Habilidad para identificar y considerar las implicaciones éticas y los posibles sesgos de una solución de IA."
+      },
+      {
+        "id": "IA6",
+        "nombre": "Comunicación con Equipos Técnicos",
+        "descripcion_indicador": "Capacidad para traducir un requerimiento de negocio a un lenguaje que un equipo técnico pueda entender, y comprender las limitaciones que ellos exponen."
+      }
+    ],
+    "open_question_id": "IA7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Fundamentos de IA para Negocios. La pregunta fue: 'En tu departamento, el equipo dedica muchas horas a la semana a leer cientos de comentarios de clientes para luego resumirlos en un informe semanal. Describe cómo plantearías el uso de IA para optimizar esto. ¿Qué tipo de herramientas investigarías y cómo le venderías la idea a tu gerente?' Asigna una puntuación de 0 a 100 basada en: 1. Identificación Correcta de la Tecnología (30 pts), 2. Enfoque en Beneficios de Negocio (30 pts), 3. Conciencia de Riesgos y Pasos Prácticos (25 pts), 4. Claridad y Estructura (15 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Fundamentos de IA para Negocios",
+      "expertise": "Especialista en la aplicación práctica de inteligencia artificial en entornos empresariales, con enfoque en casos de uso reales y ROI tangible.",
+      "tone": "Pragmático y orientado a resultados, con capacidad para traducir conceptos técnicos a lenguaje de negocios.",
+      "focus_areas": [
+        "Identificación de oportunidades de IA",
+        "Evaluación de viabilidad comercial",
+        "Gestión de proyectos de IA",
+        "Comunicación entre equipos técnicos y de negocio",
+        "Consideraciones éticas y de implementación"
+      ],
+      "teaching_approach": "Proporcionar marcos prácticos y ejemplos reales que permitan a los profesionales de negocio identificar, evaluar e implementar soluciones de IA de manera efectiva.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., IA1, IA2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
+  },
+  "optimizacion_procesos": {
+    "name": "Optimización de Procesos con Automatización",
+    "rubrica": {
+      "OP1": "Mapeo de Flujos de Trabajo",
+      "OP2": "Identificación de Ineficiencias",
+      "OP3": "Selección de Herramientas Adecuadas",
+      "OP4": "Diseño de la Solución Automatizada",
+      "OP5": "Implementación y Pruebas",
+      "OP6": "Medición del Impacto"
+    },
+    "likert_indicators": ["OP1", "OP2", "OP3", "OP4", "OP5", "OP6"],
+    "indicadores_info": [
+      {
+        "id": "OP1",
+        "nombre": "Mapeo de Flujos de Trabajo",
+        "descripcion_indicador": "Habilidad para visualizar y documentar un proceso de negocio de principio a fin, identificando todas las etapas, actores y transferencias de información."
+      },
+      {
+        "id": "OP2",
+        "nombre": "Identificación de Ineficiencias",
+        "descripcion_indicador": "Capacidad para detectar tareas manuales, repetitivas, propensas a errores o que generan retrasos dentro de un flujo de trabajo."
+      },
+      {
+        "id": "OP3",
+        "nombre": "Selección de Herramientas Adecuadas",
+        "descripcion_indicador": "Criterio para elegir la herramienta de automatización correcta para el problema (desde simples reglas en el correo hasta plataformas de RPA o Zapier/Make)."
+      },
+      {
+        "id": "OP4",
+        "nombre": "Diseño de la Solución Automatizada",
+        "descripcion_indicador": "Habilidad para diseñar un nuevo flujo de trabajo automatizado que sea robusto, eficiente y fácil de mantener."
+      },
+      {
+        "id": "OP5",
+        "nombre": "Implementación y Pruebas",
+        "descripcion_indicador": "Capacidad para implementar la solución de automatización (o supervisar su implementación) y realizar pruebas para asegurar que funciona como se espera."
+      },
+      {
+        "id": "OP6",
+        "nombre": "Medición del Impacto",
+        "descripcion_indicador": "Habilidad para definir y medir métricas clave (ej. tiempo ahorrado, reducción de errores, aumento de capacidad) para cuantificar el éxito de la automatización."
+      }
+    ],
+    "open_question_id": "OP7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Optimización de Procesos con Automatización. La pregunta fue: 'Cada vez que se cierra una venta importante, un miembro de tu equipo realiza 3 tareas manuales (crear carpeta, enviar correo, crear tarea). Describe cómo automatizarías este flujo de trabajo, qué herramientas podrías usar y qué pasos seguirías para diseñarlo.' Asigna una puntuación de 0 a 100 basada en: 1. Selección de Herramientas Apropiadas (30 pts), 2. Lógica del Flujo Automatizado (40 pts), 3. Consideración de Detalles Prácticos (20 pts), 4. Enfoque Estructurado (10 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Optimización de Procesos con Automatización",
+      "expertise": "Especialista en análisis de procesos, automatización de flujos de trabajo y mejora de la eficiencia operacional mediante herramientas tecnológicas.",
+      "tone": "Metódico y orientado a la eficiencia, con enfoque en soluciones prácticas y medibles.",
+      "focus_areas": [
+        "Mapeo y análisis de procesos",
+        "Identificación de oportunidades de automatización",
+        "Selección de herramientas apropiadas",
+        "Diseño de flujos automatizados",
+        "Implementación y optimización",
+        "Medición de impacto y ROI"
+      ],
+      "teaching_approach": "Ofrecer metodologías paso a paso y herramientas prácticas para identificar, diseñar e implementar automatizaciones que generen valor tangible.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., OP1, OP2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
+      ]
+    }
+  },
+  "interpretacion_datos": {
+    "name": "Interpretación de Datos para la Toma de Decisiones",
+    "rubrica": {
+      "ID1": "Definición del Problema y Métricas",
+      "ID2": "Limpieza y Validación de Datos",
+      "ID3": "Identificación de Patrones y Tendencias",
+      "ID4": "Contextualización de Hallazgos",
+      "ID5": "Visualización y Comunicación de Datos",
+      "ID6": "Impulso a la Acción Basada en Datos"
+    },
+    "likert_indicators": ["ID1", "ID2", "ID3", "ID4", "ID5", "ID6"],
+    "indicadores_info": [
+      {
+        "id": "ID1",
+        "nombre": "Definición del Problema y Métricas",
+        "descripcion_indicador": "Habilidad para traducir una pregunta de negocio en una pregunta analítica clara y definir qué métricas son clave para responderla."
+      },
+      {
+        "id": "ID2",
+        "nombre": "Limpieza y Validación de Datos",
+        "descripcion_indicador": "Capacidad para evaluar la calidad y fiabilidad de un conjunto de datos, identificando y manejando valores atípicos, faltantes o inconsistentes."
+      },
+      {
+        "id": "ID3",
+        "nombre": "Identificación de Patrones y Tendencias",
+        "descripcion_indicador": "Habilidad para utilizar herramientas (desde hojas de cálculo hasta software especializado) para descubrir patrones, correlaciones y tendencias en los datos."
+      },
+      {
+        "id": "ID4",
+        "nombre": "Contextualización de Hallazgos",
+        "descripcion_indicador": "Capacidad para interpretar lo que los datos significan en el contexto del negocio, evitando sacar conclusiones apresuradas o superficiales."
+      },
+      {
+        "id": "ID5",
+        "nombre": "Visualización y Comunicación de Datos",
+        "descripcion_indicador": "Habilidad para presentar los hallazgos de manera clara y persuasiva, utilizando gráficos y narrativas que faciliten la comprensión para una audiencia no técnica."
+      },
+      {
+        "id": "ID6",
+        "nombre": "Impulso a la Acción Basada en Datos",
+        "descripcion_indicador": "Capacidad para formular recomendaciones concretas y tomar decisiones basadas en la evidencia encontrada en los datos."
+      }
+    ],
+    "open_question_id": "ID7_open",
+    "scoring_weights": { "likert": 0.6, "open": 0.4 },
+    "prompt_score_rubric_text": "Evalúa la respuesta a la pregunta abierta sobre Interpretación de Datos para la Toma de Decisiones. La pregunta fue: 'Tu empresa nota una caída del 15% en la renovación de suscripciones. Te dan una hoja de cálculo con datos de los clientes que no renovaron. Describe tu proceso paso a paso para interpretar estos datos y presentar tus hallazgos iniciales.' Asigna una puntuación de 0 a 100 basada en: 1. Enfoque Estructurado (30 pts), 2. Identificación de Patrones Relevantes (40 pts), 3. Comunicación Orientada a la Decisión (20 pts), 4. Prudencia y Próximos Pasos (10 pts).",
+    "prompt_tutor_definition": {
+      "role": "Tutor de Interpretación de Datos para la Toma de Decisiones",
+      "expertise": "Especialista en análisis de datos aplicado a la toma de decisiones empresariales, con enfoque en transformar datos en insights accionables.",
+      "tone": "Analítico pero accesible, orientado a la acción y la toma de decisiones basada en evidencia.",
+      "focus_areas": [
+        "Formulación de preguntas analíticas",
+        "Validación y limpieza de datos",
+        "Análisis exploratorio y identificación de patrones",
+        "Interpretación contextual de hallazgos",
+        "Comunicación efectiva de insights",
+        "Traducción de datos en recomendaciones"
+      ],
+      "teaching_approach": "Proporcionar metodologías estructuradas y herramientas prácticas que permitan extraer valor de los datos para informar decisiones estratégicas y operacionales.",
+      "content_guidelines": [
+        "Genera exactamente 3 tips como un array de strings. Cada tip debe ser una frase completa, natural y orientada a la acción. No uses los IDs internos de los indicadores (ej., ID1, ID2). No incluyas los puntajes numéricos (ej., 100/100) directamente en el texto del tip. 1. **Tip 1 (Fortaleza):** Identifica la principal fortaleza del usuario basada en el indicador con el score más alto. Usa su NOMBRE DESCRIPTIVO COMPLETO. Explica brevemente por qué esta fortaleza es valiosa en el contexto de ${skillName} y el proyecto/rol del usuario. Ejemplo: 'Tu habilidad para [Nombre Descriptivo del Indicador de Fortaleza] es un gran activo para tu rol como ${userInfo.role}, ya que te permite [beneficio específico en su contexto].' 2. **Tip 2 (Oportunidad):** Identifica la principal área de oportunidad basada en el indicador con el score más bajo. Usa su NOMBRE DESCRIPTIVO COMPLETO. Ofrece una sugerencia concisa, específica y accionable para mejorarla, conectándola si es posible con los obstáculos mencionados por el usuario. Ejemplo: 'Un área donde podrías enfocar tu desarrollo en ${skillName} es en [Nombre Descriptivo del Indicador de Oportunidad]. Para superar el obstáculo de [mencionar brevemente un obstáculo relevante del usuario si aplica], considera practicar [acción concreta para mejorar].' 3. **Tip 3 (Consejo General):** Proporciona un consejo general práctico y motivador para que el usuario siga desarrollando ${skillName} en su contexto profesional o proyecto actual. Este consejo debe ser inspirador y fomentar la aplicación continua. Ejemplo: 'Para seguir creciendo en ${skillName} y alcanzar [mencionar brevemente parte de su projectDescription], te animo a [consejo general accionable y motivador].'"
       ]
     }
   }
