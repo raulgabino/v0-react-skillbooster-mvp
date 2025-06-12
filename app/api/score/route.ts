@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
-import OpenAI from "openai"
 
 // --- Tipos ---
 interface IndicadorInfo {
@@ -42,7 +41,6 @@ interface IndicatorScore {
   name: string
   score: number
   descripcion_indicador?: string
-  feedback_especifico?: string // Para el feedback de IA
 }
 
 interface ScoreResponsePayload {
@@ -52,18 +50,6 @@ interface ScoreResponsePayload {
 
 interface ErrorResponse {
   error: string
-}
-
-// --- Configuración OpenAI ---
-const openaiApiKey = process.env.OPENAI_API_KEY
-let openai: OpenAI | null = null
-
-if (openaiApiKey) {
-  openai = new OpenAI({
-    apiKey: openaiApiKey,
-  })
-} else {
-  console.warn("OPENAI_API_KEY no está configurada. La API de puntuación no funcionará correctamente.")
 }
 
 // --- Carga de Definiciones ---
@@ -96,18 +82,24 @@ function mapLikertToScore(value: number): number {
   return mapping[value as keyof typeof mapping] || 0
 }
 
+// --- Cálculo Local de Pregunta Abierta ---
+function calculateOpenQuestionScore(answer: string): number {
+  const length = answer.trim().length
+
+  if (length >= 300) return 90
+  if (length >= 200) return 80
+  if (length >= 150) return 70
+  if (length >= 100) return 60
+  if (length >= 50) return 50
+  if (length >= 20) return 40
+  return 30
+}
+
 // --- Handler POST ---
 export async function POST(request: Request): Promise<NextResponse<ScoreResponsePayload | ErrorResponse>> {
-  // Log message to console
-  console.log("Simplified /api/score was hit!")
-
   try {
     const { skillId, answers } = (await request.json()) as ScoreRequestPayload
-    console.log(`[API /api/score] Iniciando evaluación para skillId: ${skillId}`)
-
-    if (!openai) {
-      return NextResponse.json({ error: "OpenAI API no está configurada." }, { status: 500 })
-    }
+    console.log(`[API /api/score] Iniciando cálculo de puntuaciones para skillId: ${skillId}`)
 
     // Cargar definiciones de habilidades
     const definitions = loadSkillDefinitions()
@@ -156,34 +148,13 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
 
     const likertAverage = likertScores.length > 0 ? likertTotal / likertScores.length : 0
 
-    // Procesar respuesta abierta
+    // Procesar respuesta abierta con cálculo local
     const openAnswer = answers.find((a) => a.questionId === skillDefinition.open_question_id)
     let openScore = 0
 
     if (openAnswer && typeof openAnswer.value === "string" && openAnswer.value.trim()) {
-      // Usar OpenAI para evaluar la respuesta abierta
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `Eres un evaluador experto en ${skillDefinition.name}. Tu tarea es evaluar objetivamente la respuesta de un usuario según los criterios proporcionados.`,
-          },
-          {
-            role: "user",
-            content: `${skillDefinition.prompt_score_rubric_text}\n\nRespuesta del usuario: "${openAnswer.value}"\n\nPor favor, evalúa esta respuesta y asigna una puntuación de 0 a 100. Proporciona solo el número, sin explicación.`,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 10,
-      })
-
-      const scoreText = response.choices[0]?.message?.content?.trim() || "0"
-      openScore = Number.parseInt(scoreText.match(/\d+/)?.[0] || "0", 10)
-
-      // Validar que el score esté en el rango correcto
-      openScore = Math.max(0, Math.min(100, openScore))
-      console.log(`[API /api/score] Puntuación de pregunta abierta obtenida: ${openScore}`)
+      openScore = calculateOpenQuestionScore(openAnswer.value)
+      console.log(`[API /api/score] Puntuación de pregunta abierta calculada localmente: ${openScore}`)
     }
 
     // Calcular puntuación global ponderada
@@ -211,125 +182,9 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
         "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
     })
 
-    // --- INICIO: Bloque para generar feedback_especifico por indicador (PARALELIZADO) ---
-    if (openai) {
-      // Solo proceder si OpenAI está configurado
+    console.log(`[API /api/score] Cálculo de puntuaciones completado. Puntuación global: ${globalScore}`)
 
-      // Crear array de promesas para ejecutar en paralelo
-      const feedbackPromises = likertScores.map(async (indScore, index) => {
-        try {
-          // Opcional: Decidir si se genera feedback para la pregunta abierta.
-          if (indScore.id === skillDefinition.open_question_id && !indScore.descripcion_indicador) {
-            return {
-              index,
-              feedback:
-                "Tu desempeño en la situación práctica ha sido considerado en tu puntaje global y en la sesión con el mentor.",
-            }
-          }
-
-          // Si no hay descripción del indicador, usar un texto genérico para el prompt de IA.
-          const descripcionParaPrompt =
-            indScore.descripcion_indicador || `Este es un aspecto clave de la habilidad '${skillDefinition.name}'.`
-
-          const systemContent = `Eres un tutor experto en ${skillDefinition.name}, con un tono alentador, conciso y orientado a la acción. Tu tarea es proporcionar un feedback muy breve (1-2 frases concisas, idealmente menos de 30 palabras) sobre el desempeño del usuario en un indicador específico. No utilices Markdown en tu respuesta.`
-
-          let userContent = ""
-          const score = indScore.score
-          const indicatorName = indScore.name
-
-          if (score >= 75) {
-            // Puntuación Alta
-            userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}"). 
-Proporciona un reconocimiento positivo y una sugerencia breve sobre cómo puede seguir aprovechando o expandiendo esta fortaleza. Ejemplo: "¡Excelente desempeño en ${indicatorName}! Sigue aplicando esta claridad para liderar con impacto."`
-          } else if (score >= 40) {
-            // Puntuación Media
-            userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
-Proporciona una observación constructiva y una sugerencia simple y accionable, o una pregunta breve para la reflexión enfocada en mejorar este aspecto. Ejemplo: "Has mostrado una base en ${indicatorName}. Para mejorar, considera practicar [acción simple]."`
-          } else {
-            // Puntuación Baja
-            userContent = `El usuario obtuvo ${score}/100 en el indicador "${indicatorName}" (Descripción: "${descripcionParaPrompt}").
-Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable, o una pregunta que le ayude a identificar un posible obstáculo. Ejemplo: "Este es un área para enfocar tu desarrollo en ${indicatorName}. Un buen inicio sería [acción muy básica]."`
-          }
-          userContent +=
-            "\n\nInstrucciones Adicionales: Responde directamente al usuario. Tu respuesta debe ser solo el feedback, sin saludos, introducciones ni despedidas. Mantén la respuesta entre 1 y 2 frases concisas, no más de 35 palabras."
-
-          const feedbackResponse = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-              { role: "system", content: systemContent },
-              { role: "user", content: userContent },
-            ],
-            temperature: 0.55,
-            max_tokens: 60,
-            n: 1,
-          })
-
-          let generatedFeedback =
-            feedbackResponse.choices[0]?.message?.content?.trim() ||
-            "Continúa practicando para fortalecer este aspecto."
-
-          // Opcional: Truncar si es muy largo, aunque el prompt ya lo limita.
-          const words = generatedFeedback.split(" ")
-          if (words.length > 40) {
-            generatedFeedback = words.slice(0, 38).join(" ") + "..."
-          }
-
-          return { index, feedback: generatedFeedback }
-        } catch (feedbackError) {
-          console.error(
-            `Error generando feedback específico para el indicador '${indScore.name}' (ID: ${indScore.id}):`,
-            feedbackError,
-          )
-
-          // Fallback genérico si la IA falla para este indicador específico
-          let fallbackFeedback
-          if (indScore.score >= 75) {
-            fallbackFeedback = `¡Buen trabajo en ${indScore.name}! Sigue aplicando tus fortalezas.`
-          } else if (indScore.score >= 40) {
-            fallbackFeedback = `Sigue esforzándote en ${indScore.name}, ¡la práctica constante es clave!`
-          } else {
-            fallbackFeedback = `Identificar áreas de mejora es el primer paso. ¡Con enfoque en ${indScore.name}, progresarás!`
-          }
-
-          return { index, feedback: fallbackFeedback }
-        }
-      })
-
-      // Ejecutar todas las promesas en paralelo
-      const feedbackResults = await Promise.allSettled(feedbackPromises)
-
-      console.log("[API /api/score] Generación de feedback para indicadores completada.")
-
-      // Asignar los resultados de vuelta a likertScores
-      feedbackResults.forEach((result, index) => {
-        if (result.status === "fulfilled") {
-          const { index: originalIndex, feedback } = result.value
-          likertScores[originalIndex].feedback_especifico = feedback
-        } else {
-          console.error(`Error en feedback para indicador en índice ${index}:`, result.reason)
-          // Asignar fallback genérico
-          const indScore = likertScores[index]
-          if (indScore.score >= 75) {
-            indScore.feedback_especifico = `¡Buen trabajo en ${indScore.name}! Sigue aplicando tus fortalezas.`
-          } else if (indScore.score >= 40) {
-            indScore.feedback_especifico = `Sigue esforzándote en ${indScore.name}, ¡la práctica constante es clave!`
-          } else {
-            indScore.feedback_especifico = `Identificar áreas de mejora es el primer paso. ¡Con enfoque en ${indScore.name}, progresarás!`
-          }
-        }
-      })
-    } else {
-      // Fallback si la instancia de OpenAI no está disponible
-      likertScores.forEach((indScore) => {
-        indScore.feedback_especifico = "El servicio de análisis detallado no está disponible en este momento."
-      })
-    }
-    // --- FIN: Bloque para generar feedback_especifico por indicador (PARALELIZADO) ---
-
-    return NextResponse.json(
-      { message: "Simplified score API reached successfully", indicatorScores: likertScores, globalScore },
-      { status: 200 },
-    )
+    return NextResponse.json({ indicatorScores: likertScores, globalScore }, { status: 200 })
   } catch (error) {
     console.error("Error al calcular la puntuación:", error)
     return NextResponse.json({ error: "Error al calcular la puntuación." }, { status: 500 })

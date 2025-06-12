@@ -18,7 +18,6 @@ interface LessonRequestPayload {
     name: string
     score: number
     descripcion_indicador?: string
-    feedback_especifico?: string
   }>
   globalScore: number
   openEndedAnswer?: string
@@ -77,6 +76,8 @@ function replacePlaceholders(text: string, skillName: string, userInfo: LessonRe
 
 export async function POST(request: Request) {
   try {
+    console.log("[API /api/lesson] Iniciando generación de tips de feedback")
+
     // Verificar que OpenAI esté configurado
     if (!process.env.OPENAI_API_KEY) {
       console.error("OPENAI_API_KEY no está configurada")
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
     const payload: LessonRequestPayload = await request.json()
     const { skillId, userInfo, indicatorScores, globalScore, openEndedAnswer } = payload
 
-    console.log("Processing lesson request for skill:", skillId)
+    console.log(`[API /api/lesson] Procesando solicitud para skillId: ${skillId}`)
 
     // Cargar definiciones de habilidades
     const skillDefinitions = loadSkillDefinitions()
@@ -106,7 +107,10 @@ export async function POST(request: Request) {
     const highestScoreIndicator = sortedIndicators[0]
     const lowestScoreIndicator = sortedIndicators[sortedIndicators.length - 1]
 
-    // Construir el system prompt
+    console.log(`[API /api/lesson] Fortaleza principal: ${highestScoreIndicator.name} (${highestScoreIndicator.score})`)
+    console.log(`[API /api/lesson] Área de oportunidad: ${lowestScoreIndicator.name} (${lowestScoreIndicator.score})`)
+
+    // Construir el system prompt usando los campos de prompt_tutor_definition
     const systemPrompt = `Eres un ${tutorDefinition.role}. ${tutorDefinition.expertise}
 
 Tu tono debe ser: ${tutorDefinition.tone}
@@ -116,7 +120,7 @@ ${tutorDefinition.focus_areas.map((area) => `- ${area}`).join("\n")}
 
 Enfoque de enseñanza: ${tutorDefinition.teaching_approach}`
 
-    // Construir el user prompt con información contextual
+    // Construir el user prompt con información contextual y content_guidelines
     const contentGuidelines = tutorDefinition.content_guidelines[0] || ""
     const processedGuidelines = replacePlaceholders(contentGuidelines, skillName, userInfo)
 
@@ -150,9 +154,9 @@ Por favor, responde ÚNICAMENTE con un objeto JSON válido que contenga exactame
   ]
 }`
 
-    console.log("Calling OpenAI API...")
+    console.log("[API /api/lesson] Realizando llamada única a OpenAI...")
 
-    // Llamar a la API de OpenAI
+    // Realizar una única llamada a OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -171,7 +175,7 @@ Por favor, responde ÚNICAMENTE con un objeto JSON válido que contenga exactame
       throw new Error("No response content from OpenAI")
     }
 
-    console.log("OpenAI response received")
+    console.log("[API /api/lesson] Respuesta de OpenAI recibida exitosamente")
 
     // Parsear la respuesta JSON
     const parsedResponse = JSON.parse(responseContent)
@@ -185,10 +189,10 @@ Por favor, responde ÚNICAMENTE con un objeto JSON válido que contenga exactame
       tips: parsedResponse.tips,
     }
 
-    console.log("Lesson tips generated successfully")
+    console.log("[API /api/lesson] Tips generados exitosamente")
     return NextResponse.json(response)
   } catch (error: any) {
-    console.error("Error in lesson API:", error)
+    console.error("[API /api/lesson] Error en la generación de tips:", error)
 
     // Mecanismo de fallback: generar tips genéricos
     const fallbackTips = [
@@ -197,7 +201,7 @@ Por favor, responde ÚNICAMENTE con un objeto JSON válido que contenga exactame
       "Consejo: Busca oportunidades para aplicar esta habilidad en tu trabajo diario y solicita feedback de colegas o supervisores para acelerar tu desarrollo.",
     ]
 
-    console.log("Using fallback tips due to error")
+    console.log("[API /api/lesson] Usando tips de fallback debido al error")
 
     return NextResponse.json({ tips: fallbackTips })
   }

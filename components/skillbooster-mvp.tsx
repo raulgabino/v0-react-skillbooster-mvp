@@ -235,7 +235,8 @@ export default function SkillboosterMVP() {
           (answer) => currentSkill.questions.find((q) => q.id === answer.questionId)?.type === "open",
         )?.value as string | undefined
 
-        // 1. Llamada a la API de puntuación
+        // 1. Primera llamada a /api/score para obtener puntuaciones
+        console.log("[Frontend] Llamando a /api/score...")
         const scoreResponse = await fetch("/api/score", {
           method: "POST",
           headers: {
@@ -248,13 +249,25 @@ export default function SkillboosterMVP() {
         })
 
         if (!scoreResponse.ok) {
-          throw new Error(`Error en la API de puntuación: ${scoreResponse.statusText}`)
+          throw new Error(`Error en la API de puntuación: ${scoreResponse.status} ${scoreResponse.statusText}`)
         }
 
         const scoreData = await scoreResponse.json()
-        const { indicatorScores, globalScore } = scoreData
 
-        // 2. Llamada a la API de tips
+        // Validar estructura de datos de /api/score
+        if (
+          !scoreData.indicatorScores ||
+          !Array.isArray(scoreData.indicatorScores) ||
+          typeof scoreData.globalScore !== "number"
+        ) {
+          throw new Error("La API de puntuación no devolvió la estructura de datos esperada.")
+        }
+
+        const { indicatorScores, globalScore } = scoreData
+        console.log(`[Frontend] Puntuaciones obtenidas. Score global: ${globalScore}`)
+
+        // 2. Segunda llamada a /api/lesson para obtener tips de IA
+        console.log("[Frontend] Llamando a /api/lesson...")
         const lessonResponse = await fetch("/api/lesson", {
           method: "POST",
           headers: {
@@ -270,27 +283,33 @@ export default function SkillboosterMVP() {
         })
 
         if (!lessonResponse.ok) {
-          throw new Error(`Error en la API de tips: ${lessonResponse.statusText}`)
+          throw new Error(`Error en la API de tips: ${lessonResponse.status} ${lessonResponse.statusText}`)
         }
 
         const lessonData = await lessonResponse.json()
-        const { tips } = lessonData
 
-        // 3. Construimos el resultado completo
+        // Validar estructura de datos de /api/lesson
+        if (!lessonData.tips || !Array.isArray(lessonData.tips) || lessonData.tips.length !== 3) {
+          throw new Error("La API de tips no devolvió la estructura de datos esperada.")
+        }
+
+        const { tips } = lessonData
+        console.log("[Frontend] Tips de IA generados exitosamente")
+
+        // 3. Construir el resultado completo con datos de ambas APIs
         const result: SkillResult = {
           skillId: currentSkillId,
-          skillName: currentSkill.name, // Usar name en lugar de axis
+          skillName: currentSkill.name,
           globalScore,
           indicatorScores,
           tips,
         }
 
-        // 4. Actualizamos el estado
+        // 4. Actualizar el estado y pasar a la pantalla de resultados
         const newResults = { ...results }
         newResults[currentSkillId] = result
         setResults(newResults)
 
-        // 5. Pasamos a la pantalla de resultados
         setCurrentStep(4)
         setShowMentorSession(false)
       } catch (error: any) {
