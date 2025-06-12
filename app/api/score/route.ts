@@ -102,11 +102,12 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
   console.log("Simplified /api/score was hit!")
 
   try {
+    const { skillId, answers } = (await request.json()) as ScoreRequestPayload
+    console.log(`[API /api/score] Iniciando evaluación para skillId: ${skillId}`)
+
     if (!openai) {
       return NextResponse.json({ error: "OpenAI API no está configurada." }, { status: 500 })
     }
-
-    const { skillId, answers } = (await request.json()) as ScoreRequestPayload
 
     // Cargar definiciones de habilidades
     const definitions = loadSkillDefinitions()
@@ -182,6 +183,7 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
 
       // Validar que el score esté en el rango correcto
       openScore = Math.max(0, Math.min(100, openScore))
+      console.log(`[API /api/score] Puntuación de pregunta abierta obtenida: ${openScore}`)
     }
 
     // Calcular puntuación global ponderada
@@ -209,18 +211,20 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
         "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
     })
 
-    // --- INICIO: Bloque para generar feedback_especifico por indicador ---
+    // --- INICIO: Bloque para generar feedback_especifico por indicador (PARALELIZADO) ---
     if (openai) {
       // Solo proceder si OpenAI está configurado
-      for (const indScore of likertScores) {
+
+      // Crear array de promesas para ejecutar en paralelo
+      const feedbackPromises = likertScores.map(async (indScore, index) => {
         try {
           // Opcional: Decidir si se genera feedback para la pregunta abierta.
-          // Si la pregunta abierta no tiene una 'descripcion_indicador' clara o si se prefiere no darle feedback específico aquí,
-          // se puede añadir una condición para saltarla o darle un texto por defecto.
           if (indScore.id === skillDefinition.open_question_id && !indScore.descripcion_indicador) {
-            indScore.feedback_especifico =
-              "Tu desempeño en la situación práctica ha sido considerado en tu puntaje global y en la sesión con el mentor."
-            continue // Saltar a la siguiente iteración del bucle
+            return {
+              index,
+              feedback:
+                "Tu desempeño en la situación práctica ha sido considerado en tu puntaje global y en la sesión con el mentor.",
+            }
           }
 
           // Si no hay descripción del indicador, usar un texto genérico para el prompt de IA.
@@ -255,10 +259,11 @@ Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable,
               { role: "system", content: systemContent },
               { role: "user", content: userContent },
             ],
-            temperature: 0.55, // Ligeramente más determinista para feedback consistente
-            max_tokens: 60, // Espacio para ~40 palabras + buffer
+            temperature: 0.55,
+            max_tokens: 60,
             n: 1,
           })
+
           let generatedFeedback =
             feedbackResponse.choices[0]?.message?.content?.trim() ||
             "Continúa practicando para fortalecer este aspecto."
@@ -268,13 +273,42 @@ Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable,
           if (words.length > 40) {
             generatedFeedback = words.slice(0, 38).join(" ") + "..."
           }
-          indScore.feedback_especifico = generatedFeedback
+
+          return { index, feedback: generatedFeedback }
         } catch (feedbackError) {
           console.error(
             `Error generando feedback específico para el indicador '${indScore.name}' (ID: ${indScore.id}):`,
             feedbackError,
           )
+
           // Fallback genérico si la IA falla para este indicador específico
+          let fallbackFeedback
+          if (indScore.score >= 75) {
+            fallbackFeedback = `¡Buen trabajo en ${indScore.name}! Sigue aplicando tus fortalezas.`
+          } else if (indScore.score >= 40) {
+            fallbackFeedback = `Sigue esforzándote en ${indScore.name}, ¡la práctica constante es clave!`
+          } else {
+            fallbackFeedback = `Identificar áreas de mejora es el primer paso. ¡Con enfoque en ${indScore.name}, progresarás!`
+          }
+
+          return { index, feedback: fallbackFeedback }
+        }
+      })
+
+      // Ejecutar todas las promesas en paralelo
+      const feedbackResults = await Promise.allSettled(feedbackPromises)
+
+      console.log("[API /api/score] Generación de feedback para indicadores completada.")
+
+      // Asignar los resultados de vuelta a likertScores
+      feedbackResults.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          const { index: originalIndex, feedback } = result.value
+          likertScores[originalIndex].feedback_especifico = feedback
+        } else {
+          console.error(`Error en feedback para indicador en índice ${index}:`, result.reason)
+          // Asignar fallback genérico
+          const indScore = likertScores[index]
           if (indScore.score >= 75) {
             indScore.feedback_especifico = `¡Buen trabajo en ${indScore.name}! Sigue aplicando tus fortalezas.`
           } else if (indScore.score >= 40) {
@@ -283,14 +317,14 @@ Proporciona un comentario de apoyo con un primer paso muy concreto y alcanzable,
             indScore.feedback_especifico = `Identificar áreas de mejora es el primer paso. ¡Con enfoque en ${indScore.name}, progresarás!`
           }
         }
-      }
+      })
     } else {
       // Fallback si la instancia de OpenAI no está disponible
       likertScores.forEach((indScore) => {
         indScore.feedback_especifico = "El servicio de análisis detallado no está disponible en este momento."
       })
     }
-    // --- FIN: Bloque para generar feedback_especifico por indicador ---
+    // --- FIN: Bloque para generar feedback_especifico por indicador (PARALELIZADO) ---
 
     return NextResponse.json(
       { message: "Simplified score API reached successfully", indicatorScores: likertScores, globalScore },
