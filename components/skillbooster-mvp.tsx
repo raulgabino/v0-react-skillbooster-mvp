@@ -230,18 +230,10 @@ export default function SkillboosterMVP() {
       setLoading(true)
 
       try {
-        // Encontrar la respuesta a la pregunta abierta
-        const openEndedAnswer = newAnswers[currentSkillId].find(
-          (answer) => currentSkill.questions.find((q) => q.id === answer.questionId)?.type === "open",
-        )?.value as string | undefined
-
-        // 1. Primera llamada a /api/score para obtener puntuaciones
-        console.log("[Frontend] Llamando a /api/score...")
+        // 1. Llamada a la API de puntuación local
         const scoreResponse = await fetch("/api/score", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             skillId: currentSkillId,
             answers: newAnswers[currentSkillId],
@@ -249,30 +241,27 @@ export default function SkillboosterMVP() {
         })
 
         if (!scoreResponse.ok) {
-          throw new Error(`Error en la API de puntuación: ${scoreResponse.status} ${scoreResponse.statusText}`)
+          const errorBody = await scoreResponse.json()
+          throw new Error(`Error en la API de puntuación: ${scoreResponse.statusText} - ${errorBody.error}`)
         }
 
         const scoreData = await scoreResponse.json()
-
-        // Validar estructura de datos de /api/score
-        if (
-          !scoreData.indicatorScores ||
-          !Array.isArray(scoreData.indicatorScores) ||
-          typeof scoreData.globalScore !== "number"
-        ) {
+        if (!scoreData.indicatorScores || typeof scoreData.globalScore === "undefined") {
           throw new Error("La API de puntuación no devolvió la estructura de datos esperada.")
         }
 
         const { indicatorScores, globalScore } = scoreData
-        console.log(`[Frontend] Puntuaciones obtenidas. Score global: ${globalScore}`)
+        console.log(`[Frontend] Puntuaciones obtenidas para ${currentSkill.name}. Score global: ${globalScore}`)
 
-        // 2. Segunda llamada a /api/lesson para obtener tips de IA
-        console.log("[Frontend] Llamando a /api/lesson...")
+        // 2. Llamada a la API de tips con los datos de la primera llamada
+        const openEndedAnswer = newAnswers[currentSkillId].find(
+          (answer) => currentSkill.questions.find((q) => q.id === answer.questionId)?.type === "open",
+        )?.value as string | undefined
+
+        console.log(`[Frontend] Llamando a /api/lesson para ${currentSkill.name}...`)
         const lessonResponse = await fetch("/api/lesson", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             skillId: currentSkillId,
             userInfo,
@@ -283,20 +272,19 @@ export default function SkillboosterMVP() {
         })
 
         if (!lessonResponse.ok) {
-          throw new Error(`Error en la API de tips: ${lessonResponse.status} ${lessonResponse.statusText}`)
+          const errorBody = await lessonResponse.json()
+          throw new Error(`Error en la API de tips: ${lessonResponse.statusText} - ${errorBody.error}`)
         }
 
         const lessonData = await lessonResponse.json()
-
-        // Validar estructura de datos de /api/lesson
-        if (!lessonData.tips || !Array.isArray(lessonData.tips) || lessonData.tips.length !== 3) {
+        if (!lessonData.tips || !Array.isArray(lessonData.tips)) {
           throw new Error("La API de tips no devolvió la estructura de datos esperada.")
         }
 
         const { tips } = lessonData
-        console.log("[Frontend] Tips de IA generados exitosamente")
+        console.log("[Frontend] Tips de IA generados exitosamente.")
 
-        // 3. Construir el resultado completo con datos de ambas APIs
+        // 3. Construimos el resultado completo
         const result: SkillResult = {
           skillId: currentSkillId,
           skillName: currentSkill.name,
@@ -305,7 +293,6 @@ export default function SkillboosterMVP() {
           tips,
         }
 
-        // 4. Actualizar el estado y pasar a la pantalla de resultados
         const newResults = { ...results }
         newResults[currentSkillId] = result
         setResults(newResults)
@@ -313,59 +300,26 @@ export default function SkillboosterMVP() {
         setCurrentStep(4)
         setShowMentorSession(false)
       } catch (error: any) {
-        // Especificar 'any' para poder acceder a propiedades específicas
         console.error("Error DETALLADO al procesar la evaluación:", error)
-
-        // Extraer más información del error si está disponible
-        if (error && typeof error === "object") {
-          if (error.message) {
-            console.error("Mensaje de error:", error.message)
-          }
-          if (error.stack) {
-            console.error("Stack de error:", error.stack)
-          }
-          if (error.response) {
-            console.error("Datos de respuesta:", error.response)
-            if (error.response.data) {
-              console.error("Datos de error:", error.response.data)
-            }
-            if (error.response.status) {
-              console.error("Código de estado HTTP:", error.response.status)
-            }
-          }
-          if (error.request) {
-            console.error("Detalles de la solicitud:", error.request)
-          }
-          if (error.config) {
-            console.error("Configuración de la solicitud:", error.config)
-          }
-        }
-
-        // Mantenemos la alerta existente para el usuario
         alert(
           "Ocurrió un error al procesar tu evaluación. Se mostrarán resultados aproximados. Por favor, revisa tu conexión o intenta más tarde.",
         )
 
         // Verificación adicional para currentSkill
-        const currentSkillId = selectedSkills[currentSkillIndex]
-        const currentSkill = skills.find((s) => s.id === currentSkillId)
-
         if (!currentSkill) {
           console.error("No se pudo encontrar currentSkill en el bloque catch de handleAnswerQuestion")
-          // Terminamos la ejecución si no podemos encontrar la habilidad actual
+          setLoading(false)
           return
         }
 
-        // Resto de la lógica del fallback existente
+        // Código de fallback existente
         const fallbackResult: SkillResult = {
           skillId: currentSkillId,
           skillName: currentSkill.name,
           globalScore: 75,
           indicatorScores: newAnswers[currentSkillId].map((answer) => {
-            // Mejorar el fallback para que use nombres descriptivos cuando sea posible
             const question = currentSkill.questions.find((q) => q.id === answer.questionId)
             const indicadorInfo = currentSkill.indicadoresInfo.find((info) => info.id === answer.questionId)
-
             return {
               id: answer.questionId,
               name:

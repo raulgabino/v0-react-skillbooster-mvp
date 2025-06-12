@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
 
-// --- Tipos ---
+// --- Tipos (Mantenerlos para la estructura de datos) ---
 interface IndicadorInfo {
   id: string
   nombre: string
@@ -19,7 +19,6 @@ interface SkillDefinition {
     likert: number
     open: number
   }
-  prompt_score_rubric_text: string
 }
 
 interface AllSkillDefinitions {
@@ -43,21 +42,11 @@ interface IndicatorScore {
   descripcion_indicador?: string
 }
 
-interface ScoreResponsePayload {
-  indicatorScores: IndicatorScore[]
-  globalScore: number
-}
-
-interface ErrorResponse {
-  error: string
-}
-
-// --- Carga de Definiciones ---
+// --- Carga de Definiciones (Sin cambios) ---
 let skillDefinitions: AllSkillDefinitions | null = null
 
 function loadSkillDefinitions(): AllSkillDefinitions {
   if (skillDefinitions) return skillDefinitions
-
   try {
     const filePath = path.join(process.cwd(), "data", "skill_definitions.json")
     const fileContent = fs.readFileSync(filePath, "utf8")
@@ -69,124 +58,87 @@ function loadSkillDefinitions(): AllSkillDefinitions {
   }
 }
 
-// --- Mapeo Likert ---
+// --- Mapeo Likert (Sin cambios) ---
 function mapLikertToScore(value: number): number {
-  // Mapea valores Likert (1-5) a puntuaciones (0-100)
-  const mapping = {
-    1: 20,
-    2: 40,
-    3: 60,
-    4: 80,
-    5: 100,
-  }
+  const mapping = { 1: 20, 2: 40, 3: 60, 4: 80, 5: 100 }
   return mapping[value as keyof typeof mapping] || 0
 }
 
-// --- Cálculo Local de Pregunta Abierta ---
-function calculateOpenQuestionScore(answer: string): number {
-  const length = answer.trim().length
-
-  if (length >= 300) return 90
-  if (length >= 200) return 80
-  if (length >= 150) return 70
-  if (length >= 100) return 60
-  if (length >= 50) return 50
-  if (length >= 20) return 40
-  return 30
+// --- NUEVA Función de Puntuación Local para Pregunta Abierta ---
+function scoreOpenAnswerLocally(answerText: string): number {
+  if (!answerText || typeof answerText !== "string" || answerText.trim().length === 0) {
+    return 20
+  }
+  const length = answerText.trim().length
+  if (length > 250) return 100
+  if (length > 150) return 80
+  if (length > 50) return 60
+  return 40
 }
 
-// --- Handler POST ---
-export async function POST(request: Request): Promise<NextResponse<ScoreResponsePayload | ErrorResponse>> {
+// --- Handler POST Refactorizado ---
+export async function POST(request: Request) {
+  console.log(`[API /api/score] Iniciando cálculo de puntuación local.`)
   try {
     const { skillId, answers } = (await request.json()) as ScoreRequestPayload
-    console.log(`[API /api/score] Iniciando cálculo de puntuaciones para skillId: ${skillId}`)
 
-    // Cargar definiciones de habilidades
     const definitions = loadSkillDefinitions()
-    const skillKey = Object.keys(definitions).find(
-      (key) => definitions[key].name.toLowerCase().replace(/\s+/g, "_") === skillId,
-    )
+    // Ajuste para buscar por ID de skill, no por nombre transformado
+    const skillDefinition = definitions[skillId]
 
-    if (!skillKey) {
+    if (!skillDefinition) {
       return NextResponse.json({ error: "Habilidad no encontrada." }, { status: 404 })
     }
 
-    const skillDefinition = definitions[skillKey]
-
-    // Procesar respuestas Likert
-    const likertScores: IndicatorScore[] = []
+    // 1. Procesar respuestas Likert
+    const indicatorScores: IndicatorScore[] = []
     let likertTotal = 0
-
-    for (const indicator of skillDefinition.likert_indicators) {
-      const answer = answers.find((a) => a.questionId === indicator)
+    for (const indicatorId of skillDefinition.likert_indicators) {
+      const answer = answers.find((a) => a.questionId === indicatorId)
       if (answer && typeof answer.value === "number") {
         const score = mapLikertToScore(answer.value)
+        const indicadorInfo = skillDefinition.indicadores_info.find((info) => info.id === indicatorId)
 
-        // Buscar el nombre descriptivo del indicador
-        const indicadorInfo = skillDefinition.indicadores_info.find((info) => info.id === indicator)
-
-        if (!indicadorInfo) {
-          console.error(
-            `Error: No se encontró indicadorInfo para el ID: ${indicator} en la habilidad: ${skillDefinition.name}. Verifique la consistencia de datos en skill_definitions.json.`,
-          )
-        }
-
-        // Usar nombre descriptivo o un fallback claro (no el ID crudo)
-        const indicatorName = indicadorInfo ? indicadorInfo.nombre : `[NOMBRE PENDIENTE - ${indicator}]`
-        const descripcionIndicador = indicadorInfo ? indicadorInfo.descripcion_indicador : undefined
-
-        likertScores.push({
-          id: indicator,
-          name: indicatorName,
-          score,
-          descripcion_indicador: descripcionIndicador,
+        indicatorScores.push({
+          id: indicatorId,
+          name: indicadorInfo?.nombre || `Indicador ${indicatorId}`,
+          score: score,
+          descripcion_indicador: indicadorInfo?.descripcion_indicador,
         })
-
         likertTotal += score
       }
     }
+    const likertAverage = indicatorScores.length > 0 ? likertTotal / indicatorScores.length : 0
 
-    const likertAverage = likertScores.length > 0 ? likertTotal / likertScores.length : 0
-
-    // Procesar respuesta abierta con cálculo local
+    // 2. Procesar respuesta abierta LOCALMENTE
     const openAnswer = answers.find((a) => a.questionId === skillDefinition.open_question_id)
-    let openScore = 0
+    const openAnswerText = (openAnswer?.value as string) || ""
+    const openScore = scoreOpenAnswerLocally(openAnswerText)
 
-    if (openAnswer && typeof openAnswer.value === "string" && openAnswer.value.trim()) {
-      openScore = calculateOpenQuestionScore(openAnswer.value)
-      console.log(`[API /api/score] Puntuación de pregunta abierta calculada localmente: ${openScore}`)
-    }
-
-    // Calcular puntuación global ponderada
-    const globalScore = Math.round(
-      likertAverage * skillDefinition.scoring_weights.likert + openScore * skillDefinition.scoring_weights.open,
-    )
-
-    // Añadir la puntuación de la pregunta abierta a los indicadores
     const openQuestionIndicadorInfo = skillDefinition.indicadores_info.find(
       (info) => info.id === skillDefinition.open_question_id,
     )
 
-    if (!openQuestionIndicadorInfo) {
-      console.warn(
-        `ADVERTENCIA: No se encontró información descriptiva para la pregunta abierta ${skillDefinition.open_question_id} en la habilidad ${skillDefinition.name}. Verifique la consistencia de datos en skill_definitions.json.`,
-      )
-    }
-
-    likertScores.push({
+    // Añadir la puntuación de la pregunta abierta a la lista de indicadores
+    indicatorScores.push({
       id: skillDefinition.open_question_id,
-      name: openQuestionIndicadorInfo ? openQuestionIndicadorInfo.nombre : "Aplicación Práctica",
+      name: openQuestionIndicadorInfo?.nombre || "Aplicación Práctica",
       score: openScore,
       descripcion_indicador:
         openQuestionIndicadorInfo?.descripcion_indicador ||
-        "Evaluación de tu capacidad para aplicar esta habilidad en una situación práctica concreta.",
+        "Capacidad para aplicar la habilidad en un escenario práctico.",
     })
 
-    console.log(`[API /api/score] Cálculo de puntuaciones completado. Puntuación global: ${globalScore}`)
+    // 3. Calcular puntuación global ponderada
+    const globalScore = Math.round(
+      likertAverage * skillDefinition.scoring_weights.likert + openScore * skillDefinition.scoring_weights.open,
+    )
 
-    return NextResponse.json({ indicatorScores: likertScores, globalScore }, { status: 200 })
+    console.log(`[API /api/score] Cálculo local completado para ${skillId}. Score global: ${globalScore}`)
+
+    return NextResponse.json({ indicatorScores, globalScore })
   } catch (error) {
-    console.error("Error al calcular la puntuación:", error)
-    return NextResponse.json({ error: "Error al calcular la puntuación." }, { status: 500 })
+    console.error("[API /api/score] Error durante el cálculo local:", error)
+    return NextResponse.json({ error: "Error al calcular las puntuaciones." }, { status: 500 })
   }
 }
