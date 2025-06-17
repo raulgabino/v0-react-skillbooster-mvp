@@ -326,6 +326,7 @@ export default function SkillboosterMVP() {
                 indicadorInfo?.nombre || question?.prompt?.substring(0, 30) + "..." || `Indicador ${answer.questionId}`,
               score: typeof answer.value === "number" ? answer.value * 20 : 60,
               descripcion_indicador: indicadorInfo?.descripcion_indicador,
+              feedback_especifico: undefined,
             }
           }),
           tips: [
@@ -1245,9 +1246,11 @@ function ResultsStep({
                     ></div>
                   </div>
                   {indicator.feedback_especifico && (
-                    <p className="text-xs text-blue-300/90 italic bg-gray-800/70 p-2 rounded-md mt-1 border-l-2 border-blue-500/50">
-                      {indicator.feedback_especifico}
-                    </p>
+                    <div className="mt-2 p-2 bg-gray-900/50 rounded-md border-l-2 border-blue-500/70">
+                      <p className="text-xs text-gray-300 italic">
+                        <span className="font-semibold text-blue-400">Feedback:</span> {indicator.feedback_especifico}
+                      </p>
+                    </div>
                   )}
                 </div>
               ))}
