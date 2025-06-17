@@ -15,7 +15,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Progress } from "@/components/ui/progress"
 import { Info, MessageSquare, Lightbulb, Target, ClipboardList, TrendingUp, Star } from "lucide-react"
-import { Check } from "lucide-react"
+
+// Importar componente externo
+import SkillSelectionStep from "./SkillSelectionStep"
 
 // Importar tipos
 type UserInfo = {
@@ -458,14 +460,7 @@ export default function SkillboosterMVP() {
       case 1:
         return <UserInfoStep userInfo={userInfo} setUserInfo={setUserInfo} onSubmit={handleUserInfoSubmit} />
       case 2:
-        return (
-          <SkillSelectionStep
-            skills={skills}
-            selectedSkills={selectedSkills}
-            setSelectedSkills={setSelectedSkills}
-            onContinue={handleSkillSelection}
-          />
-        )
+        return <SkillSelectionStep setSelectedSkills={setSelectedSkills} onContinue={handleSkillSelection} />
       case 3:
         const currentSkillId = selectedSkills[currentSkillIndex]
         const currentSkill = skills.find((s) => s.id === currentSkillId)
@@ -921,102 +916,6 @@ function SkillObjectiveStep({
           className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full text-lg font-medium transition-colors"
         >
           Continuar a la Evaluación
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function SkillSelectionStep({
-  skills,
-  selectedSkills,
-  setSelectedSkills,
-  onContinue,
-}: {
-  skills: Skill[]
-  selectedSkills: string[]
-  setSelectedSkills: (value: string[]) => void
-  onContinue: () => void
-}) {
-  const toggleSkill = (skillId: string) => {
-    if (selectedSkills.includes(skillId)) {
-      setSelectedSkills(selectedSkills.filter((id) => id !== skillId))
-    } else {
-      setSelectedSkills([...selectedSkills, skillId])
-    }
-  }
-
-  // Function to get a brief description for the tooltip
-  const getSkillDescription = (skill: Skill) => {
-    // If we have indicadores_info, use the first one's description
-    if (skill.indicadoresInfo && skill.indicadoresInfo.length > 0 && skill.indicadoresInfo[0].descripcion_indicador) {
-      return skill.indicadoresInfo[0].descripcion_indicador
-    }
-
-    // Default description
-    return `Evalúa tu nivel de competencia en ${skill.name}`
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center text-white">
-        ¿Qué habilidades quieres evaluar hoy?
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-2xl mx-auto">
-        {skills.map((skill) => (
-          <div
-            key={skill.id}
-            onClick={() => toggleSkill(skill.id)}
-            className={`relative p-6 rounded-xl cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-[1.03] ${
-              selectedSkills.includes(skill.id)
-                ? "bg-blue-600/20 border-2 border-blue-500 text-white"
-                : "bg-gray-800 border border-gray-700 hover:bg-gray-700/70 text-gray-200"
-            }`}
-          >
-            {selectedSkills.includes(skill.id) && <Check className="h-5 w-5 text-blue-400 absolute top-4 right-4" />}
-
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center">
-                    <h3 className="text-xl font-semibold mb-2">{skill.name}</h3>
-                    <Info className="h-4 w-4 text-gray-400 hover:text-white ml-2 inline-block" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className="bg-gray-700 text-gray-200 border-gray-600 rounded-md shadow-lg p-3 text-sm max-w-xs">
-                  <p>{getSkillDescription(skill)}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <div className="mt-4 space-y-1">
-              {skill.indicadoresInfo.slice(0, 3).map((indicador) => (
-                <p key={indicador.id} className="text-sm text-gray-400 truncate">
-                  • {indicador.nombre}
-                </p>
-              ))}
-              {skill.indicadoresInfo.length > 3 && (
-                <p className="text-xs text-gray-500 italic">+{skill.indicadoresInfo.length - 3} indicadores más</p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          onClick={onContinue}
-          disabled={selectedSkills.length === 0}
-          className={`px-8 py-3 rounded-full text-lg font-medium transition-colors ${
-            selectedSkills.length > 0
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
-              : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {selectedSkills.length === 0
-            ? "Selecciona al menos una habilidad"
-            : `Iniciar Evaluación de ${selectedSkills.length === 1 ? "Habilidad" : `${selectedSkills.length} Habilidades`}`}
         </button>
       </div>
     </div>
