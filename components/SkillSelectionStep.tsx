@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { animations } from "@/lib/animation-config"
 
 // Nuevo tipo para representar un paquete de habilidades
 interface SkillPackage {
@@ -83,6 +84,7 @@ export default function SkillSelectionStep({ setSelectedSkills, onContinue }: Sk
             className={`
               relative p-6 rounded-lg border-2 cursor-pointer
               flex flex-col justify-between
+              ${animations.transitions.default}
               ${
                 selectedPackages.includes(pkg.id)
                   ? "border-blue-500 bg-blue-900/20"
@@ -96,6 +98,7 @@ export default function SkillSelectionStep({ setSelectedSkills, onContinue }: Sk
               <div
                 className={`
                   w-6 h-6 rounded-full border-2 flex items-center justify-center
+                  ${animations.transitions.default}
                   ${
                     selectedPackages.includes(pkg.id) ? "border-blue-500 bg-blue-500" : "border-gray-400 bg-transparent"
                   }
@@ -133,6 +136,7 @@ export default function SkillSelectionStep({ setSelectedSkills, onContinue }: Sk
           className={`
             px-8 py-3 rounded-full font-semibold
             shadow-lg hover:shadow-xl transform hover:scale-105
+            ${animations.transitions.default}
             ${
               selectedPackages.length > 0
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
