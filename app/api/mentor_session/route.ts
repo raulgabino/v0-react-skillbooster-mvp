@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
+import { Error } from "typescript"
 
 // --- Tipos ---
 interface UserInfo {
@@ -294,7 +295,11 @@ Eres un Mentor Práctico y Coach Ejecutivo, experto en la habilidad de **${skill
 **TU PROCESO DE PENSAMIENTO SIEMPRE DEBE SER:**
 1.  **ANALIZAR LA ÚLTIMA RESPUESTA DEL USUARIO:** Antes de hacer cualquier otra cosa, determina la intención del usuario. ¿Está aplicando el concepto (intención 'aplicar'), o está pidiendo una clarificación, expresando confusión o dando una respuesta irrelevante (intención 'clarificar')?
 2.  **ACTUAR SEGÚN LA INTENCIÓN:**
-    * Si la intención es 'clarificar', tu ÚNICA tarea es explicar el concepto solicitado de forma simple y concisa (máximo 2-3 frases) y luego REFORMULAR tu pregunta anterior para darle al usuario otra oportunidad de responder. NO AVANCES a la siguiente fase.
+    * **Si la intención es 'clarificar'**: Tu ÚNICA tarea es ayudar al usuario a superar su confusión. Para ello, elige **una** de las siguientes técnicas pedagógicas:
+    1.  **Explica con una Analogía:** Compara el concepto con una situación simple y cotidiana (ej., "Piensa en [el concepto] como si fueras un chef...").
+    2.  **Da un Ejemplo Concreto y Genérico:** Ilustra la idea con un mini-caso práctico (ej., "Por ejemplo, si tu análisis muestra que un software ahorra tiempo, la aplicación práctica es mostrarle al cliente un escenario real...").
+    3.  **Descompón la Idea:** Divide el concepto en 2-3 partes más simples y explícalas una por una.
+    Después de tu explicación (que debe ser breve), **reformula tu pregunta anterior** para darle al usuario otra oportunidad de responder. NO AVANCES a la siguiente fase del guion.
     * Si la intención es 'aplicar', procede con el siguiente paso lógico de la sesión de mentoría (ej. pasar de la micro-lección al escenario práctico).
 
 **REGLAS CRÍTICAS:**
@@ -350,58 +355,60 @@ ${fullContext}
       // Asumimos que la IA determinará la intención. Si avanza, actualizamos la fase.
       // Una IA más avanzada podría devolver la intención explícitamente.
       // Por ahora, si la respuesta no parece una simple clarificación, avanzamos.
-      nextPhase = phaseTransitions[currentMentorPhase] || currentMentorPhase
-    }
+      // El prompt le indica que no avance, así que confiamos en que su respuesta no introducirá la siguiente fase.
+      // Por lo tanto, el `nextPhase` calculado es una presunción optimista que funciona para el "happy path".
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPromptForAI },
-      ],
-      temperature: 0.5,
-    })
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPromptForAI },
+        ],
+        temperature: 0.5,
+      })
 
-    let mentorMessage =
-      response.choices[0]?.message?.content || "Lo siento, no pude procesar tu respuesta. ¿Podrías intentarlo de nuevo?"
-    let exerciseScore: number | undefined
-    let exerciseScoreJustification: string | undefined
+      let mentorMessage =
+        response.choices[0]?.message?.content ||
+        "Lo siento, no pude procesar tu respuesta. ¿Podrías intentarlo de nuevo?"
+      let exerciseScore: number | undefined
+      let exerciseScoreJustification: string | undefined
 
-    // Lógica para extraer el score si estamos en la fase de feedback
-    if (currentMentorPhase === "phase3_feedback") {
-      // Implementación simple para buscar un JSON en la respuesta.
-      try {
-        const jsonMatch = mentorMessage.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0])
-          if (parsed.exerciseScore !== undefined) {
-            exerciseScore = Number(parsed.exerciseScore)
-            exerciseScoreJustification = parsed.exerciseScoreJustification
-            // Limpiar el mensaje para no mostrar el JSON al usuario
-            mentorMessage = mentorMessage.replace(jsonMatch[0], "").trim()
+      // Lógica para extraer el score si estamos en la fase de feedback
+      if (currentMentorPhase === "phase3_feedback") {
+        // Implementación simple para buscar un JSON en la respuesta.
+        try {
+          const jsonMatch = mentorMessage.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0])
+            if (parsed.exerciseScore !== undefined) {
+              exerciseScore = Number(parsed.exerciseScore)
+              exerciseScoreJustification = parsed.exerciseScoreJustification
+              // Limpiar el mensaje para no mostrar el JSON al usuario
+              mentorMessage = mentorMessage.replace(jsonMatch[0], "").trim()
+            }
           }
+        } catch (e) {
+          console.error("No se pudo parsear el JSON de la puntuación del ejercicio.", e)
         }
-      } catch (e) {
-        console.error("No se pudo parsear el JSON de la puntuación del ejercicio.", e)
       }
+
+      // Si después del análisis, la IA decide NO avanzar, debemos sobreescribir nextPhase.
+      // Esta es una simplificación. Una implementación avanzada haría que la IA devuelva un objeto
+      // con `intention: 'clarify'` y basaríamos la lógica en eso.
+      // Por ahora, si la IA explica algo y repite una pregunta, no debería avanzar.
+      // El prompt le indica que no avance, así que confiamos en que su respuesta no introducirá la siguiente fase.
+      // Por lo tanto, el `nextPhase` calculado es una presunción optimista que funciona para el "happy path".
+
+      return NextResponse.json(
+        {
+          mentorMessage,
+          nextMentorPhase: nextPhase, // La IA es instruida para no avanzar si clarifica.
+          exerciseScore,
+          exerciseScoreJustification,
+        },
+        { status: 200 },
+      )
     }
-
-    // Si después del análisis, la IA decide NO avanzar, debemos sobreescribir nextPhase.
-    // Esta es una simplificación. Una implementación avanzada haría que la IA devuelva un objeto
-    // con `intention: 'clarify'` y basaríamos la lógica en eso.
-    // Aquí, asumimos que si la IA explica algo y repite una pregunta, no debería avanzar.
-    // El prompt le indica que no avance, así que confiamos en que su respuesta no introducirá la siguiente fase.
-    // Por lo tanto, el `nextPhase` calculado es una presunción optimista que funciona para el "happy path".
-
-    return NextResponse.json(
-      {
-        mentorMessage,
-        nextMentorPhase: nextPhase, // La IA es instruida para no avanzar si clarifica.
-        exerciseScore,
-        exerciseScoreJustification,
-      },
-      { status: 200 },
-    )
   } catch (error) {
     console.error("[API /api/mentor_session] Error en el handler:", error)
     const errorMessage = error instanceof Error ? error.message : "Error desconocido"
