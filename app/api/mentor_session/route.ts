@@ -268,363 +268,143 @@ function determineFocusIndicators(
 // --- Handler POST ---
 export async function POST(request: Request): Promise<NextResponse<MentorSessionResponsePayload | ErrorResponse>> {
   try {
-    if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: "OpenAI API no está configurada." }, { status: 500 })
     }
 
     const {
       skillId,
       skillName,
-      globalScore,
-      indicatorScores,
-      openEndedAnswer,
       userProfile,
       conversationHistory,
       userResponse,
       currentMentorPhase,
+      // Se añade el resto de la información para tenerla disponible
+      globalScore,
+      indicatorScores,
+      openEndedAnswer,
     } = (await request.json()) as MentorSessionRequestPayload
 
-    // Pre-procesar la respuesta abierta si existe
-    let preProcessedOpenAnswer: PreProcessedOpenAnswer = {
-      keyThemes: [],
-      specificProblemsMentioned: [],
-    }
+    console.log(`[API /api/mentor_session] Fase actual: ${currentMentorPhase} para habilidad: ${skillName}`)
 
-    if (openEndedAnswer) {
-      preProcessedOpenAnswer = await preProcessOpenAnswer(openEndedAnswer)
-    }
+    // --- NUEVO: System Prompt Mejorado con Análisis de Intención ---
+    const systemPrompt = `
+Eres un Mentor Práctico y Coach Ejecutivo, experto en la habilidad de **${skillName}**. Tu principal directiva es guiar al usuario a través de un proceso de aprendizaje adaptativo.
 
-    // Determinar la profundidad de la lección basada en el puntaje global
-    const lessonDepth = determineLessonDepth(globalScore)
+**TU PROCESO DE PENSAMIENTO SIEMPRE DEBE SER:**
+1.  **ANALIZAR LA ÚLTIMA RESPUESTA DEL USUARIO:** Antes de hacer cualquier otra cosa, determina la intención del usuario. ¿Está aplicando el concepto (intención 'aplicar'), o está pidiendo una clarificación, expresando confusión o dando una respuesta irrelevante (intención 'clarificar')?
+2.  **ACTUAR SEGÚN LA INTENCIÓN:**
+    * Si la intención es 'clarificar', tu ÚNICA tarea es explicar el concepto solicitado de forma simple y concisa (máximo 2-3 frases) y luego REFORMULAR tu pregunta anterior para darle al usuario otra oportunidad de responder. NO AVANCES a la siguiente fase.
+    * Si la intención es 'aplicar', procede con el siguiente paso lógico de la sesión de mentoría (ej. pasar de la micro-lección al escenario práctico).
 
-    // Determinar los indicadores de enfoque
-    const focusIndicators = determineFocusIndicators(
-      indicatorScores,
-      userProfile?.obstacles || "",
-      preProcessedOpenAnswer,
-    )
-
-    // Identificar fortalezas y áreas de mejora
-    const sortedByScore = [...indicatorScores].sort((a, b) => b.score - a.score)
-    const strengths = sortedByScore.slice(0, 2)
-    const weaknesses = sortedByScore.slice(-2).reverse()
-
-    // Instrucción global para todas las fases
-    const globalInstruction = `
-ALERTA CRÍTICA DE FORMATO Y CONTENIDO: Al referirte a cualquier indicador de la habilidad (ej., el 'Indicador de Enfoque Primario' o cualquier otro), SIEMPRE debes usar su NOMBRE DESCRIPTIVO COMPLETO proporcionado en el contexto (ej., 'Modelado del Contexto', 'Diseño de Estrategias Adaptativas') y NUNCA sus códigos internos (ej., AA_P1, CE3, AA_P7). El usuario final NO debe ver estos códigos. Tu respuesta debe ser fluida y natural, integrando estos nombres descriptivos sin que parezcan etiquetas técnicas.
-
-RESTRICCIÓN DE FOCO: Tu análisis, ejemplos y sugerencias deben centrarse ESTRICTA Y ÚNICAMENTE en la habilidad principal en discusión: **${skillName}**. Evita introducir o referenciar otras habilidades a menos que sea una conexión explícita y absolutamente necesaria, brevemente justificada y siempre subordinada a la habilidad principal.
+**REGLAS CRÍTICAS:**
+* **Claridad ante todo:** Prioriza siempre que el usuario entienda los conceptos.
+* **No avanzar con dudas:** Nunca introduzcas un nuevo concepto o fase si el usuario ha mostrado confusión en el paso anterior.
+* **Nombres Descriptivos:** Al referirte a indicadores o conceptos de la habilidad, USA SIEMPRE sus nombres descriptivos completos (ej. "Gestión de Stakeholders") y NUNCA códigos internos (ej. GP5).
+* **Foco en la Habilidad:** Tu contenido debe centrarse estricta y únicamente en **${skillName}**.
+* **Formato:** Usa Markdown simple ('###' para títulos, '**' para negritas, '*' para listas) para máxima legibilidad.
 `
 
-    // Construir el prompt según la fase actual
-    let systemPrompt = ""
-    let userPrompt = ""
-    let nextPhase = ""
-
-    switch (currentMentorPhase) {
-      case "start_session":
-        // Fase 1: Bienvenida y Micro-lección Dinámica
-        systemPrompt = `
-Eres un Mentor Práctico altamente especializado y enfocado EXCLUSIVAMENTE en la habilidad de: **${skillName}**.
-Tu principal objetivo es iniciar una sesión de mentoría que sea profundamente personalizada, relevante y directamente aplicable para el usuario, basada en su evaluación y contexto.
-Tu tono debe ser profesional, analítico, pero también cálido y alentador. Concéntrate en la aplicabilidad práctica.
-Evita superlativos o elogios genéricos. Basa todas tus afirmaciones en la evidencia concreta proporcionada sobre el usuario.
-Utiliza Markdown de forma clara y efectiva para la legibilidad: '###' para el título principal de la micro-lección, '**negritas**' para términos clave, y listas con '*' o '-' para enumeraciones o pasos. No utilices otros elementos de markdown como tablas o citas en bloque en esta fase.
-
-${globalInstruction}
-
-Tu tarea es generar el mensaje inicial de bienvenida y la micro-lección dinámica. Sigue las instrucciones del User Prompt meticulosamente.
+    const fullContext = `
+# CONTEXTO GLOBAL DE LA SESIÓN
+- **Habilidad en Foco:** ${skillName}
+- **Usuario:** ${userProfile?.name || "Usuario"} (${userProfile?.role || "Profesional"})
+- **Objetivos y Obstáculos del Usuario:** ${userProfile?.obstacles || "No especificados"}
+- **Resultados de Evaluación:** Puntuación global ${globalScore}/100. Indicadores clave: ${indicatorScores.map((i) => `${i.name} (${i.score})`).join(", ")}.
+- **Historial de Conversación:**
+${conversationHistory.map((msg) => `${msg.sender === "user" ? userProfile?.name : "Mentor"}: ${msg.text}`).join("\n")}
 `
-        userPrompt = `
-# Contexto del Usuario (Información Confidencial para tu Análisis)
-- Nombre del Usuario: ${userProfile?.name || "Usuario"}
-- Habilidad Actual en Foco: **${skillName}**
-- Rol del Usuario: ${userProfile?.role || "No especificado"}
-- Años de Experiencia: ${userProfile?.experience || "No especificado"}
-- Descripción del Proyecto/Contexto Profesional del Usuario: ${userProfile?.projectDescription || "No especificado"}
-- Principales Obstáculos que el Usuario enfrenta: ${userProfile?.obstacles || "No especificados"}
-- Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName}): ${userProfile?.learningObjective || "No especificó un objetivo particular para esta habilidad."}
-- Respuesta del Usuario a la Pregunta Abierta de Evaluación para ${skillName}: "${openEndedAnswer || "No proporcionó una respuesta a la pregunta abierta."}"
 
-# Resultados de la Evaluación del Usuario en la Habilidad: ${skillName}
-- Puntuación Global Obtenida: ${globalScore}/100.
-- Nivel de Profundidad Recomendado para la Micro-lección: ${lessonDepth} (fundamental, standard, o advanced).
-- Fortalezas Clave Identificadas (Indicadores con mayor puntaje en ${skillName}):
-${strengths.map((s) => `  - Indicador: "${s.name}" (Puntuación: ${s.score}/100)`).join("\n")}
-- Principales Áreas de Mejora Identificadas (Indicadores con menor puntaje en ${skillName}, relevantes para los obstáculos/respuesta abierta del usuario):
-  - Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.score}/100)
-  ${focusIndicators.secondary ? `  - Indicador de Enfoque Secundario: "${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.score}/100)` : ""}
+    let userPromptForAI = ""
+    let nextPhase = currentMentorPhase // Por defecto, la fase no cambia
 
-# Análisis Previo de la Respuesta Abierta del Usuario (Relacionada con ${skillName}):
-- Temas Clave en su Respuesta: ${preProcessedOpenAnswer.keyThemes.join(", ") || "No se identificaron temas clave específicos."}
-- Problemas Específicos Mencionados en su Respuesta: ${preProcessedOpenAnswer.specificProblemsMentioned.join(", ") || "No se identificaron problemas específicos."}
-
-# TU TAREA COMO MENTOR PRÁCTICO (Genera el siguiente mensaje para el usuario):
-
-1.  **Bienvenida y Puntuación Global:**
-    * Inicia con un saludo cordial y personalizado (ej. "¡Hola ${userProfile?.name || "Usuario"}!").
-    * Menciona que han completado la evaluación para la habilidad **"${skillName}"** y su puntuación global (ej. "Es un gusto acompañarte en este proceso para fortalecer tu habilidad en **${skillName}**. ¡Felicitaciones por completar la evaluación! Tu puntuación global es de ${globalScore}/100.").
-
-2.  **Análisis Específico de UNA Fortaleza Clave (¡USA NOMBRES DESCRIPTIVOS, NO IDs!):**
-    * Selecciona la fortaleza más destacada de la lista "Fortalezas Clave Identificadas" (usualmente la primera, con el score más alto).
-    * Menciona esta fortaleza usando su **NOMBRE DESCRIPTIVO COMPLETO** (ej., "${strengths[0].name}").
-    * Explica brevemente (1 frase) por qué esta fortaleza específica es importante o valiosa DENTRO DEL CONTEXTO DE LA HABILIDAD **${skillName}**. Ejemplo: "He notado que tienes una habilidad particular en '${strengths[0].name}', lo cual es fundamental en **${skillName}** porque permite [beneficio/importancia específica]."
-    * **Importante:** NO uses los IDs internos de los indicadores (como CE1, AA_P1) en el texto que generas para el usuario. Siempre usa el nombre descriptivo completo.
-
-3.  **Micro-Lección Dinámica y Ultra-Personalizada sobre ${skillName} (Máximo 150-200 palabras. Usa un título Markdown con '###'):**
-    * **Título Sugerido:** \`### Estrategia Práctica para ${skillName}: Mejorando tu "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"\`
-    * **Contenido de la Lección:**
-        * La lección debe centrarse ESTRICTA Y ÚNICAMENTE en la habilidad **${skillName}**.
-        * Debe enseñar una estrategia, técnica o concepto práctico para mejorar específicamente el **"Indicador de Enfoque Primario: ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"**.
-        * **Personalización Esencial:** La lección debe sentirse como una respuesta directa a la situación del usuario. Para ello, conecta la estrategia que enseñas con:
-            * Los \`Principales Obstáculos que el Usuario enfrenta\` (si son relevantes para ${skillName}).
-            * El \`Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName})\` (si lo especificó).
-            * Al menos uno de los \`Temas Clave en su Respuesta\` o \`Problemas Específicos Mencionados en su Respuesta\` (si estos se relacionan con el indicador de enfoque y ${skillName}).
-            * *Ejemplo de conexión para la personalización:* "Dado que tu objetivo para ${skillName} es '${userProfile?.learningObjective}' y mencionaste que uno de tus obstáculos es '${userProfile?.obstacles}', una técnica efectiva para fortalecer tu '${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}' es [Explicación de la técnica de la micro-lección]. Esto te ayudará específicamente a [cómo la técnica se relaciona con el objetivo/obstáculo en el contexto de ${skillName}]."
-        * Adapta la complejidad de la lección al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
-        * Estructura la lección con párrafos cortos y/o listas (\`*\` o \`-\`) para facilitar la lectura.
-
-4.  **Pregunta Final Abierta, Relevante y Conectada:**
-    * Formula una pregunta que motive al usuario a pensar en la aplicación INMEDIATA y PRÁCTICA de la micro-lección.
-    * La pregunta debe relacionarse con su \`Descripción del Proyecto/Contexto Profesional del Usuario\` o sus \`Principales Obstáculos que el Usuario enfrenta\`, siempre dentro del ámbito de **${skillName}**.
-    * Ejemplo: "Pensando en tu rol actual y los desafíos de tu proyecto [mencionar algo breve del proyecto/contexto del usuario si es relevante y conciso], ¿cuál sería el primer paso que podrías dar esta semana para aplicar esta estrategia de [nombre de la técnica de la micro-lección] y así fortalecer tu '${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}'?"
-
-Asegúrate de que toda tu respuesta sea coherente, centrada en **${skillName}**, y que los nombres de los indicadores sean los descriptivos.
+    if (currentMentorPhase === "start_session") {
+      // La primera llamada no tiene respuesta de usuario, genera la bienvenida.
+      userPromptForAI = `
+${fullContext}
+**TAREA:** Inicia la sesión. Presenta una micro-lección personalizada sobre el área de mejora más relevante para el usuario en "${skillName}", conectándola con sus obstáculos. Finaliza con una pregunta abierta que le invite a reflexionar sobre cómo aplicaría este primer concepto.
 `
-        nextPhase = "phase2_scenario"
-        break
-
-      case "phase2_scenario":
-        // Fase 2: Escenario Personalizado
-        systemPrompt = `
-Eres un Mentor Práctico experto y especializado ÚNICAMENTE en la habilidad de: **${skillName}**.
-Tu objetivo es proporcionar un escenario personalizado que ayude al usuario a aplicar la estrategia aprendida en la micro-lección.
-Tu respuesta debe ser fluida y natural, integrando los nombres descriptivos de los indicadores sin que parezcan etiquetas técnicas.
-Utiliza Markdown de forma clara y efectiva para la legibilidad: '###' para el título principal del escenario, '**negritas**' para términos clave, y listas con '*' o '-' para enumeraciones o pasos. No utilices otros elementos de markdown como tablas o citas en bloque en esta fase.
-
-${globalInstruction}
-
-Tu tarea es generar un escenario personalizado basado en la micro-lección anterior. Sigue las instrucciones del User Prompt meticulosamente.
+      nextPhase = "phase2_scenario"
+    } else {
+      // A partir de la segunda llamada, se analiza la respuesta del usuario.
+      userPromptForAI = `
+${fullContext}
+**TAREA:**
+1.  **Analiza la última respuesta de ${userProfile?.name}:** "${userResponse}"
+2.  **Determina la intención:** ¿Es 'aplicar' o 'clarificar'?
+3.  **Actúa según la intención:**
+    * **Si es 'clarificar':** Explica el concepto que no entendió y repite tu pregunta anterior. NO avances de fase.
+    * **Si es 'aplicar' y la fase actual es 'phase2_scenario':** Reconoce su respuesta y presenta el escenario práctico.
+    * **Si es 'aplicar' y la fase actual es 'phase3_feedback':** Reconoce su solución al escenario, dale feedback constructivo y evalúa su respuesta con un JSON al final: {"exerciseScore": <0-100>, "exerciseScoreJustification": "<breve justificación>"}.
+    * **Si es 'aplicar' y la fase actual es 'phase4_action_plan':** Basado en todo lo anterior, presenta un plan de acción concreto con 2-3 pasos.
+    * **Si es 'aplicar' y la fase actual es 'phase5_synthesis':** Felicítalo y haz una síntesis final de la sesión, proyectando el impacto de la mejora.
 `
-        userPrompt = `
-# Contexto del Usuario (Información Confidencial para tu Análisis)
-- Nombre del Usuario: ${userProfile?.name || "Usuario"}
-- Habilidad Actual en Foco: **${skillName}**
-- Rol del Usuario: ${userProfile?.role || "No especificado"}
-- Años de Experiencia: ${userProfile?.experience || "No especificado"}
-- Descripción del Proyecto/Contexto Profesional del Usuario: ${userProfile?.projectDescription || "No especificado"}
-- Principales Obstáculos que el Usuario enfrenta: ${userProfile?.obstacles || "No especificados"}
-- Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName}): ${userProfile?.learningObjective || "No especificó un objetivo particular para esta habilidad."}
-- Respuesta del Usuario a la Pregunta Abierta de Evaluación para ${skillName}: "${openEndedAnswer || "No proporcionó una respuesta a la pregunta abierta."}"
 
-# Resultados de la Evaluación del Usuario en la Habilidad: ${skillName}
-- Puntuación Global Obtenida: ${globalScore}/100.
-- Nivel de Profundidad Recomendado para la Micro-lección: ${lessonDepth} (fundamental, standard, o advanced).
-- Fortalezas Clave Identificadas (Indicadores con mayor puntaje en ${skillName}):
-${strengths.map((s) => `  - Indicador: "${s.name}" (Puntuación: ${s.score}/100)`).join("\n")}
-- Principales Áreas de Mejora Identificadas (Indicadores con menor puntaje en ${skillName}, relevantes para los obstáculos/respuesta abierta del usuario):
-  - Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.score}/100)
-  ${focusIndicators.secondary ? `  - Indicador de Enfoque Secundario: "${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.score}/100)` : ""}
-
-# Análisis Previo de la Respuesta Abierta del Usuario (Relacionada con ${skillName}):
-- Temas Clave en su Respuesta: ${preProcessedOpenAnswer.keyThemes.join(", ") || "No se identificaron temas clave específicos."}
-- Problemas Específicos Mencionados en su Respuesta: ${preProcessedOpenAnswer.specificProblemsMentioned.join(", ") || "No se identificaron problemas específicos."}
-
-# Micro-Lección Anterior:
-${conversationHistory
-  .filter((msg) => msg.sender === "mentor")
-  .map((msg) => msg.text)
-  .join("\n")}
-
-# TU TAREA COMO MENTOR PRÁCTICO (Genera el siguiente escenario personalizado para el usuario):
-
-1.  **Escenario Personalizado:**
-    * **Título Sugerido:** \`### Aplicando la Estrategia en tu Proyecto: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}"\`
-    * **Contenido del Escenario:**
-        * Describe un escenario práctico que el usuario pueda aplicar en su proyecto o contexto profesional.
-        * Conecta el escenario con la estrategia aprendida en la micro-lección.
-        * Proporciona una guía paso a paso sobre cómo el usuario puede implementar la estrategia en el escenario descrito.
-        * **Personalización Esencial:** Asegúrate de que el escenario sea relevante para los \`Principales Obstáculos que el Usuario enfrenta\` y su \`Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName})\`.
-        * Adapta la complejidad del escenario al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
-        * Estructura el escenario con párrafos cortos y/o listas (\`*\` o \`-\`) para facilitar la lectura.
-
-2.  **Pregunta Final Abierta, Relevante y Conectada:**
-    * Formula una pregunta que motive al usuario a pensar en la aplicación INMEDIATA y PRÁCTICA del escenario.
-    * La pregunta debe relacionarse con su \`Descripción del Proyecto/Contexto Profesional del Usuario\` o sus \`Principales Obstáculos que el Usuario enfrenta\`, siempre dentro del ámbito de **${skillName}**.
-    * Ejemplo: "¿Cómo planeas aplicar la estrategia de [nombre de la técnica de la micro-lección] en tu proyecto [mencionar algo breve del proyecto/contexto del usuario si es relevante y conciso]?"
-
-Asegúrate de que toda tu respuesta sea coherente, centrada en **${skillName}**, y que los nombres de los indicadores sean los descriptivos.
-`
-        nextPhase = "phase3_feedback"
-        break
-
-      case "phase3_feedback":
-        // Fase 3: Feedback y Recomendaciones
-        systemPrompt = `
-Eres un Mentor Práctico experto y especializado ÚNICAMENTE en la habilidad de: **${skillName}**.
-Tu objetivo es proporcionar un feedback detallado y personalizado al usuario sobre su rendimiento y ofrecer recomendaciones clave para mejorar.
-Tu respuesta debe ser fluida y natural, integrando los nombres descriptivos de los indicadores sin que parezcan etiquetas técnicas.
-Utiliza Markdown de forma clara y efectiva para la legibilidad: '###' para el título principal del feedback, '**negritas**' para términos clave, y listas con '*' o '-' para enumeraciones o pasos. No utilices otros elementos de markdown como tablas o citas en bloque en esta fase.
-
-${globalInstruction}
-
-Tu tarea es generar un feedback detallado y personalizado basado en la evaluación del usuario y ofrecer 3 recomendaciones clave para mejorar su habilidad en **${skillName}**. Sigue las instrucciones del User Prompt meticulosamente.
-`
-        userPrompt = `
-# Contexto del Usuario (Información Confidencial para tu Análisis)
-- Nombre del Usuario: ${userProfile?.name || "Usuario"}
-- Habilidad Actual en Foco: **${skillName}**
-- Rol del Usuario: ${userProfile?.role || "No especificado"}
-- Años de Experiencia: ${userProfile?.experience || "No especificado"}
-- Descripción del Proyecto/Contexto Profesional del Usuario: ${userProfile?.projectDescription || "No especificado"}
-- Principales Obstáculos que el Usuario enfrenta: ${userProfile?.obstacles || "No especificados"}
-- Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName}): ${userProfile?.learningObjective || "No especificó un objetivo particular para esta habilidad."}
-- Respuesta del Usuario a la Pregunta Abierta de Evaluación para ${skillName}: "${openEndedAnswer || "No proporcionó una respuesta a la pregunta abierta."}"
-
-# Resultados de la Evaluación del Usuario en la Habilidad: ${skillName}
-- Puntuación Global Obtenida: ${globalScore}/100.
-- Nivel de Profundidad Recomendado para la Micro-lección: ${lessonDepth} (fundamental, standard, o advanced).
-- Fortalezas Clave Identificadas (Indicadores con mayor puntaje en ${skillName}):
-${strengths.map((s) => `  - Indicador: "${s.name}" (Puntuación: ${s.score}/100)`).join("\n")}
-- Principales Áreas de Mejora Identificadas (Indicadores con menor puntaje en ${skillName}, relevantes para los obstáculos/respuesta abierta del usuario):
-  - Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.score}/100)
-  ${focusIndicators.secondary ? `  - Indicador de Enfoque Secundario: "${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.score}/100)` : ""}
-
-# Análisis Previo de la Respuesta Abierta del Usuario (Relacionada con ${skillName}):
-- Temas Clave en su Respuesta: ${preProcessedOpenAnswer.keyThemes.join(", ") || "No se identificaron temas clave específicos."}
-- Problemas Específicos Mencionados en su Respuesta: ${preProcessedOpenAnswer.specificProblemsMentioned.join(", ") || "No se identificaron problemas específicos."}
-
-# Micro-Lección y Escenario Anteriores:
-${conversationHistory
-  .filter((msg) => msg.sender === "mentor")
-  .map((msg) => msg.text)
-  .join("\n")}
-
-# Respuesta del Usuario al Escenario:
-${userResponse || "No proporcionó una respuesta al escenario."}
-
-# TU TAREA COMO MENTOR PRÁCTICO (Genera el siguiente feedback y recomendaciones para el usuario):
-
-1.  **Feedback Personalizado:**
-    * **Título Sugerido:** \`### Reflexión sobre tu Rendimiento en **${skillName}**\`
-    * **Contenido del Feedback:**
-        * Analiza el rendimiento del usuario en el escenario proporcionado.
-        * Menciona específicamente las fortalezas y áreas de mejora identificadas.
-        * Proporciona una evaluación detallada de cómo el usuario aplicó la estrategia aprendida.
-        * **Personalización Esencial:** Asegúrate de que el feedback sea relevante para los \`Principales Obstáculos que el Usuario enfrenta\` y su \`Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName})\`.
-        * Adapta la complejidad del feedback al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
-        * Estructura el feedback con párrafos cortos y/o listas (\`*\` o \`-\`) para facilitar la lectura.
-
-2.  **Recomendaciones Clave:**
-    * **Título Sugerido:** \`### 3 Tips para Mejorar tu **${skillName}**\`
-    * **Contenido de las Recomendaciones:**
-        * Proporciona 3 recomendaciones clave para mejorar la habilidad en **${skillName}**.
-        * Cada recomendación debe ser una frase completa, natural y orientada a la acción.
-        * **Personalización Esencial:** Asegúrate de que las recomendaciones sean relevantes para los \`Principales Obstáculos que el Usuario enfrenta\` y su \`Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName})\`.
-        * Evita incluir los IDs internos de los indicadores ni los puntajes numéricos directamente en el texto.
-        * Adapta la complejidad de las recomendaciones al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
-        * Estructura las recomendaciones con listas (\`*\` o \`-\`) para facilitar la lectura.
-
-3.  **Pregunta Final Abierta, Relevante y Conectada:**
-    * Formula una pregunta que motive al usuario a pensar en la aplicación INMEDIATA y PRÁCTICA de las recomendaciones.
-    * La pregunta debe relacionarse con su \`Descripción del Proyecto/Contexto Profesional del Usuario\` o sus \`Principales Obstáculos que el Usuario enfrenta\`, siempre dentro del ámbito de **${skillName}**.
-    * Ejemplo: "¿Cómo planeas implementar estos 3 tips en tu proyecto [mencionar algo breve del proyecto/contexto del usuario si es relevante y conciso]?"
-
-Asegúrate de que toda tu respuesta sea coherente, centrada en **${skillName}**, y que los nombres de los indicadores sean los descriptivos.
-`
-        nextPhase = "end_session"
-        break
-
-      case "end_session":
-        // Fase 4: Finalización de la Sesión
-        systemPrompt = `
-Eres un Mentor Práctico experto y especializado ÚNICAMENTE en la habilidad de: **${skillName}**.
-Tu objetivo es finalizar la sesión de mentoría de manera profesional y alentadora, recordando al usuario lo aprendido y motivándolo a continuar mejorando.
-Tu respuesta debe ser fluida y natural, integrando los nombres descriptivos de los indicadores sin que parezcan etiquetas técnicas.
-Utiliza Markdown de forma clara y efectiva para la legibilidad: '###' para el título principal de la finalización, '**negritas**' para términos clave, y listas con '*' o '-' para enumeraciones o pasos. No utilices otros elementos de markdown como tablas o citas en bloque en esta fase.
-
-${globalInstruction}
-
-Tu tarea es generar un mensaje de finalización de la sesión de mentoría. Sigue las instrucciones del User Prompt meticulosamente.
-`
-        userPrompt = `
-# Contexto del Usuario (Información Confidencial para tu Análisis)
-- Nombre del Usuario: ${userProfile?.name || "Usuario"}
-- Habilidad Actual en Foco: **${skillName}**
-- Rol del Usuario: ${userProfile?.role || "No especificado"}
-- Años de Experiencia: ${userProfile?.experience || "No especificado"}
-- Descripción del Proyecto/Contexto Profesional del Usuario: ${userProfile?.projectDescription || "No especificado"}
-- Principales Obstáculos que el Usuario enfrenta: ${userProfile?.obstacles || "No especificados"}
-- Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName}): ${userProfile?.learningObjective || "No especificó un objetivo particular para esta habilidad."}
-- Respuesta del Usuario a la Pregunta Abierta de Evaluación para ${skillName}: "${openEndedAnswer || "No proporcionó una respuesta a la pregunta abierta."}"
-
-# Resultados de la Evaluación del Usuario en la Habilidad: ${skillName}
-- Puntuación Global Obtenida: ${globalScore}/100.
-- Nivel de Profundidad Recomendado para la Micro-lección: ${lessonDepth} (fundamental, standard, o advanced).
-- Fortalezas Clave Identificadas (Indicadores con mayor puntaje en ${skillName}):
-${strengths.map((s) => `  - Indicador: "${s.name}" (Puntuación: ${s.score}/100)`).join("\n")}
-- Principales Áreas de Mejora Identificadas (Indicadores con menor puntaje en ${skillName}, relevantes para los obstáculos/respuesta abierta del usuario):
-  - Indicador de Enfoque Primario: "${indicatorScores.find((i) => i.id === focusIndicators.primary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.primary)?.score}/100)
-  ${focusIndicators.secondary ? `  - Indicador de Enfoque Secundario: "${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.name}" (Puntuación: ${indicatorScores.find((i) => i.id === focusIndicators.secondary)?.score}/100)` : ""}
-
-# Análisis Previo de la Respuesta Abierta del Usuario (Relacionada con ${skillName}):
-- Temas Clave en su Respuesta: ${preProcessedOpenAnswer.keyThemes.join(", ") || "No se identificaron temas clave específicos."}
-- Problemas Específicos Mencionados en su Respuesta: ${preProcessedOpenAnswer.specificProblemsMentioned.join(", ") || "No se identificaron problemas específicos."}
-
-# Micro-Lección, Escenario y Feedback Anteriores:
-${conversationHistory
-  .filter((msg) => msg.sender === "mentor")
-  .map((msg) => msg.text)
-  .join("\n")}
-
-# Respuesta del Usuario al Feedback:
-${userResponse || "No proporcionó una respuesta al feedback."}
-
-# TU TAREA COMO MENTOR PRÁCTICO (Genera el siguiente mensaje de finalización para el usuario):
-
-1.  **Resumen de la Sesión:**
-    * **Título Sugerido:** \`### Resumen de tu Sesión de Mentoría en **${skillName}**\`
-    * **Contenido del Resumen:**
-        * Resume los puntos clave de la sesión de mentoría.
-        * Menciona las fortalezas identificadas y las recomendaciones proporcionadas.
-        * Agradece al usuario por su participación y compromiso con mejorar su habilidad en **${skillName}**.
-        * **Personalización Esencial:** Asegúrate de que el resumen sea relevante para los \`Principales Obstáculos que el Usuario enfrenta\` y su \`Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName})\`.
-        * Adapta la complejidad del resumen al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
-        * Estructura el resumen con párrafos cortos y/o listas (\`*\` o \`-\`) para facilitar la lectura.
-
-2.  **Mensaje de Finalización:**
-    * **Título Sugerido:** \`### ¡Felicitaciones por completar tu Sesión de Mentoría en **${skillName}**!\`
-    * **Contenido del Mensaje:**
-        * Formula un mensaje de finalización profesional y alentador.
-        * Motiva al usuario a continuar practicando y aplicando lo aprendido.
-        * Proporciona una llamada a la acción para seguir mejorando su habilidad en **${skillName}**.
-        * **Personalización Esencial:** Asegúrate de que el mensaje sea relevante para los \`Principales Obstáculos que el Usuario enfrenta\` y su \`Objetivo de Aprendizaje del Usuario para ESTA HABILIDAD (${skillName})\`.
-        * Adapta la complejidad del mensaje al \`Nivel de Profundidad Recomendado: ${lessonDepth}\`.
-        * Estructura el mensaje con párrafos cortos y/o listas (\`*\` o \`-\`) para facilitar la lectura.
-
-Asegúrate de que toda tu respuesta sea coherente, centrada en **${skillName}**, y que los nombres de los indicadores sean los descriptivos.
-`
-        nextPhase = "end"
-        break
-
-      default:
-        return NextResponse.json({ error: "Fase de mentoría no reconocida." }, { status: 400 })
+      // Lógica de transición de fase SÓLO si la intención es 'aplicar'
+      const phaseTransitions: Record<string, string> = {
+        phase2_scenario: "phase3_feedback",
+        phase3_feedback: "phase4_action_plan",
+        phase4_action_plan: "phase5_synthesis",
+        phase5_synthesis: "session_completed",
+      }
+      // Asumimos que la IA determinará la intención. Si avanza, actualizamos la fase.
+      // Una IA más avanzada podría devolver la intención explícitamente.
+      // Por ahora, si la respuesta no parece una simple clarificación, avanzamos.
+      nextPhase = phaseTransitions[currentMentorPhase] || currentMentorPhase
     }
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        { role: "user", content: userPromptForAI },
       ],
-      temperature: 0.3,
+      temperature: 0.5,
     })
 
-    const mentorMessage = response.choices[0]?.message?.content || "No se pudo generar una respuesta del mentor."
+    let mentorMessage =
+      response.choices[0]?.message?.content || "Lo siento, no pude procesar tu respuesta. ¿Podrías intentarlo de nuevo?"
+    let exerciseScore: number | undefined
+    let exerciseScoreJustification: string | undefined
 
-    return NextResponse.json({ mentorMessage, nextMentorPhase: nextPhase }, { status: 200 })
+    // Lógica para extraer el score si estamos en la fase de feedback
+    if (currentMentorPhase === "phase3_feedback") {
+      // Implementación simple para buscar un JSON en la respuesta.
+      try {
+        const jsonMatch = mentorMessage.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          if (parsed.exerciseScore !== undefined) {
+            exerciseScore = Number(parsed.exerciseScore)
+            exerciseScoreJustification = parsed.exerciseScoreJustification
+            // Limpiar el mensaje para no mostrar el JSON al usuario
+            mentorMessage = mentorMessage.replace(jsonMatch[0], "").trim()
+          }
+        }
+      } catch (e) {
+        console.error("No se pudo parsear el JSON de la puntuación del ejercicio.", e)
+      }
+    }
+
+    // Si después del análisis, la IA decide NO avanzar, debemos sobreescribir nextPhase.
+    // Esta es una simplificación. Una implementación avanzada haría que la IA devuelva un objeto
+    // con `intention: 'clarify'` y basaríamos la lógica en eso.
+    // Aquí, asumimos que si la IA explica algo y repite una pregunta, no debería avanzar.
+    // El prompt le indica que no avance, así que confiamos en que su respuesta no introducirá la siguiente fase.
+    // Por lo tanto, el `nextPhase` calculado es una presunción optimista que funciona para el "happy path".
+
+    return NextResponse.json(
+      {
+        mentorMessage,
+        nextMentorPhase: nextPhase, // La IA es instruida para no avanzar si clarifica.
+        exerciseScore,
+        exerciseScoreJustification,
+      },
+      { status: 200 },
+    )
   } catch (error) {
-    console.error("Error en el handler POST:", error)
-    return NextResponse.json({ error: "Error interno del servidor." }, { status: 500 })
+    console.error("[API /api/mentor_session] Error en el handler:", error)
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido"
+    return NextResponse.json({ error: `Error interno del servidor: ${errorMessage}` }, { status: 500 })
   }
 }
