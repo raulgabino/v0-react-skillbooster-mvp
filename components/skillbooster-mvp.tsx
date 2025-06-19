@@ -6,6 +6,7 @@ import SkillSelectionStep from "./SkillSelectionStep"
 import SkillObjectiveStep from "./SkillObjectiveStep"
 import ResultsStep from "./results-step"
 import MentorSessionInterface, { type MentorSessionData } from "./mentor-session-interface"
+import LoadingSpinner from "./ui/LoadingSpinner"
 import ReactMarkdown from "react-markdown"
 
 // --- Tipos ---
@@ -474,18 +475,21 @@ const SkillBoosterMVP: React.FC = () => {
 
       case "assessment":
         return (
-          <AssessmentStep
-            skills={allSkills}
-            selectedSkills={selectedSkills}
-            currentSkillIndex={currentSkillIndex}
-            currentQuestionIndex={currentQuestionIndex}
-            setCurrentQuestionIndex={setCurrentQuestionIndex}
-            answers={answers}
-            handleAnswer={handleAnswer}
-            submitAssessment={submitAssessment}
-            isLoading={isLoading}
-            error={error}
-          />
+          <>
+            <AssessmentStep
+              skills={allSkills}
+              selectedSkills={selectedSkills}
+              currentSkillIndex={currentSkillIndex}
+              currentQuestionIndex={currentQuestionIndex}
+              setCurrentQuestionIndex={setCurrentQuestionIndex}
+              answers={answers}
+              handleAnswer={handleAnswer}
+              submitAssessment={submitAssessment}
+              isLoading={isLoading}
+              error={error}
+            />
+            {isLoading && <LoadingSpinner message="Procesando tu evaluación..." size="lg" overlay={true} />}
+          </>
         )
 
       case "results":
