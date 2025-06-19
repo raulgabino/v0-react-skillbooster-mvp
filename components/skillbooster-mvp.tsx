@@ -112,6 +112,13 @@ const SkillBoosterMVP: React.FC = () => {
     fetchSkills()
   }, [])
 
+  // Guardar resultados en localStorage cuando cambien
+  useEffect(() => {
+    if (Object.keys(results).length > 0) {
+      localStorage.setItem("skillBoosterResults", JSON.stringify(results))
+    }
+  }, [results])
+
   // Funciones de navegación
   const nextStep = () => {
     switch (currentStep) {
