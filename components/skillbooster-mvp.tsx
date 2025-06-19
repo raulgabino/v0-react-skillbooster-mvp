@@ -420,7 +420,14 @@ const SkillBoosterMVP: React.FC = () => {
     const skillIndex = selectedSkills.indexOf(skillId)
     if (skillIndex >= 0) {
       setCurrentSkillIndex(skillIndex)
-      setCurrentStep("results")
+      // Resetea las respuestas de la habilidad anterior para evitar conflictos
+      setAnswers((prevAnswers) =>
+        prevAnswers.filter((a) => !allSkills[currentSkillIndex].questions.some((q) => q.id === a.questionId)),
+      )
+      // Resetea el índice de la pregunta para la nueva habilidad
+      setCurrentQuestionIndex(0)
+      // Cambia el paso actual para mostrar el objetivo de la nueva habilidad
+      setCurrentStep("skillObjective")
     }
   }
 
