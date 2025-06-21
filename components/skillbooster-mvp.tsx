@@ -1,43 +1,25 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
-import dynamic from "next/dynamic"
+import { useState, useEffect, useRef } from "react"
+import SkillSelectionStep from "./SkillSelectionStep"
+import SkillObjectiveStep from "./SkillObjectiveStep"
+import ResultsStep from "./results-step"
 import MentorSessionInterface, { type MentorSessionData } from "./mentor-session-interface"
+import LoadingSpinner from "./ui/LoadingSpinner"
 import ReactMarkdown from "react-markdown"
 
-// Importación dinámica de jsPDF y html2canvas para evitar problemas de SSR
-const jsPDF = dynamic(() => import("jspdf"), { ssr: false })
-const html2canvas = dynamic(() => import("html2canvas"), { ssr: false })
-
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Progress } from "@/components/ui/progress"
-import { Info, MessageSquare, Lightbulb, Target, ClipboardList, TrendingUp, Star } from "lucide-react"
-
-// Importar componente externo
-import SkillSelectionStep from "./SkillSelectionStep"
-
-// Importar tipos
-type UserInfo = {
+// --- Tipos ---
+interface UserInfo {
   name: string
   role: string
   experience: string
   projectDescription: string
   obstacles: string
-  // Se elimina learningObjective del UserInfo general
+  learningObjective?: string
 }
 
-type Skill = {
-  id: string
-  name: string
-  questions: Question[]
-  indicadoresInfo: Array<{ id: string; nombre: string; descripcion_indicador?: string }>
-  openQuestionId: string
-}
-
-type Question = {
+interface Question {
   id: string
   axis: string
   type: "likert" | "open"
@@ -45,12 +27,20 @@ type Question = {
   prompt: string
 }
 
-type Answer = {
+interface Skill {
+  id: string
+  name: string
+  questions: Question[]
+  indicadoresInfo: Array<{ id: string; nombre: string; descripcion_indicador?: string }>
+  openQuestionId: string
+}
+
+interface Answer {
   questionId: string
   value: string | number
 }
 
-type IndicatorScore = {
+interface IndicatorScore {
   id: string
   name: string
   score: number
@@ -58,7 +48,7 @@ type IndicatorScore = {
   feedback_especifico?: string
 }
 
-type SkillResult = {
+interface SkillResult {
   skillId: string
   skillName: string
   globalScore: number
@@ -67,752 +57,1040 @@ type SkillResult = {
   mentorSessionData?: MentorSessionData
 }
 
-// Componente principal
-export default function SkillboosterMVP() {
-  // Estado para controlar el flujo
-  const [currentStep, setCurrentStep] = useState<number>(0)
+interface ConversationMessage {
+  sender: "partner" | "user"
+  text: string
+}
+
+// --- Componente Principal ---
+const SkillBoosterMVP: React.FC = () => {
+  // Estados principales
+  const [currentStep, setCurrentStep] = useState<
+    "intro" | "userInfo" | "skillSelection" | "skillObjective" | "assessment" | "results" | "mentorSession" | "summary"
+  >("intro")
+
+  // Estados de datos
   const [userInfo, setUserInfo] = useState<UserInfo>({
     name: "",
     role: "",
     experience: "",
     projectDescription: "",
     obstacles: "",
-    // Se elimina learningObjective del estado inicial
+    learningObjective: "",
   })
-  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false)
-  const [skills, setSkills] = useState<Skill[]>([])
+
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
-  const [currentSkillIndex, setCurrentSkillIndex] = useState<number>(0)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0)
-  const [answers, setAnswers] = useState<Record<string, Answer[]>>({})
-  const [currentAnswer, setCurrentAnswer] = useState<string | number>("")
+  const [allSkills, setAllSkills] = useState<Skill[]>([])
+  const [currentSkillIndex, setCurrentSkillIndex] = useState(0)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState<Answer[]>([])
   const [results, setResults] = useState<Record<string, SkillResult>>({})
-  const [loading, setLoading] = useState<boolean>(false)
-  const [pdfGenerating, setPdfGenerating] = useState<boolean>(false)
-  const [showMentorSession, setShowMentorSession] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Nuevos estados para manejar el objetivo de aprendizaje específico de cada habilidad
-  const [currentSkillLearningObjective, setCurrentSkillLearningObjective] = useState<string>("")
-  const [skillObjectiveSubmitted, setSkillObjectiveSubmitted] = useState<boolean>(false)
+  // Estados para sesión de mentoría
+  const [showMentorSession, setShowMentorSession] = useState(false)
+  const [currentMentorSkill, setCurrentMentorSkill] = useState<string | null>(null)
 
-  // Función para renderizar el indicador de progreso general
-  const renderOverallProgress = (): string => {
-    const totalSelectedSkills = selectedSkills.length
+  // Estados para resumen final
+  const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([])
+  const [currentUserInput, setCurrentUserInput] = useState("")
+  const [isPartnerLoading, setIsPartnerLoading] = useState(false)
 
-    switch (currentStep) {
-      case 0: // LandingStep
-        return "" // No mostramos progreso en la página de inicio
-      case 1: // UserInfoStep
-        return "Paso 1 de 4: Perfil de Usuario"
-      case 2: // SkillSelectionStep
-        return "Paso 2 de 4: Selección de Habilidades"
-      case 3: // SkillObjectiveStep o AssessmentStep
-        if (totalSelectedSkills > 0) {
-          const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
-          const skillName = currentSkill?.name || "Habilidad"
-
-          if (!skillObjectiveSubmitted) {
-            return `Paso 3 de 4: Definiendo Objetivo - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
-          } else {
-            return `Paso 3 de 4: Evaluación - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills}) - Pregunta ${currentQuestionIndex + 1}/${skills.find((s) => s.id === selectedSkills[currentSkillIndex])?.questions.length || 0}`
-          }
-        }
-        return "Paso 3 de 4: Evaluación de Habilidad"
-      case 4: // ResultsStep o MentorSessionInterface
-        if (totalSelectedSkills > 0) {
-          const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
-          const skillName = currentSkill?.name || "Habilidad"
-
-          if (showMentorSession) {
-            return `Paso 3 de 4: Sesión de Mentoría - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
-          } else {
-            return `Paso 3 de 4: Resultados - ${skillName} (${currentSkillIndex + 1}/${totalSelectedSkills})`
-          }
-        }
-        return "Paso 3 de 4: Resultados"
-      case 5: // SummaryStep
-        return "Paso 4 de 4: Resumen Final"
-      default:
-        return ""
-    }
-  }
-
-  // Cargar datos de preguntas
+  // Cargar habilidades al montar el componente
   useEffect(() => {
-    // Cargamos los datos desde la API
-    const loadSkillsData = async () => {
+    const fetchSkills = async () => {
       try {
-        // Llamada a la API para obtener las habilidades con datos completos
         const response = await fetch("/api/questions")
-
-        if (!response.ok) {
-          const errorText = await response.text() // Intenta obtener más detalles del error como texto
-          console.error(`Error de API al cargar habilidades: ${response.status} ${response.statusText}`, errorText)
-          throw new Error(
-            `Error al cargar datos de habilidades: ${response.status} ${response.statusText}. Cuerpo del error: ${errorText}`,
-          )
-        }
-
-        // Solo proceder con response.json() si response.ok es true
+        if (!response.ok) throw new Error("Error al cargar las habilidades")
         const skillsData: Skill[] = await response.json()
-        setSkills(skillsData)
+        setAllSkills(skillsData)
       } catch (error) {
-        console.error("Error al cargar las habilidades:", error)
-        // Mostrar un mensaje de error al usuario o establecer un estado de error
-        setSkills([]) // Establecer un array vacío para evitar errores de renderizado
+        console.error("Error cargando habilidades:", error)
+        setError("Error al cargar las habilidades. Por favor, recarga la página.")
       }
     }
-
-    loadSkillsData()
+    fetchSkills()
   }, [])
 
-  // Manejadores de eventos
-  const handleStartAssessment = () => {
-    setCurrentStep(1)
-  }
+  // Cargar resultados guardados del localStorage al montar el componente
+  useEffect(() => {
+    const savedResults = localStorage.getItem("skillBoosterResults")
+    if (savedResults) {
+      setResults(JSON.parse(savedResults))
+    }
+  }, [])
 
-  const handleUserInfoSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (userInfo.name && userInfo.role && userInfo.projectDescription && userInfo.obstacles) {
-      setCurrentStep(2)
+  // Guardar resultados en localStorage cuando cambien
+  useEffect(() => {
+    if (Object.keys(results).length > 0) {
+      localStorage.setItem("skillBoosterResults", JSON.stringify(results))
+    }
+  }, [results])
+
+  // Funciones de navegación
+  const nextStep = () => {
+    switch (currentStep) {
+      case "intro":
+        setCurrentStep("userInfo")
+        break
+      case "userInfo":
+        setCurrentStep("skillSelection")
+        break
+      case "skillSelection":
+        setCurrentStep("skillObjective")
+        break
+      case "skillObjective":
+        setCurrentStep("assessment")
+        break
+      case "assessment":
+        setCurrentStep("results")
+        break
+      case "results":
+        if (currentSkillIndex < selectedSkills.length - 1) {
+          setCurrentSkillIndex(currentSkillIndex + 1)
+          setCurrentQuestionIndex(0)
+          setCurrentStep("skillObjective")
+        } else {
+          setCurrentStep("summary")
+        }
+        break
+      case "mentorSession":
+        setCurrentStep("results")
+        setShowMentorSession(false)
+        break
+      default:
+        break
     }
   }
 
-  const handleSkillSelection = () => {
-    if (selectedSkills.length > 0) {
-      setCurrentSkillIndex(0)
-      setCurrentQuestionIndex(0)
-      setCurrentSkillLearningObjective("") // Limpiar para la nueva habilidad
-      setSkillObjectiveSubmitted(false) // Reiniciar para la nueva habilidad
-
-      // Inicializamos el objeto de respuestas para cada habilidad seleccionada
-      const initialAnswers: Record<string, Answer[]> = {}
-      selectedSkills.forEach((skillId) => {
-        initialAnswers[skillId] = []
-      })
-      setAnswers(initialAnswers)
-
-      setCurrentStep(3) // Ir al nuevo SkillObjectiveStep
+  const prevStep = () => {
+    switch (currentStep) {
+      case "userInfo":
+        setCurrentStep("intro")
+        break
+      case "skillSelection":
+        setCurrentStep("userInfo")
+        break
+      case "skillObjective":
+        if (currentSkillIndex > 0) {
+          setCurrentSkillIndex(currentSkillIndex - 1)
+          setCurrentStep("results")
+        } else {
+          setCurrentStep("skillSelection")
+        }
+        break
+      case "assessment":
+        setCurrentStep("skillObjective")
+        break
+      case "results":
+        setCurrentStep("assessment")
+        break
+      case "summary":
+        setCurrentStep("results")
+        break
+      default:
+        break
     }
   }
 
-  // Función para manejar el envío del objetivo de la habilidad
-  const handleSubmitSkillObjective = () => {
-    setSkillObjectiveSubmitted(true)
+  // Función para manejar respuestas
+  const handleAnswer = (questionId: string, value: string | number) => {
+    setAnswers((prev) => {
+      const existingIndex = prev.findIndex((a) => a.questionId === questionId)
+      if (existingIndex >= 0) {
+        const updated = [...prev]
+        updated[existingIndex] = { questionId, value }
+        return updated
+      }
+      return [...prev, { questionId, value }]
+    })
   }
 
-  const handleAnswerQuestion = async () => {
-    const currentSkillId = selectedSkills[currentSkillIndex]
-    const currentSkill = skills.find((s) => s.id === currentSkillId)
-
+  // Función para enviar evaluación
+  const submitAssessment = async () => {
+    const currentSkill = allSkills.find((s) => s.id === selectedSkills[currentSkillIndex])
     if (!currentSkill) return
 
-    const currentQuestion = currentSkill.questions[currentQuestionIndex]
+    setIsLoading(true)
+    setError(null)
 
-    // Guardamos la respuesta actual
-    const newAnswers = { ...answers }
-    newAnswers[currentSkillId] = [
-      ...newAnswers[currentSkillId],
-      {
-        questionId: currentQuestion.id,
-        value: currentAnswer,
-      },
-    ]
-    setAnswers(newAnswers)
+    try {
+      const skillAnswers = answers.filter((a) => currentSkill.questions.some((q) => q.id === a.questionId))
 
-    // Limpiamos la respuesta actual
-    setCurrentAnswer("")
+      const scoreResponse = await fetch("/api/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skillId: currentSkill.id,
+          answers: skillAnswers,
+        }),
+      })
 
-    // Verificamos si hay más preguntas para esta habilidad
-    if (currentQuestionIndex < currentSkill.questions.length - 1) {
-      // Pasamos a la siguiente pregunta
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-    } else {
-      // Última pregunta - Llamamos a las APIs para obtener puntuación y tips
-      setLoading(true)
+      if (!scoreResponse.ok) throw new Error("Error al calcular puntuaciones")
+      const scoreData = await scoreResponse.json()
 
-      try {
-        // 1. Llamada a la API de puntuación local
-        const scoreResponse = await fetch("/api/score", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            skillId: currentSkillId,
-            answers: newAnswers[currentSkillId],
-          }),
-        })
+      const openEndedAnswer = skillAnswers.find((a) => a.questionId === currentSkill.openQuestionId)?.value as string
 
-        if (!scoreResponse.ok) {
-          const errorBody = await scoreResponse.json()
-          throw new Error(`Error en la API de puntuación: ${scoreResponse.statusText} - ${errorBody.error}`)
-        }
+      const lessonResponse = await fetch("/api/lesson", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skillId: currentSkill.id,
+          userInfo,
+          indicatorScores: scoreData.indicatorScores,
+          globalScore: scoreData.globalScore,
+          openEndedAnswer,
+        }),
+      })
 
-        const scoreData = await scoreResponse.json()
-        if (!scoreData.indicatorScores || typeof scoreData.globalScore === "undefined") {
-          throw new Error("La API de puntuación no devolvió la estructura de datos esperada.")
-        }
+      if (!lessonResponse.ok) throw new Error("Error al generar recomendaciones")
+      const lessonData = await lessonResponse.json()
 
-        const { indicatorScores, globalScore } = scoreData
-        console.log(`[Frontend] Puntuaciones obtenidas para ${currentSkill.name}. Score global: ${globalScore}`)
-
-        // 2. Llamada a la API de tips con los datos de la primera llamada
-        const openEndedAnswer = newAnswers[currentSkillId].find(
-          (answer) => currentSkill.questions.find((q) => q.id === answer.questionId)?.type === "open",
-        )?.value as string | undefined
-
-        console.log(`[Frontend] Llamando a /api/lesson para ${currentSkill.name}...`)
-        const lessonResponse = await fetch("/api/lesson", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            skillId: currentSkillId,
-            userInfo,
-            indicatorScores,
-            globalScore,
-            openEndedAnswer,
-          }),
-        })
-
-        if (!lessonResponse.ok) {
-          const errorBody = await lessonResponse.json()
-          throw new Error(`Error en la API de tips: ${lessonResponse.statusText} - ${errorBody.error}`)
-        }
-
-        const lessonData = await lessonResponse.json()
-        if (!lessonData.tips || !Array.isArray(lessonData.tips)) {
-          throw new Error("La API de tips no devolvió la estructura de datos esperada.")
-        }
-
-        const { tips } = lessonData
-        console.log("[Frontend] Tips de IA generados exitosamente.")
-
-        // 3. Construimos el resultado completo
-        const result: SkillResult = {
-          skillId: currentSkillId,
-          skillName: currentSkill.name,
-          globalScore,
-          indicatorScores,
-          tips,
-        }
-
-        const newResults = { ...results }
-        newResults[currentSkillId] = result
-        setResults(newResults)
-
-        setCurrentStep(4)
-        setShowMentorSession(false)
-      } catch (error: any) {
-        console.error("Error DETALLADO al procesar la evaluación:", error)
-        alert(
-          "Ocurrió un error al procesar tu evaluación. Se mostrarán resultados aproximados. Por favor, revisa tu conexión o intenta más tarde.",
-        )
-
-        // Verificación adicional para currentSkill
-        if (!currentSkill) {
-          console.error("No se pudo encontrar currentSkill en el bloque catch de handleAnswerQuestion")
-          setLoading(false)
-          return
-        }
-
-        // Código de fallback existente
-        const fallbackResult: SkillResult = {
-          skillId: currentSkillId,
-          skillName: currentSkill.name,
-          globalScore: 75,
-          indicatorScores: newAnswers[currentSkillId].map((answer) => {
-            const question = currentSkill.questions.find((q) => q.id === answer.questionId)
-            const indicadorInfo = currentSkill.indicadoresInfo.find((info) => info.id === answer.questionId)
-            return {
-              id: answer.questionId,
-              name:
-                indicadorInfo?.nombre || question?.prompt?.substring(0, 30) + "..." || `Indicador ${answer.questionId}`,
-              score: typeof answer.value === "number" ? answer.value * 20 : 60,
-              descripcion_indicador: indicadorInfo?.descripcion_indicador,
-            }
-          }),
-          tips: [
-            "Fortaleza: Tienes buena capacidad de análisis general.",
-            "Oportunidad: Podrías mejorar en la identificación de patrones específicos.",
-            "Consejo: Practica regularmente con ejercicios de análisis de datos reales.",
-          ],
-        }
-
-        const newResults = { ...results }
-        newResults[currentSkillId] = fallbackResult
-        setResults(newResults)
-        setCurrentStep(4)
-        setShowMentorSession(false)
-      } finally {
-        setLoading(false)
+      const skillResult: SkillResult = {
+        skillId: currentSkill.id,
+        skillName: currentSkill.name,
+        globalScore: scoreData.globalScore,
+        indicatorScores: scoreData.indicatorScores,
+        tips: lessonData.tips,
       }
+
+      setResults((prev) => ({
+        ...prev,
+        [currentSkill.id]: skillResult,
+      }))
+
+      nextStep()
+    } catch (error) {
+      console.error("Error en evaluación:", error)
+      setError("Error al procesar la evaluación. Por favor, intenta de nuevo.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleNextSkill = () => {
-    // Verificamos si hay más habilidades por evaluar
-    if (currentSkillIndex < selectedSkills.length - 1) {
-      // Pasamos a la siguiente habilidad
-      setCurrentSkillIndex(currentSkillIndex + 1)
-      setCurrentQuestionIndex(0)
-      setCurrentSkillLearningObjective("") // Limpiar para la nueva habilidad
-      setSkillObjectiveSubmitted(false) // Reiniciar para la nueva habilidad
-      setCurrentStep(3) // Volvemos a la pantalla de objetivo de habilidad
-      setShowMentorSession(false)
-    } else {
-      // Pasamos a la pantalla de resumen final
-      setCurrentStep(5)
+  // Función para iniciar sesión de mentoría
+  const startMentorSession = (skillId: string) => {
+    setCurrentMentorSkill(skillId)
+    setShowMentorSession(true)
+    setCurrentStep("mentorSession")
+  }
+
+  // Función para completar sesión de mentoría
+  const completeMentorSession = (sessionData: MentorSessionData) => {
+    if (currentMentorSkill && results[currentMentorSkill]) {
+      setResults((prev) => ({
+        ...prev,
+        [currentMentorSkill]: {
+          ...prev[currentMentorSkill],
+          mentorSessionData: sessionData,
+        },
+      }))
+    }
+    setShowMentorSession(false)
+    setCurrentMentorSkill(null)
+    setCurrentStep("results")
+  }
+
+  // Función para inicializar conversación con Partner Digital
+  const initializePartnerConversation = async () => {
+    if (conversationHistory.length > 0) return
+
+    setIsPartnerLoading(true)
+    try {
+      const response = await fetch("/api/partner_debrief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userInfo,
+          results,
+          conversationHistory: [],
+        }),
+      })
+
+      if (!response.ok) throw new Error("Error al inicializar conversación")
+      const data = await response.json()
+
+      setConversationHistory([
+        {
+          sender: "partner",
+          text: data.partnerMessage,
+        },
+      ])
+    } catch (error) {
+      console.error("Error inicializando conversación:", error)
+      setConversationHistory([
+        {
+          sender: "partner",
+          text: "¡Hola! Soy tu Partner Digital. Lamentablemente hay un problema técnico, pero puedo ayudarte a analizar tus resultados. ¿Qué te gustaría explorar sobre tu evaluación?",
+        },
+      ])
+    } finally {
+      setIsPartnerLoading(false)
     }
   }
 
-  const handleRestart = () => {
-    // Reiniciamos todo el proceso
-    setCurrentStep(0)
+  // Función para enviar mensaje al Partner Digital
+  const sendMessageToPartner = async () => {
+    if (!currentUserInput.trim() || isPartnerLoading) return
+
+    const userMessage: ConversationMessage = {
+      sender: "user",
+      text: currentUserInput.trim(),
+    }
+
+    const updatedHistory = [...conversationHistory, userMessage]
+    setConversationHistory(updatedHistory)
+    setCurrentUserInput("")
+    setIsPartnerLoading(true)
+
+    try {
+      const response = await fetch("/api/partner_debrief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userInfo,
+          results,
+          conversationHistory: updatedHistory,
+        }),
+      })
+
+      if (!response.ok) throw new Error("Error en conversación")
+      const data = await response.json()
+
+      setConversationHistory([
+        ...updatedHistory,
+        {
+          sender: "partner",
+          text: data.partnerMessage,
+        },
+      ])
+    } catch (error) {
+      console.error("Error en conversación:", error)
+      setConversationHistory([
+        ...updatedHistory,
+        {
+          sender: "partner",
+          text: "Disculpa, hubo un problema técnico. ¿Podrías reformular tu pregunta?",
+        },
+      ])
+    } finally {
+      setIsPartnerLoading(false)
+    }
+  }
+
+  // Función para descargar PDF
+  const handleDownloadPDF = async () => {
+    try {
+      const { default: jsPDF } = await import("jspdf")
+      const { default: html2canvas } = await import("html2canvas")
+
+      const pdf = new jsPDF()
+      const element = document.getElementById("summary-content")
+
+      if (element) {
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+        })
+        const imgData = canvas.toDataURL("image/png")
+        const imgProps = pdf.getImageProperties(imgData)
+        const pdfWidth = pdf.internal.pageSize.getWidth()
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight)
+        pdf.save(`skillbooster-report-${userInfo.name.replace(/\s+/g, "-")}.pdf`)
+      }
+    } catch (error) {
+      console.error("Error generando PDF:", error)
+      alert("Error al generar el PDF. Por favor, intenta de nuevo.")
+    }
+  }
+
+  // Función para reiniciar la aplicación
+  const restartAssessment = () => {
+    setCurrentStep("intro")
     setUserInfo({
       name: "",
       role: "",
       experience: "",
       projectDescription: "",
       obstacles: "",
+      learningObjective: "",
     })
-    setAcceptedTerms(false)
     setSelectedSkills([])
     setCurrentSkillIndex(0)
     setCurrentQuestionIndex(0)
-    setCurrentSkillLearningObjective("") // Limpiar el objetivo de aprendizaje
-    setSkillObjectiveSubmitted(false) // Reiniciar el estado de envío
-    setAnswers({})
+    setAnswers([])
     setResults({})
+    setConversationHistory([])
+    setCurrentUserInput("")
     setShowMentorSession(false)
+    setCurrentMentorSkill(null)
+    setError(null)
   }
 
-  const handleStartMentorSession = () => {
-    setShowMentorSession(true)
-  }
-
-  const handleMentorSessionComplete = (sessionData: MentorSessionData) => {
-    const currentSkillId = selectedSkills[currentSkillIndex]
-
-    // Actualizar los resultados con los datos de la sesión de mentoría
-    const newResults = { ...results }
-    newResults[currentSkillId] = {
-      ...newResults[currentSkillId],
-      mentorSessionData: sessionData,
-    }
-    setResults(newResults)
-
-    // Avanzar automáticamente al siguiente paso en el flujo
-    handleNextSkill()
-  }
-
-  const handleDownloadPDF = async () => {
-    const summaryElement = document.getElementById("summary-content-to-pdf")
-    if (!summaryElement) {
-      console.error("Elemento del resumen no encontrado para generar PDF.")
-      return
-    }
-
-    setPdfGenerating(true)
-    try {
-      // Importar dinámicamente las librerías
-      const jsPDFModule = await import("jspdf")
-      const html2canvasModule = await import("html2canvas")
-
-      const JsPDF = jsPDFModule.default
-      const html2canvas = html2canvasModule.default
-
-      // Crear el canvas
-      const canvas = await html2canvas(summaryElement, {
-        scale: 2, // Aumenta la escala para mejor calidad de imagen en el PDF
-        useCORS: true, // Si tienes imágenes externas
-        logging: false, // Para depuración
-      })
-
-      const imgData = canvas.toDataURL("image/png")
-      const pdf = new JsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      })
-
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = canvas.width
-      const imgHeight = canvas.height
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
-      const imgX = (pdfWidth - imgWidth * ratio) / 2 // Centrar imagen
-      const imgY = 10 // Margen superior
-
-      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio)
-      pdf.save("reporte-skillboosterx.pdf")
-    } catch (error) {
-      console.error("Error al generar PDF:", error)
-      // Aquí podrías mostrar un mensaje de error al usuario
-    } finally {
-      setPdfGenerating(false)
+  // Función para seleccionar habilidad específica
+  const selectSkill = (skillId: string) => {
+    const skillIndex = selectedSkills.indexOf(skillId)
+    if (skillIndex >= 0) {
+      setCurrentSkillIndex(skillIndex)
+      // Resetea las respuestas de la habilidad anterior para evitar conflictos
+      setAnswers((prevAnswers) =>
+        prevAnswers.filter((a) => !allSkills[currentSkillIndex].questions.some((q) => q.id === a.questionId)),
+      )
+      // Resetea el índice de la pregunta para la nueva habilidad
+      setCurrentQuestionIndex(0)
+      // Cambia el paso actual para mostrar el objetivo de la nueva habilidad
+      setCurrentStep("skillObjective")
     }
   }
 
-  // Renderizado condicional según la etapa actual
-  const renderStep = () => {
+  // Renderizado condicional según el paso actual
+  const renderCurrentStep = () => {
     switch (currentStep) {
-      case 0:
-        return <LandingStep onStart={handleStartAssessment} />
-      case 1:
-        return <UserInfoStep userInfo={userInfo} setUserInfo={setUserInfo} onSubmit={handleUserInfoSubmit} />
-      case 2:
-        return <SkillSelectionStep setSelectedSkills={setSelectedSkills} onContinue={handleSkillSelection} />
-      case 3:
-        const currentSkillId = selectedSkills[currentSkillIndex]
-        const currentSkill = skills.find((s) => s.id === currentSkillId)
+      case "intro":
+        return <IntroductionStep nextStep={nextStep} />
 
-        if (!currentSkill) return <div>Cargando habilidad...</div>
+      case "userInfo":
+        return <UserInfoStep userInfo={userInfo} setUserInfo={setUserInfo} nextStep={nextStep} prevStep={prevStep} />
 
-        // Renderizar SkillObjectiveStep o AssessmentStep según el estado
-        if (!skillObjectiveSubmitted) {
-          return (
-            <SkillObjectiveStep
-              skillName={currentSkill.name} // Usar name en lugar de axis
-              learningObjective={currentSkillLearningObjective}
-              setLearningObjective={setCurrentSkillLearningObjective}
-              onSubmitObjective={handleSubmitSkillObjective}
-              indicadoresInfo={currentSkill.indicadoresInfo}
-            />
-          )
-        } else {
-          return (
+      case "skillSelection":
+        return <SkillSelectionStep setSelectedSkills={setSelectedSkills} onContinue={nextStep} />
+
+      case "skillObjective":
+        const currentSkill = allSkills.find((s) => s.id === selectedSkills[currentSkillIndex])
+        if (!currentSkill) return <div>Error: Habilidad no encontrada</div>
+
+        return (
+          <SkillObjectiveStep
+            skillName={currentSkill.name}
+            learningObjective={userInfo.learningObjective || ""}
+            setLearningObjective={(objective) => setUserInfo((prev) => ({ ...prev, learningObjective: objective }))}
+            onSubmitObjective={nextStep}
+            indicadoresInfo={currentSkill.indicadoresInfo}
+          />
+        )
+
+      case "assessment":
+        return (
+          <>
             <AssessmentStep
-              skill={currentSkill}
-              questionIndex={currentQuestionIndex}
-              currentAnswer={currentAnswer}
-              setCurrentAnswer={setCurrentAnswer}
-              onNext={handleAnswerQuestion}
+              skills={allSkills}
+              selectedSkills={selectedSkills}
+              currentSkillIndex={currentSkillIndex}
+              currentQuestionIndex={currentQuestionIndex}
+              setCurrentQuestionIndex={setCurrentQuestionIndex}
+              answers={answers}
+              handleAnswer={handleAnswer}
+              submitAssessment={submitAssessment}
+              isLoading={isLoading}
+              error={error}
             />
-          )
-        }
-      case 4:
-        const resultSkillId = selectedSkills[currentSkillIndex]
-        const result = results[resultSkillId]
+            {isLoading && <LoadingSpinner message="Procesando tu evaluación..." size="lg" overlay={true} />}
+          </>
+        )
 
-        if (!result) return <div>Cargando resultados...</div>
+      case "results":
+        const currentResult = results[selectedSkills[currentSkillIndex]]
+        if (!currentResult) return <div>Cargando resultados...</div>
 
-        // Encontrar la respuesta a la pregunta abierta
-        const currentSkill2 = skills.find((s) => s.id === resultSkillId)
-        const openEndedQuestionId = currentSkill2?.questions.find((q) => q.type === "open")?.id
-        const openEndedAnswer = answers[resultSkillId]?.find((answer) => answer.questionId === openEndedQuestionId)
-          ?.value as string | undefined
-
-        // Crear un perfil de usuario que incluya el objetivo de aprendizaje específico
-        const userProfileForMentor = {
-          ...userInfo,
-          learningObjective: currentSkillLearningObjective, // Añadir el objetivo específico de la habilidad
-        }
-
-        // Preparar datos para el navegador de habilidades
-        const allSkillsForNavigation = selectedSkills.map((skillId) => {
-          const skillResult = results[skillId]
+        const allSkillsWithStatus = selectedSkills.map((skillId) => {
+          const skill = allSkills.find((s) => s.id === skillId)
+          const result = results[skillId]
           return {
             id: skillId,
-            name: skills.find((s) => s.id === skillId)?.name || skillId,
-            globalScore: skillResult?.globalScore,
-            status: skillResult ? "evaluado" : "no_evaluado",
+            name: skill?.name || skillId,
+            globalScore: result?.globalScore,
+            status: result ? ("evaluado" as const) : ("no_evaluado" as const),
           }
         })
 
-        // Función para cambiar a otra habilidad evaluada
-        const handleSelectSkill = (skillId: string) => {
-          const newIndex = selectedSkills.findIndex((id) => id === skillId)
-          if (newIndex >= 0) {
-            setCurrentSkillIndex(newIndex)
-          }
+        return (
+          <ResultsStep
+            result={currentResult}
+            hasMoreSkills={currentSkillIndex < selectedSkills.length - 1}
+            onNextSkill={nextStep}
+            onStartMentorSession={() => startMentorSession(currentResult.skillId)}
+            allSkills={allSkillsWithStatus}
+            onSelectSkill={selectSkill}
+          />
+        )
+
+      case "mentorSession":
+        if (!currentMentorSkill || !results[currentMentorSkill]) {
+          return <div>Error: No se puede iniciar la sesión de mentoría</div>
         }
 
-        return showMentorSession ? (
+        const mentorResult = results[currentMentorSkill]
+        const openEndedAnswer = answers.find(
+          (a) => a.questionId === allSkills.find((s) => s.id === currentMentorSkill)?.openQuestionId,
+        )?.value as string
+
+        return (
           <MentorSessionInterface
-            skillId={resultSkillId}
-            skillName={result.skillName}
-            globalScore={result.globalScore}
-            indicatorScores={result.indicatorScores}
+            skillId={mentorResult.skillId}
+            skillName={mentorResult.skillName}
+            globalScore={mentorResult.globalScore}
+            indicatorScores={mentorResult.indicatorScores}
             openEndedAnswer={openEndedAnswer}
-            userProfile={userProfileForMentor} // Pasar el perfil modificado
-            onSessionComplete={handleMentorSessionComplete}
-          />
-        ) : (
-          <ResultsStep
-            result={result}
-            hasMoreSkills={currentSkillIndex < selectedSkills.length - 1}
-            onNextSkill={handleNextSkill}
-            onStartMentorSession={handleStartMentorSession}
-            allSkills={selectedSkills.length > 1 ? allSkillsForNavigation : undefined}
-            onSelectSkill={selectedSkills.length > 1 ? handleSelectSkill : undefined}
+            userProfile={userInfo}
+            onSessionComplete={completeMentorSession}
           />
         )
-      case 5:
+
+      case "summary":
         return (
           <SummaryStep
+            userInfo={userInfo}
             results={results}
-            onRestart={handleRestart}
-            onDownloadPDF={handleDownloadPDF}
-            pdfGenerating={pdfGenerating}
-            setCurrentStep={setCurrentStep}
+            conversationHistory={conversationHistory}
+            currentUserInput={currentUserInput}
+            setCurrentUserInput={setCurrentUserInput}
+            sendMessage={sendMessageToPartner}
+            isLoading={isPartnerLoading}
+            initializeConversation={initializePartnerConversation}
+            handleDownloadPDF={handleDownloadPDF}
+            restartAssessment={restartAssessment}
           />
         )
+
       default:
-        return <div>Error: Paso desconocido</div>
+        return <div>Paso no reconocido</div>
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white font-sans">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Indicador de progreso general */}
-        {currentStep > 0 && (
-          <div className="mb-6 text-center font-medium text-blue-400 tracking-wider bg-gray-800/50 py-2 px-4 rounded-lg shadow-inner">
-            {renderOverallProgress()}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-            <p className="mt-4 text-xl">Procesando...</p>
-          </div>
-        ) : (
-          renderStep()
-        )}
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+      <div className="container mx-auto px-4 py-8">{renderCurrentStep()}</div>
     </div>
   )
 }
 
-// Componentes para cada etapa
-function LandingStep({
-  onStart,
-}: {
-  onStart: () => void
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-      <h1 className="text-5xl md:text-6xl font-bold mb-3">
-        <span className="text-white">SkillBooster</span>
-        <span className="text-blue-500">X</span>
-      </h1>
-      <h2 className="text-3xl md:text-4xl font-semibold text-gray-300 mb-10">Evalúa. Mejora. Despega.</h2>
+// --- Componentes de Pasos ---
 
-      <p className="text-lg text-gray-200 max-w-2xl mx-auto mb-12 text-center">
-        Descubre y potencia las habilidades clave de tu equipo con micro-evaluaciones y mentoría IA personalizada.
-      </p>
+const IntroductionStep: React.FC<{ nextStep: () => void }> = ({ nextStep }) => {
+  return (
+    <div className="max-w-4xl mx-auto text-center">
+      <div className="mb-8 animate-fadeInDown">
+        <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+          Skill<span className="text-blue-400">booster</span>X
+        </h1>
+        <p className="text-xl text-gray-300 mb-2">Evalúa. Mejora. Despega.</p>
+        <p className="text-lg text-gray-400">
+          Herramienta ágil para líderes y equipos que creen en la sostenibilidad con acción real.
+        </p>
+      </div>
+
+      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-8 mb-8 animate-fadeInUp">
+        <h2 className="text-2xl font-semibold text-blue-300 mb-6">¿Qué vas a lograr hoy?</h2>
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">📊</span>
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">Evaluación Personalizada</h3>
+            <p className="text-gray-400">Descubre tus fortalezas y áreas de mejora con IA avanzada</p>
+          </div>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">🎯</span>
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">Recomendaciones Prácticas</h3>
+            <p className="text-gray-400">Recibe tips específicos para tu rol y contexto profesional</p>
+          </div>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">🚀</span>
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">Plan de Acción</h3>
+            <p className="text-gray-400">Obtén un roadmap claro para tu desarrollo profesional</p>
+          </div>
+        </div>
+      </div>
 
       <button
-        onClick={onStart}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full text-lg font-medium transition-colors duration-150 ease-in-out"
+        onClick={nextStep}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all transform hover:scale-105 shadow-lg hover:shadow-xl animate-pulse"
       >
-        Empezar Evaluación
+        Comenzar Evaluación
       </button>
-
-      <p className="text-xs text-gray-400 mt-4">
-        Al continuar, aceptas nuestros{" "}
-        <a href="#terminos" className="underline hover:text-blue-400">
-          Términos y Condiciones
-        </a>
-        .
-      </p>
     </div>
   )
 }
 
-function UserInfoStep({
-  userInfo,
-  setUserInfo,
-  onSubmit,
-}: {
+const UserInfoStep: React.FC<{
   userInfo: UserInfo
-  setUserInfo: (value: UserInfo) => void
-  onSubmit: (e: React.FormEvent) => void
-}) {
-  // Define the fields in order
-  const fields = [
-    { name: "name", label: "¿Cómo te llamas?", type: "text", placeholder: "Escribe aquí tu nombre" },
-    {
-      name: "role",
-      label: "¿Cuál es tu rol actual?",
-      type: "text",
-      placeholder: "Ej: Gerente de Proyecto, Desarrollador...",
-    },
-    {
-      name: "experience",
-      label: "¿Cuántos años de experiencia tienes en este rol?",
-      type: "number",
-      placeholder: "Ej: 3",
-    },
-    {
-      name: "projectDescription",
-      label: "Cuéntanos brevemente sobre tu proyecto o contexto profesional actual.",
-      type: "textarea",
-      placeholder: "Describe el proyecto o contexto en el que estás trabajando...",
-    },
-    {
-      name: "obstacles",
-      label: "Y finalmente, ¿cuáles son los principales obstáculos que enfrentas?",
-      type: "textarea",
-      placeholder: "Describe los desafíos o problemas que estás tratando de resolver...",
-    },
-  ]
-
-  // State to track current field index
-  const [currentFieldIndex, setCurrentFieldIndex] = useState(0)
-  const currentField = fields[currentFieldIndex]
-
-  // Animation state
-  const [direction, setDirection] = useState<"entering" | "exiting">("entering")
-  const [isAnimating, setIsAnimating] = useState(false)
-
-  // Handle field change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setUserInfo({ ...userInfo, [name]: value })
-  }
-
-  // Check if current field is valid
-  const isCurrentFieldValid = () => {
-    const value = userInfo[currentField.name as keyof UserInfo]
-
-    // For required fields
-    if (currentField.name !== "experience") {
-      return Boolean(value && String(value).trim() !== "")
-    }
-
-    // For experience (optional or valid number)
-    return value === "" || (typeof value === "string" && !isNaN(Number(value)))
-  }
-
-  // Handle next field
-  const handleNextField = () => {
-    if (!isCurrentFieldValid()) return
-
-    if (currentFieldIndex < fields.length - 1) {
-      // Animate exit
-      setDirection("exiting")
-      setIsAnimating(true)
-
-      setTimeout(() => {
-        setCurrentFieldIndex(currentFieldIndex + 1)
-        setDirection("entering")
-
-        setTimeout(() => {
-          setIsAnimating(false)
-        }, 300)
-      }, 300)
-    } else {
-      // Submit form on last field
-      const formEvent = { preventDefault: () => {} } as React.FormEvent
-      onSubmit(formEvent)
-    }
-  }
-
-  // Handle key press (Enter to advance)
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && isCurrentFieldValid()) {
-      if (currentField.type !== "textarea") {
-        e.preventDefault()
-        handleNextField()
-      }
+  setUserInfo: (info: UserInfo) => void
+  nextStep: () => void
+  prevStep: () => void
+}> = ({ userInfo, setUserInfo, nextStep, prevStep }) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (userInfo.name && userInfo.role && userInfo.experience) {
+      nextStep()
     }
   }
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
-        Primero, cuéntanos un poco sobre ti y tu proyecto
-      </h2>
+      <h2 className="text-3xl font-bold text-center text-white mb-8">Cuéntanos sobre ti</h2>
 
-      {/* Progress indicator */}
-      <div className="flex justify-center mb-8">
-        <div className="flex space-x-2">
-          {fields.map((field, index) => (
-            <div
-              key={field.name}
-              className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                index === currentFieldIndex ? "bg-blue-500" : index < currentFieldIndex ? "bg-blue-300" : "bg-gray-600"
-              }`}
-            />
-          ))}
+      <form onSubmit={handleSubmit} className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-8 space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-200 mb-2">Nombre completo *</label>
+          <input
+            type="text"
+            value={userInfo.name}
+            onChange={(e) => setUserInfo({ ...userInfo, name: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            placeholder="Tu nombre completo"
+            required
+          />
         </div>
-        <span className="text-xs text-gray-400 ml-3">
-          {currentFieldIndex + 1} de {fields.length}
-        </span>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-200 mb-2">Rol o posición actual *</label>
+          <input
+            type="text"
+            value={userInfo.role}
+            onChange={(e) => setUserInfo({ ...userInfo, role: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            placeholder="Ej: Gerente de Proyecto, Líder de Equipo, etc."
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-200 mb-2">Años de experiencia *</label>
+          <select
+            value={userInfo.experience}
+            onChange={(e) => setUserInfo({ ...userInfo, experience: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            required
+          >
+            <option value="">Selecciona tu experiencia</option>
+            <option value="0-2 años">0-2 años</option>
+            <option value="3-5 años">3-5 años</option>
+            <option value="6-10 años">6-10 años</option>
+            <option value="11-15 años">11-15 años</option>
+            <option value="Más de 15 años">Más de 15 años</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-200 mb-2">
+            Describe tu proyecto o contexto profesional actual
+          </label>
+          <textarea
+            value={userInfo.projectDescription}
+            onChange={(e) => setUserInfo({ ...userInfo, projectDescription: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            placeholder="Ej: Lidero un equipo de 8 personas en el desarrollo de una nueva plataforma digital..."
+            rows={3}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-200 mb-2">
+            ¿Cuáles son tus principales obstáculos o desafíos actuales?
+          </label>
+          <textarea
+            value={userInfo.obstacles}
+            onChange={(e) => setUserInfo({ ...userInfo, obstacles: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            placeholder="Ej: Dificultad para delegar tareas, comunicación con stakeholders, gestión del tiempo..."
+            rows={3}
+          />
+        </div>
+
+        <div className="flex justify-between pt-4">
+          <button
+            type="button"
+            onClick={prevStep}
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors"
+          >
+            Anterior
+          </button>
+          <button
+            type="submit"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+          >
+            Continuar
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+const AssessmentStep: React.FC<{
+  skills: Skill[]
+  selectedSkills: string[]
+  currentSkillIndex: number
+  currentQuestionIndex: number
+  setCurrentQuestionIndex: (index: number) => void
+  answers: Answer[]
+  handleAnswer: (questionId: string, value: string | number) => void
+  submitAssessment: () => void
+  isLoading: boolean
+  error: string | null
+}> = ({
+  skills,
+  selectedSkills,
+  currentSkillIndex,
+  currentQuestionIndex,
+  setCurrentQuestionIndex,
+  answers,
+  handleAnswer,
+  submitAssessment,
+  isLoading,
+  error,
+}) => {
+  const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
+  if (!currentSkill) return <div>Error: Habilidad no encontrada</div>
+
+  const currentQuestion = currentSkill.questions[currentQuestionIndex]
+  if (!currentQuestion) return <div>Error: Pregunta no encontrada</div>
+
+  const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id)
+  const progress = ((currentQuestionIndex + 1) / currentSkill.questions.length) * 100
+
+  const nextQuestion = () => {
+    if (currentQuestionIndex < currentSkill.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1)
+    } else {
+      submitAssessment()
+    }
+  }
+
+  const prevQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1)
+    }
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-center text-white mb-4">Evaluación: {currentSkill.name}</h2>
+        <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+          <div
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        <p className="text-center text-gray-400">
+          Pregunta {currentQuestionIndex + 1} de {currentSkill.questions.length}
+        </p>
       </div>
 
-      <div className="relative overflow-hidden">
-        <div
-          className={`transition-all duration-300 ease-in-out ${
-            isAnimating
-              ? direction === "exiting"
-                ? "opacity-0 transform translate-x-10"
-                : "opacity-0 transform -translate-x-10"
-              : "opacity-100 transform translate-x-0"
-          }`}
-        >
-          <div className="mb-8">
-            <label htmlFor={currentField.name} className="block text-xl text-white mb-4 font-medium">
-              {currentField.label}
-            </label>
+      {error && (
+        <div className="bg-red-600/20 border border-red-600 rounded-lg p-4 mb-6">
+          <p className="text-red-300">{error}</p>
+        </div>
+      )}
 
-            {currentField.type === "textarea" ? (
-              <textarea
-                id={currentField.name}
-                name={currentField.name}
-                value={(userInfo[currentField.name as keyof UserInfo] as string) || ""}
-                onChange={handleChange}
-                onKeyDown={handleKeyPress}
-                placeholder={currentField.placeholder}
-                rows={4}
-                className="w-full px-1 py-2 bg-gray-800 text-white border-0 border-b-2 border-gray-700 focus-visible:outline-none focus-visible:border-blue-500 transition-colors rounded-t-md"
-                autoFocus
-              />
+      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-8">
+        <h3 className="text-xl font-semibold text-white mb-6">{currentQuestion.prompt}</h3>
+
+        {currentQuestion.type === "likert" ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <label key={value} className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name={currentQuestion.id}
+                  value={value}
+                  checked={currentAnswer?.value === value}
+                  onChange={() => handleAnswer(currentQuestion.id, value)}
+                  className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"
+                />
+                <span className="text-gray-200">
+                  {value === 1 && "Nunca o casi nunca"}
+                  {value === 2 && "Raramente"}
+                  {value === 3 && "A veces"}
+                  {value === 4 && "Frecuentemente"}
+                  {value === 5 && "Siempre o casi siempre"}
+                </span>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <textarea
+            value={(currentAnswer?.value as string) || ""}
+            onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            placeholder="Escribe tu respuesta aquí..."
+            rows={6}
+          />
+        )}
+
+        <div className="flex justify-between mt-8">
+          <button
+            onClick={prevQuestion}
+            disabled={currentQuestionIndex === 0}
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-md transition-colors"
+          >
+            Anterior
+          </button>
+          <button
+            onClick={nextQuestion}
+            disabled={!currentAnswer || isLoading}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:text-gray-400 text-white rounded-md transition-colors flex items-center"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Procesando...
+              </>
+            ) : currentQuestionIndex === currentSkill.questions.length - 1 ? (
+              "Finalizar Evaluación"
             ) : (
-              <input
-                type={currentField.type}
-                id={currentField.name}
-                name={currentField.name}
-                value={(userInfo[currentField.name as keyof UserInfo] as string) || ""}
-                onChange={handleChange}
-                onKeyDown={handleKeyPress}
-                placeholder={currentField.placeholder}
-                className="w-full px-1 py-2 bg-gray-800 text-white border-0 border-b-2 border-gray-700 focus-visible:outline-none focus-visible:border-blue-500 transition-colors"
-                autoFocus
-                min={currentField.type === "number" ? 0 : undefined}
-              />
+              "Siguiente"
             )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const SummaryStep: React.FC<{
+  userInfo: UserInfo
+  results: Record<string, SkillResult>
+  conversationHistory: ConversationMessage[]
+  currentUserInput: string
+  setCurrentUserInput: (input: string) => void
+  sendMessage: () => void
+  isLoading: boolean
+  initializeConversation: () => void
+  handleDownloadPDF: () => void
+  restartAssessment: () => void
+}> = ({
+  userInfo,
+  results,
+  conversationHistory,
+  currentUserInput,
+  setCurrentUserInput,
+  sendMessage,
+  isLoading,
+  initializeConversation,
+  handleDownloadPDF,
+  restartAssessment,
+}) => {
+  const conversationEndRef = useRef<HTMLDivElement>(null)
+
+  // Inicializar conversación al montar el componente
+  useEffect(() => {
+    initializeConversation()
+  }, [])
+
+  // Scroll automático al final de la conversación
+  useEffect(() => {
+    conversationEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [conversationHistory])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <h2 className="text-3xl font-bold text-center text-white mb-8">Conversación con tu Partner Digital</h2>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Chat Interface */}
+        <div className="lg:col-span-2">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg overflow-hidden shadow-xl border border-gray-700">
+            {/* Header del Chat */}
+            <div className="bg-gray-700 p-4 border-b border-gray-600">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold">PD</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-300">Partner Digital</h3>
+                  <p className="text-sm text-gray-400">Tu Estratega de Talento y Coach Ejecutivo</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Área de Conversación */}
+            <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-900/30">
+              {conversationHistory.length === 0 && !isLoading && (
+                <div className="text-center text-gray-400 py-8">
+                  <p>Iniciando conversación con tu Partner Digital...</p>
+                </div>
+              )}
+
+              {conversationHistory.map((message, index) => (
+                <div key={index} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[85%] rounded-lg p-3 ${
+                      message.sender === "user"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-700 text-gray-100 border border-gray-600"
+                    }`}
+                  >
+                    {message.sender === "partner" ? (
+                      <ReactMarkdown
+                        className="prose prose-invert prose-sm max-w-none"
+                        components={{
+                          h3: ({ node, ...props }) => (
+                            <h3 className="text-blue-300 font-semibold text-lg mt-2 mb-1" {...props} />
+                          ),
+                          h4: ({ node, ...props }) => (
+                            <h4 className="text-blue-200 font-medium text-base mt-2 mb-1" {...props} />
+                          ),
+                          p: ({ node, ...props }) => <p className="mb-2" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                          li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                          strong: ({ node, ...props }) => <strong className="font-semibold text-blue-200" {...props} />,
+                          em: ({ node, ...props }) => <em className="text-gray-300 italic" {...props} />,
+                        }}
+                      >
+                        {message.text}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{message.text}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-700 text-gray-100 rounded-lg p-3 border border-gray-600">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-150"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-300"></div>
+                      <span className="text-sm text-gray-400">Partner Digital está escribiendo...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={conversationEndRef}></div>
+            </div>
+
+            {/* Área de Input */}
+            <div className="p-4 border-t border-gray-600 bg-gray-800/50">
+              <div className="flex space-x-2">
+                <textarea
+                  value={currentUserInput}
+                  onChange={(e) => setCurrentUserInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Escribe tu mensaje al Partner Digital..."
+                  className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none"
+                  rows={2}
+                  disabled={isLoading}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!currentUserInput.trim() || isLoading}
+                  className={`px-4 py-2 rounded-md transition-colors ${
+                    !currentUserInput.trim() || isLoading
+                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {isLoading ? "..." : "Enviar"}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">Presiona Enter para enviar, Shift+Enter para nueva línea</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel de Resumen */}
+        <div className="space-y-6">
+          <div id="summary-content" className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+            <h3 className="text-xl font-semibold text-blue-300 mb-4">Resumen de Resultados</h3>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-white mb-2">Perfil</h4>
+                <p className="text-sm text-gray-300">{userInfo.name}</p>
+                <p className="text-sm text-gray-400">{userInfo.role}</p>
+                <p className="text-xs text-gray-500">{userInfo.experience}</p>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-white mb-2">Habilidades Evaluadas</h4>
+                <div className="space-y-2">
+                  {Object.values(results).map((result) => (
+                    <div key={result.skillId} className="flex justify-between items-center">
+                      <span className="text-sm text-gray-300 truncate mr-2">{result.skillName}</span>
+                      <span
+                        className={`text-sm font-medium px-2 py-1 rounded ${
+                          result.globalScore >= 70
+                            ? "text-green-300 bg-green-900/30"
+                            : result.globalScore >= 40
+                              ? "text-yellow-300 bg-yellow-900/30"
+                              : "text-red-300 bg-red-900/30"
+                        }`}
+                      >
+                        {result.globalScore}/100
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {Object.values(results).some((r) => r.mentorSessionData) && (
+                <div>
+                  <h4 className="font-medium text-white mb-2">Sesiones de Mentoría</h4>
+                  <div className="space-y-1">
+                    {Object.values(results)
+                      .filter((r) => r.mentorSessionData)
+                      .map((result) => (
+                        <div key={result.skillId} className="text-xs text-blue-300">
+                          ✓ {result.skillName}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex justify-end">
+          {/* Botones de Acción */}
+          <div className="space-y-3">
             <button
-              type="button"
-              onClick={handleNextField}
-              disabled={!isCurrentFieldValid()}
-              className={`px-6 py-2 rounded-full text-white font-medium transition-all flex items-center ${
-                isCurrentFieldValid() ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-700 text-gray-400 cursor-not-allowed"
-              }`}
+              onClick={handleDownloadPDF}
+              className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center shadow-lg"
             >
-              {currentFieldIndex === fields.length - 1 ? (
-                "Continuar al siguiente paso"
-              ) : (
-                <>
-                  Siguiente
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 ml-2"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </>
-              )}
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Descargar Reporte PDF
+            </button>
+
+            <button
+              onClick={restartAssessment}
+              className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors flex items-center justify-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              Reiniciar Evaluación
             </button>
           </div>
         </div>
@@ -821,789 +1099,4 @@ function UserInfoStep({
   )
 }
 
-// Nuevo componente para el objetivo de aprendizaje específico de la habilidad
-function SkillObjectiveStep({
-  skillName,
-  learningObjective,
-  setLearningObjective,
-  onSubmitObjective,
-  indicadoresInfo,
-}: {
-  skillName: string
-  learningObjective: string
-  setLearningObjective: (value: string) => void
-  onSubmitObjective: () => void
-  indicadoresInfo: Array<{ id: string; nombre: string; descripcion_indicador?: string }>
-}) {
-  return (
-    <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center text-white">{skillName}</h2>
-      <p className="text-lg text-gray-300 mb-6 text-center">
-        Antes de evaluar, revisemos el enfoque de esta habilidad y, si lo deseas, define un objetivo personal.
-      </p>
-
-      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-md overflow-hidden mb-8">
-        <div className="p-5 border-b border-gray-700">
-          <h3 className="text-xl font-semibold text-white">Contexto de: {skillName}</h3>
-        </div>
-
-        <div className="p-5">
-          <p className="mb-3 text-gray-300">Esta habilidad te ayuda a mejorar en los siguientes aspectos clave:</p>
-
-          <ul className="space-y-2 mb-6">
-            {indicadoresInfo.map((indicador) => (
-              <li key={indicador.id} className="flex items-start">
-                <div className="flex-shrink-0 h-5 w-5 text-blue-400 mr-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-gray-200">{indicador.nombre}</span>
-                  {indicador.descripcion_indicador && (
-                    <TooltipProvider delayDuration={300}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            aria-label={`Más información sobre ${indicador.nombre}`}
-                            className="ml-1.5 p-0.5 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          >
-                            <Info className="w-3.5 h-3.5 text-gray-400" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-gray-700 text-gray-200 p-3 rounded-md shadow-lg max-w-xs">
-                          <p>{indicador.descripcion_indicador}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <div className="h-px bg-gray-700 my-6"></div>
-
-          <div>
-            <label htmlFor="learningObjective" className="block mb-3 text-sm font-medium text-gray-200">
-              Si tienes un objetivo específico para la habilidad de <strong>{skillName}</strong> o una situación donde
-              te gustaría aplicarla mejor, ¿cuál sería? <span className="text-gray-400">(Opcional)</span>
-            </label>
-            <textarea
-              id="learningObjective"
-              value={learningObjective}
-              onChange={(e) => setLearningObjective(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-              placeholder={`Ej: Aplicar técnicas de ${skillName} en reuniones de equipo para mejorar mi desempeño profesional.`}
-            ></textarea>
-
-            <div className="mt-2 flex items-center text-xs text-gray-400">
-              <Lightbulb className="w-4 h-4 mr-1.5 text-blue-400" />
-              <span>Este objetivo nos ayudará a personalizar tu sesión con el mentor.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          onClick={onSubmitObjective}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full text-lg font-medium transition-colors"
-        >
-          Continuar a la Evaluación
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function AssessmentStep({
-  skill,
-  questionIndex,
-  currentAnswer,
-  setCurrentAnswer,
-  onNext,
-}: {
-  skill: Skill
-  questionIndex: number
-  currentAnswer: string | number
-  setCurrentAnswer: (value: string | number) => void
-  onNext: () => void
-}) {
-  const question = skill.questions[questionIndex]
-  const isLastQuestion = questionIndex === skill.questions.length - 1
-
-  // Definir las etiquetas descriptivas para la escala Likert
-  const likertLabels: Record<number, string> = {
-    1: "Totalmente en desacuerdo",
-    2: "En desacuerdo",
-    3: "Neutral / A veces",
-    4: "De acuerdo",
-    5: "Totalmente de acuerdo",
-  }
-
-  const handleLikertChange = (value: number) => {
-    setCurrentAnswer(value)
-  }
-
-  const handleOpenChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCurrentAnswer(e.target.value)
-  }
-
-  const isNextDisabled =
-    (question.type === "likert" && !currentAnswer) ||
-    (question.type === "open" && (!currentAnswer || (currentAnswer as string).trim() === ""))
-
-  return (
-    <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-2 text-center">{skill.name}</h2>
-
-      <div className="mb-6 flex justify-between items-center">
-        <div className="text-sm text-gray-400">
-          Pregunta {questionIndex + 1} de {skill.questions.length}
-        </div>
-        <div className="w-2/3 bg-gray-700 rounded-full h-2.5">
-          <div
-            className="bg-blue-600 h-2.5 rounded-full"
-            style={{ width: `${((questionIndex + 1) / skill.questions.length) * 100}%` }}
-          ></div>
-        </div>
-      </div>
-
-      <div className="bg-gray-800 rounded-lg p-6 mb-6">
-        {question.type === "likert" ? (
-          <>
-            <p className="text-lg mb-6">{question.prompt}</p>
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm text-gray-400 px-2">
-                <span>Muy en desacuerdo</span>
-                <span>Muy de acuerdo</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <div key={value} className="flex flex-col items-center flex-1">
-                    <button
-                      onClick={() => handleLikertChange(value)}
-                      className={`w-full py-3 rounded-md transition-all mb-1 ${
-                        currentAnswer === value
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-700 hover:bg-gray-600 text-gray-200"
-                      }`}
-                      aria-label={`${likertLabels[value]} (${value})`}
-                    >
-                      {value}
-                    </button>
-                    <span className="text-xs text-gray-400 text-center px-1 h-8">{likertLabels[value]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="bg-gray-700/50 p-5 rounded-lg border border-blue-600/30 shadow-lg">
-            <div className="flex items-center text-blue-400 mb-3">
-              <Lightbulb className="w-5 h-5 mr-2" />
-              <h4 className="text-lg font-semibold">Pregunta de Aplicación Práctica</h4>
-            </div>
-
-            <p className="text-sm text-gray-300 mb-4 italic">
-              Esta pregunta nos ayuda a entender cómo aplicarías esta habilidad en situaciones reales. Tu respuesta
-              detallada permitirá una evaluación más precisa y una sesión de mentoría personalizada.
-            </p>
-
-            <div className="bg-gray-800/70 p-4 rounded-md mb-4 border-l-4 border-blue-500">
-              <p className="text-base text-gray-100">{question.prompt}</p>
-            </div>
-
-            <textarea
-              value={currentAnswer as string}
-              onChange={handleOpenChange}
-              rows={7}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-              placeholder="Describe tu enfoque aquí de manera detallada. Cuanto más específico seas, mejor podremos personalizar tu experiencia de aprendizaje..."
-            ></textarea>
-
-            <div className="flex items-center mt-3 text-xs text-gray-400">
-              <MessageSquare className="w-4 h-4 mr-1 text-gray-500" />
-              <span>Tu respuesta será analizada para personalizar tu sesión con el mentor.</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          onClick={onNext}
-          disabled={isNextDisabled}
-          className={`px-8 py-3 rounded-full text-lg font-medium transition-all ${
-            !isNextDisabled
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
-              : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {isLastQuestion ? "Enviar Respuestas" : "Siguiente Pregunta"}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function ResultsStep({
-  result,
-  hasMoreSkills,
-  onNextSkill,
-  onStartMentorSession,
-  allSkills,
-  onSelectSkill,
-}: {
-  result: SkillResult
-  hasMoreSkills: boolean
-  onNextSkill: () => void
-  onStartMentorSession: () => void
-  allSkills?: { id: string; name: string; globalScore: number; status: string }[]
-  onSelectSkill?: (skillId: string) => void
-}) {
-  return (
-    <div className="max-w-3xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">Resultados para: {result.skillName}</h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <div className="bg-gray-800 rounded-lg p-6 flex flex-col items-center">
-          <h3 className="text-xl font-semibold mb-4">Puntaje Global</h3>
-          <div className="relative w-48 h-48 flex items-center justify-center">
-            <svg className="w-full h-full" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#374151" strokeWidth="10" />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="#2563EB"
-                strokeWidth="10"
-                strokeDasharray={`${(result.globalScore / 100) * 283} 283`}
-                strokeDashoffset="0"
-                transform="rotate(-90 50 50)"
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center">
-              <span className="text-5xl font-bold">{result.globalScore}</span>
-              <span className="text-sm text-gray-400">de 100</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">Indicadores</h3>
-          <TooltipProvider delayDuration={200}>
-            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2">
-              {result.indicatorScores.map((indicator, index) => (
-                <div key={index} className="py-2.5 border-b border-gray-700/50 last:border-b-0">
-                  <div className="flex justify-between text-sm mb-1 items-center">
-                    <div className="flex items-center">
-                      <span className="font-medium text-gray-100">{indicator.name}</span>
-                      {indicator.descripcion_indicador && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              aria-label={`Más información sobre ${indicator.name}`}
-                              className="ml-1.5 p-0.5 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            >
-                              <Info className="w-3.5 h-3.5 text-gray-400" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs z-50">
-                            <p className="font-semibold mb-1">{indicator.name}</p>
-                            <p>{indicator.descripcion_indicador}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded-md ${
-                        indicator.score >= 70
-                          ? "bg-green-900/40 text-green-300"
-                          : indicator.score >= 40
-                            ? "bg-yellow-900/40 text-yellow-300"
-                            : "bg-red-900/40 text-red-300"
-                      }`}
-                    >
-                      {indicator.score}/100
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5 mb-1.5">
-                    <div
-                      className={`h-2.5 rounded-full ${
-                        indicator.score >= 70 ? "bg-green-500" : indicator.score >= 40 ? "bg-yellow-500" : "bg-red-500"
-                      }`}
-                      style={{ width: `${indicator.score}%` }}
-                    ></div>
-                  </div>
-                  {indicator.feedback_especifico && (
-                    <p className="text-xs text-blue-300/90 italic bg-gray-800/70 p-2 rounded-md mt-1 border-l-2 border-blue-500/50">
-                      {indicator.feedback_especifico}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </TooltipProvider>
-        </div>
-      </div>
-
-      {allSkills && (
-        <div className="mb-6">
-          <h4 className="text-xl font-semibold mb-3">Navega entre tus Habilidades Evaluadas</h4>
-          <div className="flex space-x-3 overflow-x-auto py-2">
-            {allSkills.map((skill) => (
-              <button
-                key={skill.id}
-                onClick={() => onSelectSkill?.(skill.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  skill.id === result.skillId
-                    ? "bg-blue-600 text-white"
-                    : skill.status === "evaluado"
-                      ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                      : "bg-gray-800 text-gray-500 cursor-not-allowed"
-                }`}
-                disabled={skill.status !== "evaluado"}
-              >
-                {skill.name} ({skill.globalScore || "Pendiente"})
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-center mb-10">
-        <button
-          onClick={onStartMentorSession}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-medium transition-all flex items-center justify-center"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-            />
-          </svg>
-          Iniciar Sesión con Mentor Práctico
-        </button>
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          onClick={onNextSkill}
-          className="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-full text-white font-medium transition-all"
-        >
-          {hasMoreSkills ? "Evaluar Siguiente Habilidad" : "Ver Resumen Final"}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function SummaryStep({
-  results,
-  onRestart,
-  onDownloadPDF,
-  pdfGenerating,
-  setCurrentStep,
-}: {
-  results: Record<string, SkillResult>
-  onRestart: () => void
-  onDownloadPDF: () => void
-  pdfGenerating: boolean
-  setCurrentStep: (step: number) => void
-}) {
-  const resultsArray = Object.values(results)
-
-  return (
-    <div className="max-w-3xl mx-auto">
-      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">Resumen de tu Evaluación</h2>
-
-      {/* Texto de cierre explícito */}
-      <div className="bg-blue-900/30 rounded-lg p-4 mb-6 text-center">
-        <p className="text-gray-200">
-          Has completado tu ciclo de evaluación y mentoría para las habilidades seleccionadas. A continuación, puedes
-          ver un resumen, descargar tu reporte completo o iniciar una nueva evaluación.
-        </p>
-      </div>
-
-      <div id="summary-content-to-pdf" className="bg-gray-800 rounded-lg p-6 mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Puntajes Globales</h3>
-            <div className="space-y-4">
-              {resultsArray.map((result, index) => (
-                <div key={index}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>{result.skillName}</span>
-                    <span>{result.globalScore}/100</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${result.globalScore}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Fortalezas y Oportunidades</h3>
-            <TooltipProvider delayDuration={200}>
-              <div className="space-y-4">
-                {resultsArray.map((result) => {
-                  // Encontrar el indicador con mayor puntuación (fortaleza)
-                  const highestScore = [...result.indicatorScores].sort((a, b) => b.score - a.score)[0]
-                  // Encontrar el indicador con menor puntuación (oportunidad)
-                  const lowestScore = [...result.indicatorScores].sort((a, b) => a.score - b.score)[0]
-
-                  return (
-                    <div key={result.skillId} className="mb-4">
-                      <h4 className="font-medium text-blue-400 mb-1">{result.skillName}</h4>
-                      <div className="pl-2 text-sm">
-                        <p className="mb-2 flex items-center">
-                          <span className="font-medium text-green-400 mr-1">💪 Fortaleza: </span>
-                          <span className="mr-1">{highestScore.name}</span>
-                          {highestScore.descripcion_indicador && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  aria-label={`Más información sobre ${highestScore.name}`}
-                                  className="ml-1.5 p-0.5 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                >
-                                  <Info className="w-3.5 h-3.5 text-gray-400" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs">
-                                <p className="font-semibold mb-1">{highestScore.name}</p>
-                                <p>{highestScore.descripcion_indicador}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </p>
-                        <p className="flex items-center">
-                          <span className="font-medium text-yellow-400 mr-1">🔍 Oportunidad: </span>
-                          <span className="mr-1">{lowestScore.name}</span>
-                          {lowestScore.descripcion_indicador && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  aria-label={`Más información sobre ${lowestScore.name}`}
-                                  className="ml-1.5 p-0.5 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                >
-                                  <Info className="w-3.5 h-3.5 text-gray-400" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent className="bg-gray-900 border-gray-700 text-white p-3 rounded-md shadow-lg max-w-xs text-xs">
-                                <p className="font-semibold mb-1">{lowestScore.name}</p>
-                                <p>{lowestScore.descripcion_indicador}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </TooltipProvider>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Recomendaciones Clave</h3>
-          <div className="space-y-4">
-            {resultsArray.map((result) => (
-              <div key={result.skillId} className="mb-4">
-                <h4 className="font-medium text-blue-400 mb-1">{result.skillName}:</h4>
-                <ul className="list-disc list-inside space-y-1 pl-4 text-sm">
-                  {result.tips.map((tip, tipIndex) => (
-                    <li key={tipIndex} className="text-gray-300">
-                      <span
-                        className={`font-medium ${tipIndex === 0 ? "text-green-400" : tipIndex === 1 ? "text-yellow-400" : "text-blue-400"}`}
-                      >
-                        {tipIndex === 0 ? "💪 Fortaleza: " : tipIndex === 1 ? "🔍 Oportunidad: " : "💡 Consejo: "}
-                      </span>
-                      {tip.replace(/^(Fortaleza|Oportunidad|Consejo):\s*/i, "")}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Rest of the component remains unchanged */}
-        {/* Dashboard del Ejercicio Práctico */}
-        {resultsArray.some((result) => result.mentorSessionData?.exerciseScore !== undefined) && (
-          <div className="mt-8 border-t border-gray-700 pt-6">
-            <h3 className="text-xl font-semibold mb-4">Análisis de tu Práctica con el Mentor</h3>
-            <div className="space-y-6">
-              {resultsArray
-                .filter((result) => result.mentorSessionData?.exerciseScore !== undefined)
-                .map((result) => (
-                  <div key={`exercise-${result.skillId}`} className="bg-gray-700 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-400 mb-3">{result.skillName}</h4>
-
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-medium text-white">Tu Desempeño en el Ejercicio:</h5>
-                        <span className="text-xl font-bold">{result.mentorSessionData?.exerciseScore}/100</span>
-                      </div>
-                      <div className="w-full bg-gray-800 rounded-full h-3">
-                        <div
-                          className="bg-blue-600 h-3 rounded-full"
-                          style={{ width: `${result.mentorSessionData?.exerciseScore}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {result.mentorSessionData?.exerciseScoreJustification && (
-                      <div>
-                        <h5 className="font-medium text-white mb-2">Justificación del Mentor:</h5>
-                        <p className="text-sm text-gray-300 pl-2">
-                          {result.mentorSessionData.exerciseScoreJustification}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sección de Sesión con Mentor */}
-        {resultsArray.some((result) => result.mentorSessionData) && (
-          <div className="mt-8 border-t border-gray-700 pt-6">
-            <h3 className="text-xl font-semibold mb-4">Resultados de Sesión con Mentor</h3>
-            <div className="space-y-6">
-              {resultsArray
-                .filter((result) => result.mentorSessionData)
-                .map((result) => (
-                  <div key={`mentor-${result.skillId}`} className="bg-gray-700 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-400 mb-3">{result.skillName}</h4>
-
-                    <Accordion type="single" collapsible className="w-full">
-                      {/* Item 1: Micro-Lección Personalizada */}
-                      {result.mentorSessionData?.microLesson && (
-                        <AccordionItem value="micro-lesson" className="border-b border-gray-600">
-                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
-                            <div className="flex items-center">
-                              <Lightbulb className="w-5 h-5 mr-2 text-blue-400" />
-                              <span>Paso 1: Tu Micro-Lección Personalizada</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
-                            <ReactMarkdown className="text-sm text-gray-300 prose prose-invert prose-sm max-w-none">
-                              {result.mentorSessionData.microLesson}
-                            </ReactMarkdown>
-                          </AccordionContent>
-                        </AccordionItem>
-                      )}
-
-                      {/* Item 2: Análisis de Tu Práctica con el Mentor */}
-                      {result.mentorSessionData?.exerciseScore !== undefined && (
-                        <AccordionItem value="exercise-analysis" className="border-b border-gray-600">
-                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
-                            <div className="flex items-center">
-                              <Target className="w-5 h-5 mr-2 text-green-400" />
-                              <span>Paso 2: Tu Desempeño en el Ejercicio Práctico</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
-                            <div className="mb-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-gray-300">Puntuación:</span>
-                                <span className="text-lg font-semibold text-green-400">
-                                  {result.mentorSessionData.exerciseScore}/100
-                                </span>
-                              </div>
-                              <Progress value={result.mentorSessionData.exerciseScore} className="h-2 bg-gray-700" />
-                            </div>
-
-                            {result.mentorSessionData.exerciseScoreJustification && (
-                              <div className="mt-3">
-                                <h6 className="text-sm font-medium text-gray-200 mb-1">Justificación del Mentor:</h6>
-                                <p className="text-sm text-gray-300 italic border-l-2 border-green-500/40 pl-3">
-                                  {result.mentorSessionData.exerciseScoreJustification}
-                                </p>
-                              </div>
-                            )}
-                          </AccordionContent>
-                        </AccordionItem>
-                      )}
-
-                      {/* Item 3: Plan de Acción SMART */}
-                      {result.mentorSessionData?.actionPlan && (
-                        <AccordionItem value="action-plan" className="border-b border-gray-600">
-                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
-                            <div className="flex items-center">
-                              <ClipboardList className="w-5 h-5 mr-2 text-yellow-400" />
-                              <span>Paso 3: Tu Plan de Acción Personalizado</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
-                            <ReactMarkdown className="text-sm text-gray-300 prose prose-invert prose-sm max-w-none">
-                              {result.mentorSessionData.actionPlan}
-                            </ReactMarkdown>
-                          </AccordionContent>
-                        </AccordionItem>
-                      )}
-
-                      {/* Item 4: Síntesis y Proyección de Crecimiento */}
-                      {(result.mentorSessionData?.userInsight ||
-                        result.mentorSessionData?.userCommitment ||
-                        result.mentorSessionData?.mentorProjection) && (
-                        <AccordionItem value="synthesis" className="border-b border-gray-600">
-                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
-                            <div className="flex items-center">
-                              <TrendingUp className="w-5 h-5 mr-2 text-blue-400" />
-                              <span>Paso 4: Tu Síntesis y Proyección de Crecimiento</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
-                            <div className="space-y-4">
-                              {result.mentorSessionData?.userInsight && (
-                                <div>
-                                  <h6 className="text-sm font-medium text-green-400 mb-1">
-                                    Mi Principal "Aha!" Moment:
-                                  </h6>
-                                  <p className="text-sm text-gray-300 bg-gray-800/70 p-2 rounded-md">
-                                    {result.mentorSessionData.userInsight}
-                                  </p>
-                                </div>
-                              )}
-
-                              {result.mentorSessionData?.userCommitment && (
-                                <div>
-                                  <h6 className="text-sm font-medium text-yellow-400 mb-1">Mi Compromiso de Acción:</h6>
-                                  <p className="text-sm text-gray-300 bg-gray-800/70 p-2 rounded-md">
-                                    {result.mentorSessionData.userCommitment}
-                                  </p>
-                                </div>
-                              )}
-
-                              {result.mentorSessionData?.mentorProjection && (
-                                <div>
-                                  <h6 className="text-sm font-medium text-blue-400 mb-1">
-                                    Proyección de Crecimiento del Mentor:
-                                  </h6>
-                                  <ReactMarkdown className="text-sm text-gray-300 bg-gray-800/70 p-2 rounded-md prose prose-invert prose-sm max-w-none">
-                                    {result.mentorSessionData.mentorProjection}
-                                  </ReactMarkdown>
-                                </div>
-                              )}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      )}
-
-                      {/* Item 5: Feedback de la Sesión (Opcional) */}
-                      {result.mentorSessionData?.sessionFeedback && (
-                        <AccordionItem value="feedback" className="border-b-0">
-                          <AccordionTrigger className="py-3 hover:text-blue-300 transition-colors">
-                            <div className="flex items-center">
-                              <Star className="w-5 h-5 mr-2 text-yellow-400" />
-                              <span>Tu Feedback sobre la Sesión</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pt-2 pb-4 px-3 bg-gray-800/50 rounded-md">
-                            <div className="flex items-center mb-2">
-                              <p className="text-sm text-gray-300 mr-2">Calificación:</p>
-                              <div className="flex">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <span
-                                    key={star}
-                                    className={
-                                      star <= result.mentorSessionData!.sessionFeedback!.rating
-                                        ? "text-yellow-400"
-                                        : "text-gray-500"
-                                    }
-                                  >
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-
-                            {result.mentorSessionData.sessionFeedback.comment && (
-                              <div className="mt-2">
-                                <h6 className="text-sm font-medium text-gray-200 mb-1">Tu comentario:</h6>
-                                <p className="text-sm text-gray-300 italic bg-gray-800/70 p-2 rounded-md">
-                                  "{result.mentorSessionData.sessionFeedback.comment}"
-                                </p>
-                              </div>
-                            )}
-                          </AccordionContent>
-                        </AccordionItem>
-                      )}
-                    </Accordion>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-center gap-4 mb-6">
-        <button
-          onClick={onDownloadPDF}
-          disabled={pdfGenerating}
-          className={`px-8 py-3 rounded-full text-white font-medium transition-all flex items-center justify-center ${
-            pdfGenerating ? "bg-gray-600 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {pdfGenerating ? (
-            <>
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Generando PDF...
-            </>
-          ) : (
-            "Descargar Reporte PDF"
-          )}
-        </button>
-        <button
-          onClick={() => setCurrentStep(2)}
-          className="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-full text-white font-medium transition-all"
-        >
-          Evaluar Otras Habilidades
-        </button>
-        <button
-          onClick={onRestart}
-          className="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-full text-white font-medium transition-all"
-        >
-          Iniciar Nueva Evaluación
-        </button>
-      </div>
-
-      <div className="text-center text-gray-400 text-sm">
-        <p>Gracias por utilizar SkillBoosterX. ¡Esperamos que esta evaluación te ayude en tu desarrollo profesional!</p>
-      </div>
-    </div>
-  )
-}
+export default SkillBoosterMVP
