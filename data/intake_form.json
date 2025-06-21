@@ -46,7 +46,7 @@
     "axis": "Liderazgo de Equipos",
     "type": "open",
     "indicator": "LE7_open",
-    "prompt": "Imagina que un miembro talentoso de tu equipo muestra signos de desmotivación y su rendimiento ha disminuido. Describe, paso a paso, cómo abordarías esta situación, desde la preparación de la conversación hasta las acciones de seguimiento que implementarías."
+    "prompt": "Considerando tu rol como ${userInfo.role}, imagina que un miembro talentoso de tu equipo muestra signos de desmotivación. Describe, paso a paso, cómo abordarías esta situación, desde la preparación de la conversación hasta el seguimiento, aplicando los principios de Liderazgo de Equipos."
   },
   {
     "id": "CE1",
@@ -95,7 +95,7 @@
     "axis": "Comunicación Estratégica",
     "type": "open",
     "indicator": "CE7_open",
-    "prompt": "Imagina que debes presentar una propuesta de proyecto innovador a un directivo que tiene poco tiempo y es escéptico sobre nuevas ideas. Describe brevemente cómo estructurarías los primeros 2 minutos de tu comunicación para captar su interés y transmitir el valor principal de tu propuesta. Menciona qué dirías y cómo lo dirías."
+    "prompt": "Imagina que debes presentar tu proyecto, '${userInfo.projectDescription}', a un directivo escéptico y con poco tiempo. Describe cómo estructurarías los primeros 2 minutos de tu comunicación para captar su interés y transmitir el valor principal, usando técnicas de Comunicación Estratégica."
   },
   {
     "id": "FC1",
@@ -340,7 +340,7 @@
     "axis": "Fundamentos de IA para Negocios",
     "type": "open",
     "indicator": "IA7_open",
-    "prompt": "En tu departamento, el equipo dedica muchas horas a la semana a leer cientos de comentarios de clientes (de encuestas, redes sociales, etc.) para luego resumirlos en un informe semanal. Describe cómo plantearías el uso de Inteligencia Artificial para optimizar este proceso. ¿Qué tipo de herramientas de IA investigarías y cómo le 'venderías' la idea a tu gerente, enfocándote en los beneficios y los posibles riesgos?"
+    "prompt": "Basado en tu proyecto, '${userInfo.projectDescription}', identifica un proceso clave que actualmente consume muchas horas. Describe cómo plantearías el uso de Inteligencia Artificial para optimizarlo y cómo le venderías la idea a un stakeholder importante en tu organización."
   },
   {
     "id": "OP1",
@@ -487,6 +487,6 @@
     "axis": "Pensamiento Analítico y Crítico",
     "type": "open",
     "indicator": "AC7_open",
-    "prompt": "Un colega te presenta una propuesta entusiasta para comprar un nuevo software que, según él, 'revolucionará la productividad del equipo'. Te muestra un gráfico de la página del proveedor que indica un 'aumento de productividad del 150%'. Describe, paso a paso, el proceso de pensamiento crítico y analítico que seguirías antes de apoyar o rechazar esta propuesta."
+    "prompt": "Un colega te presenta una propuesta entusiasta para una nueva herramienta relacionada con tu proyecto, '${userInfo.projectDescription}', mostrando datos muy optimistas del proveedor. Describe tu proceso de pensamiento crítico y analítico para evaluar la propuesta antes de dar tu apoyo."
   }
 ]
