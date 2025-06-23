@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import OpenAI from "openai"
 import fs from "fs"
 import path from "path"
+import { PromptOptimizer } from "@/lib/prompt-optimizer"
 
 // --- Tipos ---
 interface UserInfo {
@@ -96,53 +97,51 @@ export async function POST(request: Request) {
     const { name: skillName, definition: promptDef } = promptData
     console.log(`[API /api/lesson] Iniciando generación de tips para ${skillName}`)
 
-    // Construcción del Prompt
-    const systemPrompt = `Eres un ${promptDef.role}. Tu especialidad es ${promptDef.expertise}. Tu tono es ${promptDef.tone}. Te enfocas en: ${promptDef.focus_areas.join(", ")}. Tu enfoque de enseñanza es: ${promptDef.teaching_approach}. Debes generar una respuesta JSON que contenga un array de 3 strings en la clave "tips".`
-
-    const highestScoreIndicator = [...indicatorScores].sort((a, b) => b.score - a.score)[0]
-    const lowestScoreIndicator = [...indicatorScores].sort((a, b) => a.score - b.score)[0]
-
-    let guidelines = promptDef.content_guidelines.join(" ")
-    guidelines = replacePlaceholders(
-      guidelines,
-      skillName,
-      userInfo,
-      highestScoreIndicator.name,
-      lowestScoreIndicator.name,
-    )
-
-    const userPrompt = `Basado en el siguiente contexto de un usuario y usando las directrices proporcionadas, genera 3 tips personalizados.
-    Contexto del Usuario:
-    - Nombre: ${userInfo.name}
-    - Rol: ${userInfo.role}
-    - Puntuación Global en ${skillName}: ${globalScore}/100
-    - Puntuaciones por Indicador: ${indicatorScores.map((i) => `${i.name}: ${i.score}/100`).join(", ")}
-    - Obstáculos Mencionados: ${userInfo.obstacles}
-    ${openEndedAnswer ? `- Respuesta a pregunta abierta: "${openEndedAnswer}"` : ""}
-
-    Directrices para generar los tips: "${guidelines}"
-    
-    Genera únicamente un objeto JSON con la clave "tips", que contenga un array de 3 strings. No incluyas texto adicional fuera del JSON.`
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.4,
-    })
-
-    const content = response.choices[0].message.content
-    const parsedContent = JSON.parse(content || "{}")
-
-    if (!parsedContent.tips || !Array.isArray(parsedContent.tips) || parsedContent.tips.length !== 3) {
-      throw new Error("La respuesta de la IA no contiene los 3 tips esperados.")
+    // Extract user context for optimization
+    const userContext = {
+      role: userInfo.role,
+      experience: userInfo.experience,
+      obstacles: userInfo.obstacles?.split(",") || [],
+      projectDescription: userInfo.projectDescription,
     }
 
-    console.log(`[API /api/lesson] Tips generados exitosamente para ${skillName}.`)
-    return NextResponse.json({ tips: parsedContent.tips })
+    const assessmentResult = {
+      score: globalScore,
+      strength: indicatorScores.reduce((max, curr) => (curr.score > max.score ? curr : max)).name,
+      weakness: indicatorScores.reduce((min, curr) => (curr.score < min.score ? curr : min)).name,
+      reasoning: `Assessment completed for ${skillId}`,
+    }
+
+    try {
+      const optimizedPrompt = PromptOptimizer.createTipsPrompt(skillId, assessmentResult, userContext)
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: optimizedPrompt.prompt,
+          },
+        ],
+        max_tokens: 200,
+        temperature: 0.4,
+        response_format: { type: "json_object" },
+      })
+
+      const tips = PromptOptimizer.parseTipsResponse(response.choices[0].message.content || "{}")
+
+      console.log(`[API /api/lesson] Optimized tips generated for ${skillName}`)
+      return NextResponse.json({ tips })
+    } catch (error) {
+      console.error("[API /api/lesson] Error with optimized tips generation:", error)
+      // Fallback to original tips if optimization fails
+      const fallbackTips = [
+        "Fortaleza: Demuestras un sólido entendimiento en tus áreas más fuertes. ¡Sigue así!",
+        "Oportunidad: Identificar áreas de mejora es el primer paso para el crecimiento. Enfócate en la práctica deliberada.",
+        "Consejo: La consistencia es clave. Dedica tiempo cada semana para aplicar lo aprendido en tu trabajo diario.",
+      ]
+      return NextResponse.json({ tips: fallbackTips })
+    }
   } catch (error) {
     console.error("[API /api/lesson] Error generando tips:", error)
     // Fallback en caso de error de la IA

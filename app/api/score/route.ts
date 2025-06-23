@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
 import OpenAI from "openai"
+import { PromptOptimizer } from "@/lib/prompt-optimizer"
 
 // --- Tipos ---
 interface IndicadorInfo {
@@ -93,47 +94,41 @@ async function getOpenQuestionScoreFromAI(rubric: string, answer: string): Promi
     return 60 // Un score neutral de fallback
   }
 
-  try {
-    const systemPrompt =
-      "Eres un evaluador experto y objetivo. Tu única función es analizar una respuesta de un usuario basándote estrictamente en una rúbrica y devolver una puntuación numérica en formato JSON. No debes añadir explicaciones ni texto adicional, solo el objeto JSON."
+  // Extract user context for optimization
+  const userContext = {
+    role: "Professional", // This would come from request context
+    experience: "1-3 años",
+    obstacles: ["development"],
+    projectDescription: "current role",
+  }
 
-    const userPrompt = `Por favor, evalúa la siguiente respuesta de un usuario basándote en la rúbrica proporcionada.
-    
-    RÚBRICA DE EVALUACIÓN:
-    ---
-    ${rubric}
-    ---
-    
-    RESPUESTA DEL USUARIO:
-    ---
-    ${answer}
-    ---
-    
-    Basándote únicamente en la rúbrica, devuelve un objeto JSON con una única clave "score", que contenga un número entero entre 0 y 100. Ejemplo: {"score": 85}`
+  try {
+    const optimizedPrompt = PromptOptimizer.createScoringPrompt(
+      "general_assessment", // This would be the actual skillId
+      answer,
+      userContext,
+    )
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        {
+          role: "user",
+          content: optimizedPrompt.prompt,
+        },
       ],
+      max_tokens: 100,
+      temperature: 0.3,
       response_format: { type: "json_object" },
-      temperature: 0.1, // Baja temperatura para una evaluación más consistente.
     })
 
-    const content = response.choices[0].message.content
-    if (content) {
-      const parsed = JSON.parse(content)
-      if (typeof parsed.score === "number" && parsed.score >= 0 && parsed.score <= 100) {
-        console.log(`[IA Score] Puntuación de la IA para pregunta abierta: ${parsed.score}`)
-        return parsed.score
-      }
-    }
-    // Si el formato es incorrecto, devolver una puntuación de fallback.
-    return 65
+    const assessmentResult = PromptOptimizer.parseAssessmentResponse(response.choices[0].message.content || "{}")
+
+    return assessmentResult.score
   } catch (error) {
-    console.error("Error en la llamada a OpenAI para calificar pregunta abierta:", error)
-    return 60 // Fallback en caso de error de la API.
+    console.error("Error in optimized scoring:", error)
+    // Fallback to original logic if optimization fails
+    return 60
   }
 }
 
