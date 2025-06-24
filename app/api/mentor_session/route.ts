@@ -345,70 +345,50 @@ ${fullContext}
     * **Si es 'aplicar' y la fase actual es 'phase5_synthesis':** Felicítalo y haz una síntesis final de la sesión, proyectando el impacto de la mejora.
 `
 
-      // Lógica de transición de fase SÓLO si la intención es 'aplicar'
+      // Lógica de transición de fase
       const phaseTransitions: Record<string, string> = {
         phase2_scenario: "phase3_feedback",
         phase3_feedback: "phase4_action_plan",
         phase4_action_plan: "phase5_synthesis",
         phase5_synthesis: "session_completed",
       }
-      // Asumimos que la IA determinará la intención. Si avanza, actualizamos la fase.
-      // Una IA más avanzada podría devolver la intención explícitamente.
-      // Por ahora, si la respuesta no parece una simple clarificación, avanzamos.
-      // El prompt le indica que no avance, así que confiamos en que su respuesta no introducirá la siguiente fase.
-      // Por lo tanto, el `nextPhase` calculado es una presunción optimista que funciona para el "happy path".
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPromptForAI },
-        ],
-        temperature: 0.5,
-      })
-
-      let mentorMessage =
-        response.choices[0]?.message?.content ||
-        "Lo siento, no pude procesar tu respuesta. ¿Podrías intentarlo de nuevo?"
-      let exerciseScore: number | undefined
-      let exerciseScoreJustification: string | undefined
-
-      // Lógica para extraer el score si estamos en la fase de feedback
-      if (currentMentorPhase === "phase3_feedback") {
-        // Implementación simple para buscar un JSON en la respuesta.
-        try {
-          const jsonMatch = mentorMessage.match(/\{[\s\S]*\}/)
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0])
-            if (parsed.exerciseScore !== undefined) {
-              exerciseScore = Number(parsed.exerciseScore)
-              exerciseScoreJustification = parsed.exerciseScoreJustification
-              // Limpiar el mensaje para no mostrar el JSON al usuario
-              mentorMessage = mentorMessage.replace(jsonMatch[0], "").trim()
-            }
-          }
-        } catch (e) {
-          console.error("No se pudo parsear el JSON de la puntuación del ejercicio.", e)
-        }
-      }
-
-      // Si después del análisis, la IA decide NO avanzar, debemos sobreescribir nextPhase.
-      // Esta es una simplificación. Una implementación avanzada haría que la IA devuelva un objeto
-      // con `intention: 'clarify'` y basaríamos la lógica en eso.
-      // Por ahora, si la IA explica algo y repite una pregunta, no debería avanzar.
-      // El prompt le indica que no avance, así que confiamos en que su respuesta no introducirá la siguiente fase.
-      // Por lo tanto, el `nextPhase` calculado es una presunción optimista que funciona para el "happy path".
-
-      return NextResponse.json(
-        {
-          mentorMessage,
-          nextMentorPhase: nextPhase, // La IA es instruida para no avanzar si clarifica.
-          exerciseScore,
-          exerciseScoreJustification,
-        },
-        { status: 200 },
-      )
+      nextPhase = phaseTransitions[currentMentorPhase] || currentMentorPhase
     }
+
+    // Llamada a OpenAI para TODAS las fases
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPromptForAI },
+      ],
+      temperature: 0.5,
+    })
+
+    let mentorMessage =
+      response.choices[0]?.message?.content || "Lo siento, no pude procesar tu respuesta. ¿Podrías intentarlo de nuevo?"
+    let exerciseScore: number | undefined
+    let exerciseScoreJustification: string | undefined
+
+    // Lógica para extraer el score si estamos en la fase de feedback
+    if (currentMentorPhase === "phase3_feedback") {
+      const jsonExtraction = extractJsonFromText(mentorMessage)
+      if (jsonExtraction) {
+        exerciseScore = jsonExtraction.json.exerciseScore
+        exerciseScoreJustification = jsonExtraction.json.exerciseScoreJustification
+        mentorMessage = jsonExtraction.cleanText
+      }
+    }
+
+    return NextResponse.json(
+      {
+        mentorMessage,
+        nextMentorPhase: nextPhase,
+        exerciseScore,
+        exerciseScoreJustification,
+      },
+      { status: 200 },
+    )
   } catch (error) {
     console.error("[API /api/mentor_session] Error en el handler:", error)
     const errorMessage = error instanceof Error ? error.message : "Error desconocido"
