@@ -23,22 +23,66 @@ export default function SkillSelectionStep({ setSelectedSkills, onContinue }: Sk
   const [packages, setPackages] = useState<SkillPackage[]>([])
   // Estado para rastrear los IDs de los PAQUETES seleccionados por el usuario
   const [selectedPackages, setSelectedPackages] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // **CAMBIO CLAVE 1: Cargar los paquetes en lugar de las habilidades individuales**
+  // **CAMBIO CLAVE 1: Cargar los paquetes con manejo de errores mejorado**
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        // Asumimos que existirá un endpoint para los paquetes, similar al de las habilidades.
-        // Por ahora, cargamos directamente el archivo JSON.
-        // En producción, esto sería una llamada a fetch('/api/skill_packages').
-        const response = await fetch("/data/skill_packages.json")
+        setIsLoading(true)
+        setError(null)
+
+        // CORRECCIÓN: Usar la ruta correcta del archivo JSON
+        const response = await fetch("/public/data/skill_packages.json")
+
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`)
+        }
+
         const data: Record<string, SkillPackage> = await response.json()
         setPackages(Object.values(data))
+        console.log("Paquetes cargados exitosamente:", Object.values(data))
       } catch (error) {
         console.error("Error al cargar los paquetes de habilidades:", error)
-        // Aquí se podría manejar el error, mostrando un mensaje al usuario.
+        setError("Error al cargar los paquetes. Por favor, recarga la página.")
+
+        // Fallback: usar paquetes predefinidos
+        const fallbackPackages: SkillPackage[] = [
+          {
+            id: "lider_equipo_emergente",
+            name: "Paquete: Líder de Equipo Emergente",
+            description:
+              "Desarrolla las competencias fundamentales para liderar, motivar y guiar equipos hacia el éxito.",
+            targetAudience:
+              "Nuevos gerentes, líderes de equipo, supervisores y profesionales que aspiran a su primer rol de liderazgo.",
+            skills: ["liderazgo_equipos", "comunicacion_estrategica", "feedback_coaching"],
+          },
+          {
+            id: "gestor_proyectos_exitosos",
+            name: "Paquete: Gestor de Proyectos Exitosos",
+            description:
+              "Adquiere las habilidades clave para planificar, ejecutar y entregar proyectos a tiempo y dentro del presupuesto.",
+            targetAudience:
+              "Gerentes de Proyecto, coordinadores, líderes de producto y miembros de equipos de proyecto.",
+            skills: ["gestion_proyectos", "negociacion_conflictos", "pensamiento_sistemico"],
+          },
+          {
+            id: "ia_productividad",
+            name: "Paquete: Inteligencia Artificial para la Productividad",
+            description:
+              "Aprende a integrar herramientas de IA y automatización para optimizar procesos y mejorar la toma de decisiones.",
+            targetAudience:
+              "Gerentes, analistas, profesionales de operaciones y cualquier rol que busque una ventaja competitiva.",
+            skills: ["ia_negocios", "optimizacion_procesos", "interpretacion_datos"],
+          },
+        ]
+        setPackages(fallbackPackages)
+      } finally {
+        setIsLoading(false)
       }
     }
+
     fetchPackages()
   }, [])
 
@@ -66,6 +110,32 @@ export default function SkillSelectionStep({ setSelectedSkills, onContinue }: Sk
 
     // 5. Proceder al siguiente paso
     onContinue()
+  }
+
+  // Mostrar loading
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto text-center">
+        <h2 className="text-3xl font-bold text-blue-300 mb-4">Cargando paquetes de habilidades...</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      </div>
+    )
+  }
+
+  // Mostrar error
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto text-center">
+        <h2 className="text-3xl font-bold text-red-300 mb-4">Error al cargar</h2>
+        <p className="text-gray-400 mb-6">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+        >
+          Recargar página
+        </button>
+      </div>
+    )
   }
 
   // **CAMBIO CLAVE 3: La UI ahora renderiza paquetes en lugar de habilidades**
