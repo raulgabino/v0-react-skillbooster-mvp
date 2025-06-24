@@ -115,15 +115,21 @@ const SkillBoosterMVP: React.FC = () => {
 
   // Cargar resultados guardados del localStorage al montar el componente
   useEffect(() => {
-    const savedResults = localStorage.getItem("skillBoosterResults")
-    if (savedResults) {
-      setResults(JSON.parse(savedResults))
+    if (typeof window !== "undefined") {
+      const savedResults = localStorage.getItem("skillBoosterResults")
+      if (savedResults) {
+        try {
+          setResults(JSON.parse(savedResults))
+        } catch (error) {
+          console.error("Error parsing saved results:", error)
+        }
+      }
     }
   }, [])
 
   // Guardar resultados en localStorage cuando cambien
   useEffect(() => {
-    if (Object.keys(results).length > 0) {
+    if (typeof window !== "undefined" && Object.keys(results).length > 0) {
       localStorage.setItem("skillBoosterResults", JSON.stringify(results))
     }
   }, [results])
