@@ -487,7 +487,6 @@ const SkillBoosterMVP: React.FC = () => {
               submitAssessment={submitAssessment}
               isLoading={isLoading}
               error={error}
-              userInfo={userInfo}
             />
             {isLoading && <LoadingSpinner message="Procesando tu evaluación..." size="lg" overlay={true} />}
           </>
@@ -737,7 +736,6 @@ const AssessmentStep: React.FC<{
   submitAssessment: () => void
   isLoading: boolean
   error: string | null
-  userInfo: UserInfo
 }> = ({
   skills,
   selectedSkills,
@@ -749,7 +747,6 @@ const AssessmentStep: React.FC<{
   submitAssessment,
   isLoading,
   error,
-  userInfo,
 }) => {
   const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
   if (!currentSkill) return <div>Error: Habilidad no encontrada</div>
@@ -774,16 +771,6 @@ const AssessmentStep: React.FC<{
     }
   }
 
-  // Procesar placeholders en preguntas abiertas
-  let processedPrompt = currentQuestion.prompt
-  if (currentQuestion.type === "open" && typeof processedPrompt === "string" && userInfo) {
-    processedPrompt = processedPrompt.replace(/\${userInfo\.role}/g, userInfo.role || "tu rol")
-    processedPrompt = processedPrompt.replace(
-      /\${userInfo\.projectDescription}/g,
-      userInfo.projectDescription || "tu proyecto",
-    )
-  }
-
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
@@ -806,7 +793,7 @@ const AssessmentStep: React.FC<{
       )}
 
       <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-8">
-        <h3 className="text-xl font-semibold text-white mb-6">{processedPrompt}</h3>
+        <h3 className="text-xl font-semibold text-white mb-6">{currentQuestion.prompt}</h3>
 
         {currentQuestion.type === "likert" ? (
           <div className="space-y-3">
