@@ -53,10 +53,16 @@ interface ErrorResponse {
   error: string
 }
 
-// --- Configuración de OpenAI ---
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// --- Configuración de OpenAI (con fallback) ---
+let openai: OpenAI | null = null
+
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+} else {
+  console.warn("OPENAI_API_KEY no encontrada. Usando fallback para scoring.")
+}
 
 // --- Carga de Definiciones ---
 let skillDefinitions: AllSkillDefinitions | null = null
@@ -74,74 +80,106 @@ function loadSkillDefinitions(): AllSkillDefinitions {
   }
 }
 
-// --- Mapeo Likert (Sin cambios) ---
+// --- Mapeo Likert ---
 function mapLikertToScore(value: number): number {
   const mapping = { 1: 20, 2: 40, 3: 60, 4: 80, 5: 100 }
   return mapping[value as keyof typeof mapping] || 0
 }
 
-// --- NUEVA Función para calificar la pregunta abierta con IA ---
+// --- Función para calificar pregunta abierta (con fallback) ---
 async function getOpenQuestionScoreFromAI(rubric: string, answer: string): Promise<number> {
-  // Si no hay respuesta del usuario, devolver una puntuación baja.
+  // Si no hay respuesta del usuario, devolver una puntuación baja
   if (!answer || answer.trim().length < 10) {
     return 20
   }
 
-  // Si la API key no está disponible, usar un fallback local.
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn("OPENAI_API_KEY no encontrada. Usando fallback para score de pregunta abierta.")
-    return 60 // Un score neutral de fallback
+  // Si no hay OpenAI disponible, usar algoritmo de fallback
+  if (!openai) {
+    console.log("Usando algoritmo de fallback para scoring de pregunta abierta")
+    return calculateFallbackScore(answer)
   }
 
   try {
-    const systemPrompt =
-      "Eres un evaluador experto y objetivo. Tu única función es analizar una respuesta de un usuario basándote estrictamente en una rúbrica y devolver una puntuación numérica en formato JSON. No debes añadir explicaciones ni texto adicional, solo el objeto JSON."
-
-    const userPrompt = `Por favor, evalúa la siguiente respuesta de un usuario basándote en la rúbrica proporcionada.
-    
-    RÚBRICA DE EVALUACIÓN:
-    ---
-    ${rubric}
-    ---
-    
-    RESPUESTA DEL USUARIO:
-    ---
-    ${answer}
-    ---
-    
-    Basándote únicamente en la rúbrica, devuelve un objeto JSON con una única clave "score", que contenga un número entero entre 0 y 100. Ejemplo: {"score": 85}`
-
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        {
+          role: "system",
+          content: "Eres un evaluador experto. Analiza la respuesta y devuelve un JSON con el score de 0-100.",
+        },
+        {
+          role: "user",
+          content: `Evalúa esta respuesta según la rúbrica: "${rubric}"\n\nRespuesta: "${answer}"\n\nDevuelve JSON: {"score": <número 0-100>}`,
+        },
       ],
+      max_tokens: 100,
+      temperature: 0.3,
       response_format: { type: "json_object" },
-      temperature: 0.1, // Baja temperatura para una evaluación más consistente.
     })
 
-    const content = response.choices[0].message.content
-    if (content) {
-      const parsed = JSON.parse(content)
-      if (typeof parsed.score === "number" && parsed.score >= 0 && parsed.score <= 100) {
-        console.log(`[IA Score] Puntuación de la IA para pregunta abierta: ${parsed.score}`)
-        return parsed.score
-      }
-    }
-    // Si el formato es incorrecto, devolver una puntuación de fallback.
-    return 65
+    const result = JSON.parse(response.choices[0].message.content || '{"score": 60}')
+    return Math.max(0, Math.min(100, result.score || 60))
   } catch (error) {
-    console.error("Error en la llamada a OpenAI para calificar pregunta abierta:", error)
-    return 60 // Fallback en caso de error de la API.
+    console.error("Error en scoring con OpenAI, usando fallback:", error)
+    return calculateFallbackScore(answer)
   }
 }
 
-// --- Handler POST Refactorizado (Lógica Híbrida) ---
+// --- Algoritmo de fallback para scoring ---
+function calculateFallbackScore(answer: string): number {
+  const length = answer.trim().length
+  const words = answer.trim().split(/\s+/).length
+
+  // Criterios básicos de evaluación
+  let score = 30 // Base score
+
+  // Longitud de la respuesta
+  if (length > 200) score += 20
+  else if (length > 100) score += 15
+  else if (length > 50) score += 10
+
+  // Número de palabras
+  if (words > 50) score += 15
+  else if (words > 25) score += 10
+  else if (words > 10) score += 5
+
+  // Presencia de palabras clave de calidad
+  const qualityKeywords = [
+    "estrategia",
+    "planificación",
+    "equipo",
+    "comunicación",
+    "objetivo",
+    "proceso",
+    "análisis",
+    "solución",
+    "implementar",
+    "evaluar",
+    "mejorar",
+    "desarrollar",
+    "gestionar",
+    "coordinar",
+    "colaborar",
+  ]
+
+  const lowerAnswer = answer.toLowerCase()
+  const keywordCount = qualityKeywords.filter((keyword) => lowerAnswer.includes(keyword)).length
+
+  score += Math.min(keywordCount * 3, 20)
+
+  // Estructura (presencia de puntos, pasos, etc.)
+  if (answer.includes("1.") || answer.includes("•") || answer.includes("-")) {
+    score += 10
+  }
+
+  return Math.max(20, Math.min(100, score))
+}
+
+// --- Handler POST ---
 export async function POST(request: Request): Promise<NextResponse<ScoreResponsePayload | ErrorResponse>> {
   try {
     const { skillId, answers } = (await request.json()) as ScoreRequestPayload
-    console.log(`[API /api/score] Iniciando cálculo HÍBRIDO para skillId: ${skillId}`)
+    console.log(`[API /api/score] Iniciando cálculo para skillId: ${skillId}`)
 
     const definitions = loadSkillDefinitions()
     const skillDefinition = definitions[skillId]
@@ -168,15 +206,15 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
       }
     }
     const likertAverage = indicatorScores.length > 0 ? likertTotal / indicatorScores.length : 0
-    console.log(`[API /api/score] Puntuación promedio Likert (local): ${likertAverage.toFixed(2)}`)
+    console.log(`[API /api/score] Puntuación promedio Likert: ${likertAverage.toFixed(2)}`)
 
-    // 2. Calificar la pregunta abierta usando IA y la rúbrica
+    // 2. Calificar la pregunta abierta
     const openAnswerObj = answers.find((a) => a.questionId === skillDefinition.open_question_id)
     const openAnswerText = (openAnswerObj?.value as string) || ""
 
     const openScore = await getOpenQuestionScoreFromAI(skillDefinition.prompt_score_rubric_text, openAnswerText)
 
-    // Añadir el resultado de la pregunta abierta a la lista de puntuaciones
+    // Añadir el resultado de la pregunta abierta
     const openQuestionIndicadorInfo = skillDefinition.indicadores_info.find(
       (info) => info.id === skillDefinition.open_question_id,
     )
@@ -194,11 +232,11 @@ export async function POST(request: Request): Promise<NextResponse<ScoreResponse
       likertAverage * skillDefinition.scoring_weights.likert + openScore * skillDefinition.scoring_weights.open,
     )
 
-    console.log(`[API /api/score] Cálculo HÍBRIDO completado. Score global final: ${globalScore}`)
+    console.log(`[API /api/score] Score global final: ${globalScore}`)
 
     return NextResponse.json({ indicatorScores, globalScore })
   } catch (error) {
-    console.error("[API /api/score] Error durante el cálculo híbrido:", error)
+    console.error("[API /api/score] Error durante el cálculo:", error)
     return NextResponse.json({ error: "Error al calcular las puntuaciones." }, { status: 500 })
   }
 }

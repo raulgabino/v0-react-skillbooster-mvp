@@ -101,13 +101,135 @@ const SkillBoosterMVP: React.FC = () => {
   useEffect(() => {
     const fetchSkills = async () => {
       try {
+        setError(null)
+        console.log("Intentando cargar habilidades desde /api/questions")
+
         const response = await fetch("/api/questions")
-        if (!response.ok) throw new Error("Error al cargar las habilidades")
+
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`)
+        }
+
         const skillsData: Skill[] = await response.json()
+
+        if (!skillsData || skillsData.length === 0) {
+          throw new Error("No se recibieron datos de habilidades")
+        }
+
         setAllSkills(skillsData)
+        console.log(`Habilidades cargadas exitosamente: ${skillsData.length} habilidades`)
       } catch (error) {
         console.error("Error cargando habilidades:", error)
-        setError("Error al cargar las habilidades. Por favor, recarga la página.")
+        setError(`Error al cargar las habilidades: ${error instanceof Error ? error.message : "Error desconocido"}`)
+
+        // Fallback: crear habilidades básicas
+        const fallbackSkills: Skill[] = [
+          {
+            id: "liderazgo_equipos",
+            name: "Liderazgo de Equipos",
+            questions: [
+              {
+                id: "LE1",
+                axis: "Liderazgo de Equipos",
+                type: "likert",
+                indicator: "LE1",
+                prompt:
+                  "Al iniciar un nuevo proyecto, dedico tiempo a explicar claramente los objetivos y la importancia del trabajo a realizar.",
+              },
+              {
+                id: "LE2",
+                axis: "Liderazgo de Equipos",
+                type: "likert",
+                indicator: "LE2",
+                prompt:
+                  "Busco activamente oportunidades para reconocer y destacar las contribuciones de los miembros de mi equipo.",
+              },
+              {
+                id: "LE7_open",
+                axis: "Liderazgo de Equipos",
+                type: "open",
+                indicator: "LE7_open",
+                prompt:
+                  "Describe cómo abordarías una situación donde un miembro talentoso de tu equipo muestra signos de desmotivación.",
+              },
+            ],
+            indicadoresInfo: [
+              { id: "LE1", nombre: "Visión y Alineación", descripcion_indicador: "Comunicación clara de objetivos" },
+              { id: "LE2", nombre: "Reconocimiento", descripcion_indicador: "Valoración del trabajo del equipo" },
+            ],
+            openQuestionId: "LE7_open",
+          },
+          {
+            id: "comunicacion_estrategica",
+            name: "Comunicación Estratégica",
+            questions: [
+              {
+                id: "CE1",
+                axis: "Comunicación Estratégica",
+                type: "likert",
+                indicator: "CE1",
+                prompt:
+                  "Antes de comunicaciones importantes, defino claramente los puntos clave que quiero transmitir.",
+              },
+              {
+                id: "CE2",
+                axis: "Comunicación Estratégica",
+                type: "likert",
+                indicator: "CE2",
+                prompt: "Adapto mi lenguaje y estilo de comunicación según mi audiencia.",
+              },
+              {
+                id: "CE7_open",
+                axis: "Comunicación Estratégica",
+                type: "open",
+                indicator: "CE7_open",
+                prompt:
+                  "Describe cómo presentarías un proyecto importante a un directivo escéptico con poco tiempo disponible.",
+              },
+            ],
+            indicadoresInfo: [
+              { id: "CE1", nombre: "Claridad de Mensaje", descripcion_indicador: "Estructuración clara de ideas" },
+              { id: "CE2", nombre: "Adaptación", descripcion_indicador: "Ajuste según la audiencia" },
+            ],
+            openQuestionId: "CE7_open",
+          },
+          {
+            id: "feedback_coaching",
+            name: "Feedback Efectivo y Coaching",
+            questions: [
+              {
+                id: "FC1",
+                axis: "Feedback Efectivo y Coaching",
+                type: "likert",
+                indicator: "FC1",
+                prompt: "Cuando doy feedback, me enfoco en comportamientos específicos y observables.",
+              },
+              {
+                id: "FC2",
+                axis: "Feedback Efectivo y Coaching",
+                type: "likert",
+                indicator: "FC2",
+                prompt: "Proporciono feedback de manera oportuna, cerca del momento en que ocurrió la situación.",
+              },
+              {
+                id: "FC7_open",
+                axis: "Feedback Efectivo y Coaching",
+                type: "open",
+                indicator: "FC7_open",
+                prompt:
+                  "Describe cómo estructurarías una conversación de feedback con un miembro junior que cometió un error importante.",
+              },
+            ],
+            indicadoresInfo: [
+              { id: "FC1", nombre: "Especificidad", descripcion_indicador: "Feedback basado en evidencia" },
+              { id: "FC2", nombre: "Oportunidad", descripcion_indicador: "Timing adecuado del feedback" },
+            ],
+            openQuestionId: "FC7_open",
+          },
+        ]
+
+        setAllSkills(fallbackSkills)
+        console.log("Usando habilidades de fallback")
       }
     }
     fetchSkills()
@@ -115,15 +237,21 @@ const SkillBoosterMVP: React.FC = () => {
 
   // Cargar resultados guardados del localStorage al montar el componente
   useEffect(() => {
-    const savedResults = localStorage.getItem("skillBoosterResults")
-    if (savedResults) {
-      setResults(JSON.parse(savedResults))
+    if (typeof window !== "undefined") {
+      const savedResults = localStorage.getItem("skillBoosterResults")
+      if (savedResults) {
+        try {
+          setResults(JSON.parse(savedResults))
+        } catch (error) {
+          console.error("Error parsing saved results:", error)
+        }
+      }
     }
   }, [])
 
   // Guardar resultados en localStorage cuando cambien
   useEffect(() => {
-    if (Object.keys(results).length > 0) {
+    if (typeof window !== "undefined" && Object.keys(results).length > 0) {
       localStorage.setItem("skillBoosterResults", JSON.stringify(results))
     }
   }, [results])
@@ -436,15 +564,30 @@ const SkillBoosterMVP: React.FC = () => {
     const skillIndex = selectedSkills.indexOf(skillId)
     if (skillIndex >= 0) {
       setCurrentSkillIndex(skillIndex)
-      // Resetea las respuestas de la habilidad anterior para evitar conflictos
       setAnswers((prevAnswers) =>
         prevAnswers.filter((a) => !allSkills[currentSkillIndex].questions.some((q) => q.id === a.questionId)),
       )
-      // Resetea el índice de la pregunta para la nueva habilidad
       setCurrentQuestionIndex(0)
-      // Cambia el paso actual para mostrar el objetivo de la nueva habilidad
       setCurrentStep("skillObjective")
     }
+  }
+
+  // Mostrar error crítico si no se pueden cargar las habilidades
+  if (error && allSkills.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-8 bg-gray-800/50 backdrop-blur-sm rounded-lg border border-red-600">
+          <h2 className="text-2xl font-bold text-red-300 mb-4">Error de Carga</h2>
+          <p className="text-gray-300 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+          >
+            Recargar Aplicación
+          </button>
+        </div>
+      </div>
+    )
   }
 
   // Renderizado condicional según el paso actual
@@ -487,6 +630,7 @@ const SkillBoosterMVP: React.FC = () => {
               submitAssessment={submitAssessment}
               isLoading={isLoading}
               error={error}
+              userInfo={userInfo}
             />
             {isLoading && <LoadingSpinner message="Procesando tu evaluación..." size="lg" overlay={true} />}
           </>
@@ -736,6 +880,7 @@ const AssessmentStep: React.FC<{
   submitAssessment: () => void
   isLoading: boolean
   error: string | null
+  userInfo: UserInfo
 }> = ({
   skills,
   selectedSkills,
@@ -747,6 +892,7 @@ const AssessmentStep: React.FC<{
   submitAssessment,
   isLoading,
   error,
+  userInfo,
 }) => {
   const currentSkill = skills.find((s) => s.id === selectedSkills[currentSkillIndex])
   if (!currentSkill) return <div>Error: Habilidad no encontrada</div>
@@ -771,6 +917,16 @@ const AssessmentStep: React.FC<{
     }
   }
 
+  // Procesar placeholders en preguntas abiertas
+  let processedPrompt = currentQuestion.prompt
+  if (currentQuestion.type === "open" && typeof processedPrompt === "string" && userInfo) {
+    processedPrompt = processedPrompt.replace(/\${userInfo\.role}/g, userInfo.role || "tu rol")
+    processedPrompt = processedPrompt.replace(
+      /\${userInfo\.projectDescription}/g,
+      userInfo.projectDescription || "tu proyecto",
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
@@ -793,7 +949,7 @@ const AssessmentStep: React.FC<{
       )}
 
       <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-8">
-        <h3 className="text-xl font-semibold text-white mb-6">{currentQuestion.prompt}</h3>
+        <h3 className="text-xl font-semibold text-white mb-6">{processedPrompt}</h3>
 
         {currentQuestion.type === "likert" ? (
           <div className="space-y-3">

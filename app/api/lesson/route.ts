@@ -32,6 +32,17 @@ interface SkillDefinition {
   prompt_tutor_definition: PromptDefinition
 }
 
+// --- Configuración OpenAI (con fallback) ---
+let openai: OpenAI | null = null
+
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+} else {
+  console.warn("OPENAI_API_KEY no encontrada. Usando tips de fallback.")
+}
+
 // --- Carga de Definiciones ---
 function loadPromptDefinition(skillId: string): { name: string; definition: PromptDefinition } | null {
   try {
@@ -53,36 +64,32 @@ function loadPromptDefinition(skillId: string): { name: string; definition: Prom
   }
 }
 
-// --- Configuración OpenAI ---
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
-// --- Función para reemplazar placeholders ---
-function replacePlaceholders(
-  text: string,
+// --- Función para generar tips de fallback ---
+function generateFallbackTips(
   skillName: string,
   userInfo: UserInfo,
-  highestIndicatorName: string,
-  lowestIndicatorName: string,
-): string {
-  return text
-    .replace(/\$\{skillName\}/g, skillName)
-    .replace(/\$\{userInfo\.role\}/g, userInfo.role)
-    .replace(/\$\{userInfo\.projectDescription\}/g, userInfo.projectDescription)
-    .replace(/\$\{userInfo\.obstacles\}/g, userInfo.obstacles)
-    .replace(/\[Nombre Descriptivo del Indicador de Fortaleza\]/g, highestIndicatorName)
-    .replace(/\[Nombre Descriptivo del Indicador de Oportunidad\]/g, lowestIndicatorName)
-    .replace(/\[mencionar brevemente un obstáculo relevante del usuario si aplica\]/g, userInfo.obstacles)
+  indicatorScores: IndicatorScore[],
+  globalScore: number,
+): string[] {
+  // Encontrar fortaleza y debilidad
+  const sortedScores = [...indicatorScores].sort((a, b) => b.score - a.score)
+  const strength = sortedScores[0]?.name || "tu desempeño general"
+  const weakness = sortedScores[sortedScores.length - 1]?.name || "áreas de mejora"
+
+  const tips = [
+    `Fortaleza: Tu ${strength.toLowerCase()} es un punto fuerte que puedes aprovechar en tu rol como ${userInfo.role}. Continúa desarrollando esta habilidad y úsala como base para mejorar otras áreas.`,
+
+    `Oportunidad: Enfócate en desarrollar ${weakness.toLowerCase()} para potenciar tu desempeño en ${skillName}. ${userInfo.obstacles ? `Esto te ayudará especialmente con ${userInfo.obstacles.toLowerCase()}.` : "Dedica tiempo específico a practicar esta área."}`,
+
+    `Consejo: Con una puntuación de ${globalScore}/100 en ${skillName}, tienes una base sólida para crecer. ${globalScore >= 70 ? "Mantén tu excelente nivel y busca oportunidades para mentorear a otros." : globalScore >= 50 ? "Enfócate en aplicar consistentemente lo que sabes y busca feedback regular." : "Considera tomar un curso o buscar un mentor para acelerar tu desarrollo."}`,
+  ]
+
+  return tips
 }
 
-// --- Handler POST Refactorizado ---
+// --- Handler POST ---
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("La clave de API de OpenAI no está configurada.")
-    }
-
     const { skillId, userInfo, indicatorScores, globalScore, openEndedAnswer } = await request.json()
 
     const promptData = loadPromptDefinition(skillId)
@@ -93,59 +100,57 @@ export async function POST(request: Request) {
       )
     }
 
-    const { name: skillName, definition: promptDef } = promptData
-    console.log(`[API /api/lesson] Iniciando generación de tips para ${skillName}`)
+    const { name: skillName } = promptData
+    console.log(`[API /api/lesson] Generando tips para ${skillName}`)
 
-    // Construcción del Prompt
-    const systemPrompt = `Eres un ${promptDef.role}. Tu especialidad es ${promptDef.expertise}. Tu tono es ${promptDef.tone}. Te enfocas en: ${promptDef.focus_areas.join(", ")}. Tu enfoque de enseñanza es: ${promptDef.teaching_approach}. Debes generar una respuesta JSON que contenga un array de 3 strings en la clave "tips".`
-
-    const highestScoreIndicator = [...indicatorScores].sort((a, b) => b.score - a.score)[0]
-    const lowestScoreIndicator = [...indicatorScores].sort((a, b) => a.score - b.score)[0]
-
-    let guidelines = promptDef.content_guidelines.join(" ")
-    guidelines = replacePlaceholders(
-      guidelines,
-      skillName,
-      userInfo,
-      highestScoreIndicator.name,
-      lowestScoreIndicator.name,
-    )
-
-    const userPrompt = `Basado en el siguiente contexto de un usuario y usando las directrices proporcionadas, genera 3 tips personalizados.
-    Contexto del Usuario:
-    - Nombre: ${userInfo.name}
-    - Rol: ${userInfo.role}
-    - Puntuación Global en ${skillName}: ${globalScore}/100
-    - Puntuaciones por Indicador: ${indicatorScores.map((i) => `${i.name}: ${i.score}/100`).join(", ")}
-    - Obstáculos Mencionados: ${userInfo.obstacles}
-    ${openEndedAnswer ? `- Respuesta a pregunta abierta: "${openEndedAnswer}"` : ""}
-
-    Directrices para generar los tips: "${guidelines}"
-    
-    Genera únicamente un objeto JSON con la clave "tips", que contenga un array de 3 strings. No incluyas texto adicional fuera del JSON.`
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.4,
-    })
-
-    const content = response.choices[0].message.content
-    const parsedContent = JSON.parse(content || "{}")
-
-    if (!parsedContent.tips || !Array.isArray(parsedContent.tips) || parsedContent.tips.length !== 3) {
-      throw new Error("La respuesta de la IA no contiene los 3 tips esperados.")
+    // Si no hay OpenAI, usar fallback
+    if (!openai) {
+      console.log("Usando tips de fallback")
+      const fallbackTips = generateFallbackTips(skillName, userInfo, indicatorScores, globalScore)
+      return NextResponse.json({ tips: fallbackTips })
     }
 
-    console.log(`[API /api/lesson] Tips generados exitosamente para ${skillName}.`)
-    return NextResponse.json({ tips: parsedContent.tips })
+    // Intentar usar OpenAI
+    try {
+      const sortedScores = [...indicatorScores].sort((a, b) => b.score - a.score)
+      const strength = sortedScores[0]?.name || "desempeño general"
+      const weakness = sortedScores[sortedScores.length - 1]?.name || "áreas de mejora"
+
+      const prompt = `Como experto en ${skillName}, genera 3 tips personalizados para ${userInfo.name} (${userInfo.role}):
+
+Puntuación: ${globalScore}/100
+Fortaleza: ${strength}
+Área de mejora: ${weakness}
+Obstáculos: ${userInfo.obstacles}
+Proyecto: ${userInfo.projectDescription}
+
+Devuelve JSON con formato: {"tips": ["tip1", "tip2", "tip3"]}
+
+Los tips deben ser:
+1. Específicos para su rol y contexto
+2. Accionables y prácticos
+3. Motivadores pero realistas`
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 300,
+        temperature: 0.4,
+        response_format: { type: "json_object" },
+      })
+
+      const result = JSON.parse(response.choices[0].message.content || '{"tips": []}')
+      const tips = result.tips || generateFallbackTips(skillName, userInfo, indicatorScores, globalScore)
+
+      console.log(`[API /api/lesson] Tips generados exitosamente para ${skillName}`)
+      return NextResponse.json({ tips })
+    } catch (aiError) {
+      console.error("[API /api/lesson] Error con OpenAI, usando fallback:", aiError)
+      const fallbackTips = generateFallbackTips(skillName, userInfo, indicatorScores, globalScore)
+      return NextResponse.json({ tips: fallbackTips })
+    }
   } catch (error) {
     console.error("[API /api/lesson] Error generando tips:", error)
-    // Fallback en caso de error de la IA
     const fallbackTips = [
       "Fortaleza: Demuestras un sólido entendimiento en tus áreas más fuertes. ¡Sigue así!",
       "Oportunidad: Identificar áreas de mejora es el primer paso para el crecimiento. Enfócate en la práctica deliberada.",
